@@ -1,0 +1,14 @@
+[run]
+branch = True
+
+[report]
+omit = 
+    build/*
+    tests/*
+    setup.py
+    src/tiempo2/__init__.py
+    src/tiempo2/*.swp
+    src/tiempo2/__pycache__/*
+    shibokensupport/*
+    pyscript
+    signature_bootstrap.py

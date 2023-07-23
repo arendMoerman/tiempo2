@@ -1,0 +1,24 @@
+/** 
+\mainpage Home
+
+\section intro_sec Introduction
+Welcome to the documentation pages for `TiEMPO2`! This program is designed to simulate astronomical signals through the atmosphere.
+It uses ARIS (Astronomical Radio Interferometer Simulator) for generating precipitable water vapour (PWV) maps to simulate atmospheric transmission.
+
+\section install Installation
+Clone repos:
+```
+git clone <repo>
+```
+
+Navigate to cloned repo and:
+```
+pip install -e .
+```
+
+\section license License
+This project is released under the [MIT License](https://opensource.org/licenses/MIT).
+
+\section contact Contact
+`TiEMPO2` is maintained by Arend Moerman: A.Moerman-1(at)tudelft.nl
+*/
