@@ -1,3 +1,10 @@
+"""!
+@file
+File containing utility functions for the ctypes bindings.
+
+Most of these functions are concerned with allocating memory.
+"""
+
 import numpy as np
 import ctypes
 

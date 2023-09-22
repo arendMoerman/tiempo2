@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['mocksz_0',['MockSZ',['../classtiempo2_1_1Sources_1_1MockSZ.html',1,'tiempo2::Sources']]]
+  ['instrument_0',['Instrument',['../structInstrument.html',1,'Instrument'],['../classtiempo2_1_1Structs_1_1Instrument.html',1,'tiempo2.Structs.Instrument']]]
 ];

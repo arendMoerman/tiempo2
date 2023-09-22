@@ -27,7 +27,8 @@ var NAVTREE =
   [ "TiEMPO2 User Manual", "index.html", [
     [ "Home", "index.html", "index" ],
     [ "Design Philosophy", "design.html", null ],
-    [ "Demonstrations", "demos.html", null ]
+    [ "Demonstrations", "demos.html", null ],
+    [ "Documentation", "tiempodocs.html", null ]
   ] ]
 ];
 

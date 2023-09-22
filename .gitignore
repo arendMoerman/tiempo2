@@ -6,3 +6,5 @@ build/
 *.egg-info/
 *.so
 tests/resources/*
+tests/__pycache__/*
+htmlcov/*
