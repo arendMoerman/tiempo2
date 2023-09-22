@@ -1,6 +1,4 @@
 var searchData=
 [
-  ['bibliography_0',['Bibliography',['../citelist.html',1,'']]],
-  ['bindcpu_2epy_1',['BindCPU.py',['../BindCPU_8py.html',1,'']]],
-  ['bindutils_2epy_2',['BindUtils.py',['../BindUtils_8py.html',1,'']]]
+  ['convertanglestospatialatm_0',['convertAnglesToSpatialAtm',['../Scan_8h.html#aea4a7b82d457a3302615ad9425e2ac7a',1,'Scan.cpp']]]
 ];

@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['manager_0',['Manager',['../classtiempo2_1_1Threadmgr_1_1Manager.html',1,'tiempo2::Threadmgr']]],
-  ['mocksz_1',['MockSZ',['../classtiempo2_1_1Sources_1_1MockSZ.html',1,'tiempo2::Sources']]]
+  ['instrument_0',['Instrument',['../structInstrument.html',1,'Instrument'],['../classtiempo2_1_1Structs_1_1Instrument.html',1,'tiempo2.Structs.Instrument']]],
+  ['interface_1',['Interface',['../classtiempo2_1_1Interface_1_1Interface.html',1,'tiempo2::Interface']]]
 ];

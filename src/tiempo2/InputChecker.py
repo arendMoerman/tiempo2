@@ -10,7 +10,7 @@ def checkSourceDict(sourceDict):
     SZlist = ["Az", "El", "nAz", "nEl", "Te", "ne0", "beta",
               "v_pec", "rc", "Da", "freqs"]
 
-    loadlist = ["path", "name"]
+    loadlist = ["path", "filename"]
 
     errlist = []
 
@@ -42,3 +42,35 @@ def checkTelescopeDict(telescopeDict):
     
     return errlist
 
+def checkInstrumentDict(instrumentDict):
+    checklist = ["freqs", "R", "eta_inst", "f_sample"]
+
+    errlist = []
+
+    for key in checklist:
+        if instrumentDict.get(key) is None:
+            errlist.append(key)
+    
+    return errlist
+
+def checkAtmosphereDict(atmosphereDict):
+    checklist = ["Tatm", "filename", "path", "dx", "dy", "h_column", "v_wind", "PWV0"]
+
+    errlist = []
+
+    for key in checklist:
+        if atmosphereDict.get(key) is None:
+            errlist.append(key)
+    
+    return errlist
+
+def checkObservationDict(observationDict):
+    checklist = ["name_sim", "t_obs", "nThreads", "outDir"]
+
+    errlist = []
+
+    for key in checklist:
+        if observationDict.get(key) is None:
+            errlist.append(key)
+    
+    return errlist

@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['loadtiempo2lib_0',['loadTiEMPO2lib',['../BindCPU_8py.html#aa3747f06e52674ab94a2bbf1f4b1dbfd',1,'tiempo2::BindCPU']]]
+  ['readatmtransmission_0',['readAtmTransmission',['../Atmosphere_8py.html#a36286d24810cece7dd2103aaa74db079',1,'tiempo2::Atmosphere']]],
+  ['runtiempo2_1',['runTiEMPO2',['../BindCPU_8py.html#ad006ca3489b08e841587c45cdbaefdb8',1,'tiempo2::BindCPU']]]
 ];

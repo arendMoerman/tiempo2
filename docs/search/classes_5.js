@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['xy_5fatm_0',['xy_atm',['../structxy__atm.html',1,'']]]
+  ['telescope_0',['Telescope',['../structTelescope.html',1,'Telescope'],['../classtiempo2_1_1Structs_1_1Telescope.html',1,'tiempo2.Structs.Telescope']]]
 ];

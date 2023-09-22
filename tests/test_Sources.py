@@ -31,7 +31,7 @@ class TestSources(unittest.TestCase):
         self.assertEqual(El.shape, (ind.SZsource.get("nAz"), ind.SZsource.get("nEl")))
     
         if save:
-            SZ_l, CMB_l, Az_l, El_l, freqs_l = TSources.loadSZMaps(sourceName="test", path=os.getcwd())
+            SZ_l, CMB_l, Az_l, El_l, freqs_l = TSources.loadSZMaps(ind.loadSZsource)
 
             for SZi, SZ_li in zip(SZ.ravel(), SZ_l.ravel()):
                 self.assertEqual(SZi, SZ_li)

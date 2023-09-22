@@ -80,7 +80,10 @@ def generateSZMaps(SZsourceDict, convolve_beam=False, telescopeDict=None, ret_un
 
     return SZ, CMB, Az, El
 
-def loadSZMaps(sourceName, path):
+def loadSZMaps(SZsourceDict):
+    sourceName = SZsourceDict.get("filename")
+    path = SZsourceDict.get("path")
+
     totalPath = os.path.join(path, sourceName)
     
     SZ = np.load(os.path.join(totalPath, "SZ.npy"))

@@ -1,5 +1,5 @@
 instrument = {
-        "freqs"         : "Range of frequencies of filterbank in Hertz.",
+        "freqs"         : "Range of frequencies of filterbank in GHz.",
         "R"             : "Resolving power f / df.",
         "eta_inst"      : "Efficiency of entire chip.",
         "f_sample"      : "Readout frequency in Hertz.",

@@ -87,8 +87,3 @@ def allfillSimParams(SPDict, SPStruct):
     SPStruct.nThreads = ctypes.c_int(SPDict["nThreads"])
 
 
-
-
-
-
-

@@ -104,7 +104,7 @@ $(document).ready(function(){initNavTree('Sources_8py.html',''); initResizable()
 
 <div class="header">
   <div class="summary">
-<a href="#nested-classes">Classes</a>  </div>
+<a href="#func-members">Functions</a>  </div>
   <div class="headertitle"><div class="title">Sources.py File Reference</div></div>
 </div><!--header-->
 <div class="contents">
@@ -112,16 +112,108 @@ $(document).ready(function(){initNavTree('Sources_8py.html',''); initResizable()
 <p>This file contains the possible source signals for a TiEMPO2 simulation.  
 <a href="#details">More...</a></p>
 <table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
-Classes</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtiempo2_1_1Sources_1_1MockSZ.html">tiempo2.Sources.MockSZ</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Class to represent the Sunyaev-Zeldovich effect on-sky.  <a href="classtiempo2_1_1Sources_1_1MockSZ.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:a5d647b5eb8e5850b1631985c92152677"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Sources_8py.html#a5d647b5eb8e5850b1631985c92152677">tiempo2.Sources.generateSZMaps</a> (SZsourceDict, convolve_beam=False, telescopeDict=None, ret_unit=&quot;MJy&quot;, save=False, sourceName=None, path=None)</td></tr>
+<tr class="memdesc:a5d647b5eb8e5850b1631985c92152677"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generate SZ maps on-sky over a range of frequencies.  <br /></td></tr>
+<tr class="separator:a5d647b5eb8e5850b1631985c92152677"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa39208f21dabfb256668e2d27a598183"><td class="memItemLeft" align="right" valign="top"><a id="aa39208f21dabfb256668e2d27a598183" name="aa39208f21dabfb256668e2d27a598183"></a>
+def&#160;</td><td class="memItemRight" valign="bottom"><b>tiempo2.Sources.loadSZMaps</b> (SZsourceDict)</td></tr>
+<tr class="separator:aa39208f21dabfb256668e2d27a598183"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a63a3629d46ad9b2e01aaa2c595507a55"><td class="memItemLeft" align="right" valign="top"><a id="a63a3629d46ad9b2e01aaa2c595507a55" name="a63a3629d46ad9b2e01aaa2c595507a55"></a>
+def&#160;</td><td class="memItemRight" valign="bottom"><b>tiempo2.Sources._saveSource</b> (sourceName, path, SZ, CMB, Az, El, freqs)</td></tr>
+<tr class="separator:a63a3629d46ad9b2e01aaa2c595507a55"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7669068bf861d0dbc651396bb9eb9920"><td class="memItemLeft" align="right" valign="top"><a id="a7669068bf861d0dbc651396bb9eb9920" name="a7669068bf861d0dbc651396bb9eb9920"></a>
+def&#160;</td><td class="memItemRight" valign="bottom"><b>tiempo2.Sources._convolveMaps</b> (SZ, Az, El, freqs, Dtel, numThreads=None)</td></tr>
+<tr class="separator:a7669068bf861d0dbc651396bb9eb9920"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac6bd987d1bd50048aca872f9821b68aa"><td class="memItemLeft" align="right" valign="top"><a id="ac6bd987d1bd50048aca872f9821b68aa" name="ac6bd987d1bd50048aca872f9821b68aa"></a>
+def&#160;</td><td class="memItemRight" valign="bottom"><b>tiempo2.Sources._parallelConvolve</b> (args, Rtel, Az, El)</td></tr>
+<tr class="separator:ac6bd987d1bd50048aca872f9821b68aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0463dd6ec5a7104fa5819db404c0a187"><td class="memItemLeft" align="right" valign="top"><a id="a0463dd6ec5a7104fa5819db404c0a187" name="a0463dd6ec5a7104fa5819db404c0a187"></a>
+def&#160;</td><td class="memItemRight" valign="bottom"><b>tiempo2.Sources._AiryDisk</b> (k, R, Az, El)</td></tr>
+<tr class="separator:a0463dd6ec5a7104fa5819db404c0a187"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>This file contains the possible source signals for a TiEMPO2 simulation. </p>
 <p>Currently, can only use MockSZ. </p>
-</div></div><!-- contents -->
+</div><h2 class="groupheader">Function Documentation</h2>
+<a id="a5d647b5eb8e5850b1631985c92152677" name="a5d647b5eb8e5850b1631985c92152677"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5d647b5eb8e5850b1631985c92152677">&#9670;&#160;</a></span>generateSZMaps()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def tiempo2.Sources.generateSZMaps </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>SZsourceDict</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>convolve_beam</em> = <code>False</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>telescopeDict</em> = <code>None</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>ret_unit</em> = <code>&quot;MJy&quot;</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>save</em> = <code>False</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>sourceName</em> = <code>None</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>path</em> = <code>None</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Generate SZ maps on-sky over a range of frequencies. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">SZsourceDict</td><td>An SZsource dictionary. </td></tr>
+    <tr><td class="paramname">convolve_beam</td><td>Convolve generated with diffraction-limited beams at specified frequencies. If True, need to specifiy a telescopeDict in order to get Dtel. </td></tr>
+    <tr><td class="paramname">telescopeDict</td><td>A telescope dictionary. Need not be given if convolve_beam is False. </td></tr>
+    <tr><td class="paramname">ret_unit</td><td>Return maps in this unit. Choose between standard W m**-2 Hz**-1 sr**-1 ('SI'), MJy sr**-1 ('MJy') or mK ('mK').</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>SZ Datacube containing SZ intensity sky maps across the frequency range. </dd>
+<dd>
+CMB Cosmic Microwave Background. Can be added to SZ map. </dd>
+<dd>
+Az Array of Azimuthal co-ordinates. </dd>
+<dd>
+El Array of Elevation co-ordinates. </dd></dl>
+
+</div>
+</div>
+</div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
