@@ -118,8 +118,6 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a1c329ec54413aa2fd266ccdc68898b88"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaa2eb223029b18d46379d274ac5bb535"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structTelescope.html#aaa2eb223029b18d46379d274ac5bb535">Dtel</a></td></tr>
 <tr class="separator:aaa2eb223029b18d46379d274ac5bb535"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0137de9cad5fdc2c5824a38069cd6cff"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structTelescope.html#a0137de9cad5fdc2c5824a38069cd6cff">chop_mode</a></td></tr>
-<tr class="separator:a0137de9cad5fdc2c5824a38069cd6cff"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae4b07ef177555802496312869b4bbf38"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structTelescope.html#ae4b07ef177555802496312869b4bbf38">dAz_chop</a></td></tr>
 <tr class="separator:ae4b07ef177555802496312869b4bbf38"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad4d208c9a93c3fecc7b943df20806e5d"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structTelescope.html#ad4d208c9a93c3fecc7b943df20806e5d">freq_chop</a></td></tr>
@@ -132,21 +130,6 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a6fb80950a4210d859ba4cc18666132c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="a0137de9cad5fdc2c5824a38069cd6cff" name="a0137de9cad5fdc2c5824a38069cd6cff"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0137de9cad5fdc2c5824a38069cd6cff">&#9670;&#160;</a></span>chop_mode</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int Telescope::chop_mode</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Chopping mode. &lsquo;0&rsquo; means no chopping, &lsquo;1&rsquo; means chopping. </p>
-
-</div>
-</div>
 <a id="ae4b07ef177555802496312869b4bbf38" name="ae4b07ef177555802496312869b4bbf38"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae4b07ef177555802496312869b4bbf38">&#9670;&#160;</a></span>dAz_chop</h2>
 
@@ -233,7 +216,7 @@ Public Attributes</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Chopping frequency in Hertz. </p>
+<p>Chopping frequency in Hertz. If &lt; 0, no chopping. </p>
 
 </div>
 </div>

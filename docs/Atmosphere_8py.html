@@ -104,7 +104,6 @@ $(document).ready(function(){initNavTree('Atmosphere_8py.html',''); initResizabl
 
 <div class="header">
   <div class="summary">
-<a href="#nested-classes">Classes</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle"><div class="title">Atmosphere.py File Reference</div></div>
 </div><!--header-->
@@ -113,39 +112,72 @@ $(document).ready(function(){initNavTree('Atmosphere_8py.html',''); initResizabl
 <p>This file handles all atmospheric screen generation.  
 <a href="#details">More...</a></p>
 <table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
-Classes</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtiempo2_1_1Atmosphere_1_1Atmosphere.html">tiempo2.Atmosphere.Atmosphere</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Class that represents atmosphere.  <a href="classtiempo2_1_1Atmosphere_1_1Atmosphere.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:afd7eca06a0b02b609d46379300aa6432"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Atmosphere_8py.html#afd7eca06a0b02b609d46379300aa6432">tiempo2.Atmosphere.parser</a> (line)</td></tr>
-<tr class="memdesc:afd7eca06a0b02b609d46379300aa6432"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parser for reading atmospheric transmission curves from text file.  <br /></td></tr>
-<tr class="separator:afd7eca06a0b02b609d46379300aa6432"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7feea913fc45e96daac65cf47494abbc"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Atmosphere_8py.html#a7feea913fc45e96daac65cf47494abbc">tiempo2.Atmosphere.generateAtmospherePWV</a> (atmosphereDict, telescopeDict)</td></tr>
+<tr class="memdesc:a7feea913fc45e96daac65cf47494abbc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generation of PWV maps from ARIS data.  <br /></td></tr>
+<tr class="separator:a7feea913fc45e96daac65cf47494abbc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a36286d24810cece7dd2103aaa74db079"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Atmosphere_8py.html#a36286d24810cece7dd2103aaa74db079">tiempo2.Atmosphere.readAtmTransmission</a> ()</td></tr>
+<tr class="memdesc:a36286d24810cece7dd2103aaa74db079"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parser for reading atmospheric transmission curves from csv file.  <br /></td></tr>
+<tr class="separator:a36286d24810cece7dd2103aaa74db079"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>This file handles all atmospheric screen generation. </p>
 <p>In particular, the EPL maps from ARIS are converted to Gaussian-smoothed PWV maps. </p>
 </div><h2 class="groupheader">Function Documentation</h2>
-<a id="afd7eca06a0b02b609d46379300aa6432" name="afd7eca06a0b02b609d46379300aa6432"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afd7eca06a0b02b609d46379300aa6432">&#9670;&#160;</a></span>parser()</h2>
+<a id="a7feea913fc45e96daac65cf47494abbc" name="a7feea913fc45e96daac65cf47494abbc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7feea913fc45e96daac65cf47494abbc">&#9670;&#160;</a></span>generateAtmospherePWV()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">def tiempo2.Atmosphere.parser </td>
+          <td class="memname">def tiempo2.Atmosphere.generateAtmospherePWV </td>
           <td>(</td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>line</em></td><td>)</td>
+          <td class="paramname"><em>atmosphereDict</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>telescopeDict</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Generation of PWV maps from ARIS data. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">atmosphereDict</td><td>Dictionary containing atmosphere parameters. </td></tr>
+    <tr><td class="paramname">telescopeDict</td><td>Dictionary containing telescope parameters </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a36286d24810cece7dd2103aaa74db079" name="a36286d24810cece7dd2103aaa74db079"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a36286d24810cece7dd2103aaa74db079">&#9670;&#160;</a></span>readAtmTransmission()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def tiempo2.Atmosphere.readAtmTransmission </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>Parser for reading atmospheric transmission curves from text file. </p>
+<p>Parser for reading atmospheric transmission curves from csv file. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">line</td><td>Line of text </td></tr>

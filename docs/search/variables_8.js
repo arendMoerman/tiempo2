@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['pwv_0',['PWV',['../structAtmosphere.html#a0f4c518b1797348f342d0e8408810a99',1,'Atmosphere']]]
+  ['r_0',['R',['../structInstrument.html#a4bc0d1125ad7232dc394a23f8c996aac',1,'Instrument']]]
 ];

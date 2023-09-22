@@ -21,7 +21,9 @@ class TestInterface(unittest.TestCase):
         self.assertRaises(FieldError, self.interface.setSourceDict, source)
         
         self.interface.setSourceDict(ind.SZsource)
-
+        self.assertIsNotNone(self.interface.sourceDict) 
+        
+        self.interface.setSourceDict(ind.loadSZsource)
         self.assertIsNotNone(self.interface.sourceDict) 
 
     def test_setTelescopeDict(self):
@@ -33,6 +35,36 @@ class TestInterface(unittest.TestCase):
         self.interface.setTelescopeDict(ind.telescope)
 
         self.assertIsNotNone(self.interface.telescopeDict) 
+    
+    def test_setInstrumentDict(self):
+        instrument = {}
+
+        self.assertIsNone(self.interface.instrumentDict) 
+        self.assertRaises(FieldError, self.interface.setInstrumentDict, instrument)
+        
+        self.interface.setInstrumentDict(ind.instrument)
+
+        self.assertIsNotNone(self.interface.instrumentDict) 
+    
+    def test_setAtmosphereDict(self):
+        atmosphere = {}
+
+        self.assertIsNone(self.interface.atmosphereDict) 
+        self.assertRaises(FieldError, self.interface.setAtmosphereDict, atmosphere)
+        
+        self.interface.setAtmosphereDict(ind.atmosphere)
+
+        self.assertIsNotNone(self.interface.atmosphereDict) 
+    
+    def test_setObservationDict(self):
+        observation = {}
+
+        self.assertIsNone(self.interface.observationDict) 
+        self.assertRaises(FieldError, self.interface.setObservationDict, observation)
+        
+        self.interface.setObservationDict(ind.observation)
+
+        self.assertIsNotNone(self.interface.observationDict) 
 if __name__ == "__main__":
     import nose2
     nose2.main()

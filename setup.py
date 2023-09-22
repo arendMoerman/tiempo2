@@ -49,7 +49,7 @@ setup(
     license="MIT",
     version='0.0.1',
     author="Arend Moerman",
-    install_requires = ["numpy", "matplotlib", "scipy", "astropy", "MockSZ"],
+    install_requires = ["numpy", "matplotlib", "scipy", "tqdm", "astropy", "MockSZ"],
     package_dir = {'': 'src'},
     packages=['tiempo2'],
     ext_modules=[CMakeExtension(os.path.join("tiempo2", "libs"))],
