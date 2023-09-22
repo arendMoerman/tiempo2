@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['prefix_5ffilename_0',['prefix_filename',['../classtiempo2_1_1Atmosphere_1_1Atmosphere.html#accce8a754955111474020628c53468ef',1,'tiempo2::Atmosphere::Atmosphere']]]
+  ['az_0',['Az',['../structAzEl.html#aa9ccad09d471674dfb5ce756630453db',1,'AzEl::Az()'],['../structSource.html#ad759a5a8b1676a3cf476cfc50e3d75e9',1,'Source::Az()']]]
 ];

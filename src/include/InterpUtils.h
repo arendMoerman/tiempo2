@@ -25,8 +25,8 @@ int findIndexLow(double a, double *arr, int size_vals);
  * @param x0 Point in x to interpolate on.
  * @param y0 Point in y to interpolate on.
  * @param x Array of points representing x-coordinates.
- * @param size_x Size of array containing x-coordinates.
  * @param y Array of points representing y-coordinates.
+ * @param size_y Size of array containing y-coordinates.
  * @param vals Function values on grid spanning x and y.
  * @param size_vals Size of array containing values.
  * 

@@ -24,9 +24,8 @@ struct Telescope {
     double Ttel;        /**< Telescope temperature in Kelvin.*/
     double Tgnd;        /**< Ground temperature in Kelvin.*/
     double Dtel;       /**< Primary aperture diameter in meters.*/
-    int chop_mode;      /**< Chopping mode. `0' means no chopping, `1' means chopping.*/
     double dAz_chop;    /**< Azimuthal separation between chopping paths.*/
-    double freq_chop;   /**< Chopping frequency in Hertz.*/
+    double freq_chop;   /**< Chopping frequency in Hertz. If < 0, no chopping.*/
     double *eta_ap;     /**< Array of aperture efficiencies, as function of frequency (set by Instrument). Size is nfreqs of instrument.*/
     double eta_mir;     /**< Mirror reflection efficiency.*/
     double eta_fwd;     /**< Telescope forward efficiency.*/

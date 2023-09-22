@@ -3,6 +3,7 @@ branch = True
 
 [report]
 omit = 
+    GenerateDocs.py
     build/*
     tests/*
     setup.py

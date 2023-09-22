@@ -12,9 +12,8 @@ telescope = {
         "eta_ap"        : "Aperture efficiency of telescope, as function of instrument frequencies. If a single number is given, assume same aperture efficiency across entire frequency range.",
         "eta_mir"       : "Mirror efficiency.",
         "eta_fwd"       : "Front-to-back efficiency.",
-        "chop_mode"     : "Whether to chop (True) or not (False).",
-        "f_chop"        : "Chopping frequency in Hertz (ignored if chop_mode = False).",
-        "dAz_chop"      : "Angular separation between chopping paths (ignored if chop_mode = False).",
+        "f_chop"        : "Chopping frequency in Hertz. If None, no chopping.",
+        "dAz_chop"      : "Angular separation between chopping paths.",
         }
 
 atmosphere = {
@@ -28,17 +27,19 @@ atmosphere = {
         "PWV0"          : "Mean PWV value in millimeters.",
         }
 
-source = {
-        "backend"       : "Choose astronomical source: MockSZ for tSZ and kSZ simulations, GalSpec for sub-mm galaxies (not yet implemented).",
-        "Az"            : "Azimuthal extent of source map in degrees.",
-        "El"            : "Elevation extent of source map in degrees.",
+SZsource = {
+        "Az"            : "Azimuthal lower and upper limits of source map in arcseconds.",
+        "El"            : "Elevation lower and upper limits of source map in arcseconds.",
+        "nAz"           : "Number of Azimuth points.",
+        "nEl"           : "Number of Elevation points.",
         # MockSZ specific
-        "Te"            : "Electron temperature of cluster gas in Kelvin.",
+        "Te"            : "Electron temperature of cluster gas in Kev.",
         "ne0"           : "Central electron density in # per square centimeter.",
         "beta"          : "Isothermal-beta structure coefficient.",
         "v_pec"         : "Peculiar cluster velocity, relative to CMB, in kilometers per second.",
         "rc"            : "Cluster core radius in kiloparsec.",
         "Da"            : "Angular diameter distance in megaparsec.",
+        "freqs"         : "Range of frequencies over which to simulate source signal, in GHz.",
         }
 
 simparams = {

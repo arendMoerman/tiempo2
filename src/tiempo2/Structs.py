@@ -25,7 +25,6 @@ class Telescope(ctypes.Structure):
     _fields_ = [("Ttel", ctypes.c_double),
                 ("Tgnd", ctypes.c_double),
                 ("Dtel", ctypes.c_double),
-                ("chop_mode", ctypes.c_int),
                 ("dAz_chop", ctypes.c_double),
                 ("freq_chop", ctypes.c_double),
                 ("eta_ap", ctypes.POINTER(ctypes.c_double)),
