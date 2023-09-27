@@ -33,7 +33,6 @@ def allfillTelescope(TelDict, TelStruct):
     TelStruct.Ttel = ctypes.c_double(TelDict["Ttel"])
     TelStruct.Tgnd = ctypes.c_double(TelDict["Tgnd"])
     TelStruct.Dtel = ctypes.c_double(TelDict["Dtel"])
-    TelStruct.chop_mode = ctypes.c_int(TelDict["chop_mode"])
     TelStruct.dAz_chop = ctypes.c_double(TelDict["dAz_chop"])
     TelStruct.freq_chop = ctypes.c_double(TelDict["freq_chop"])
     TelStruct.eta_ap = (ctypes.c_double * TelDict["eta_ap"].size)(*(TelDict["eta_ap"].ravel().tolist()))
@@ -49,7 +48,7 @@ def allfillAtmosphere(AtmDict, AtmStruct):
     """
 
     AtmStruct.Tatm = ctypes.c_double(AtmDict["Tatm"])
-    AtmStruct.vel_w = ctypes.c_double(AtmDict["vel_w"])
+    AtmStruct.vel_w = ctypes.c_double(AtmDict["v_wind"])
     AtmStruct.h_column = ctypes.c_double(AtmDict["h_column"])
     AtmStruct.x_atm = (ctypes.c_double * AtmDict["x_atm"].size)(*(AtmDict["x_atm"].ravel().tolist()))
     AtmStruct.y_atm = (ctypes.c_double * AtmDict["y_atm"].size)(*(AtmDict["y_atm"].ravel().tolist())) 

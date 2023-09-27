@@ -31,7 +31,8 @@ def generateAtmospherePWV(atmosphereDict, telescopeDict):
 
     Rtel = telescopeDict.get("Dtel") / 2
 
-    flist = glob.glob( os.path.join(path, filename + '*.fits') )
+    flist = os.path.join(path, filename + '.fits')
+    print(flist)
     if len(flist):
         Loadfits = True
         print('Load fits files..')
@@ -44,22 +45,20 @@ def generateAtmospherePWV(atmosphereDict, telescopeDict):
 
     num_strips = 1
     # Interpolate on PWV_Gauss
-    print('Number of atmosphere strips loaded: ', num_strips)
     
     for i in range(num_strips):
-        filename = filename + (3-len(str(i))) * "0" + str(i)
         if Loadfits:
             hdul = fits.open(os.path.join(path, '%s.fits' %filename), memmap=True)
-            d = hdul[1].data
+            try:
+                d = hdul[1].data
+            except:
+                d = hdul[0].data
         else:
             d = np.loadtxt(os.path.join(path, filename), delimiter=',')
 
         if i==0:
             nx = int( max(d[:, 0]) ) + 1
             ny = int( max(d[:, 1]) ) + 1
-        print('dimensions atmosphere strips:')
-        print(i, 'x: ', nx)
-        print(i, 'y: ', ny)
         epl= np.zeros( [nx, ny] )
 
         for j in range(len(d)):
@@ -107,7 +106,7 @@ def readAtmTransmission():
         freqs = _arr[:,0]
 
         eta_atm = _arr[:,1:].T
-
-        print(eta_atm)
+    
+    return eta_atm, freqs, pwv_curve
 
             

@@ -4,6 +4,7 @@ Template dictionaries for testing TiEMPO2 functionalities.
 """
 
 import numpy as np
+import os
 
 SZsource = {
         "type"          : "SZ",
@@ -33,7 +34,7 @@ telescope = {
         "eta_ap"        : 0.7,
         "eta_mir"       : 0.99,
         "eta_fwd"       : 0.85,
-        "f_chop"        : 30,
+        "freq_chop"     : 30,
         "dAz_chop"      : 234
         }
 
@@ -41,13 +42,13 @@ instrument = {
         "freqs"         : np.linspace(220, 440, 10),
         "R"             : 300,
         "eta_inst"      : 0.4,
-        "f_sample"      : 160
+        "freq_sample"   : 160
         }
 
 atmosphere = {
         "Tatm"          : 293,
         "filename"      : "test",
-        "path"          : "resources",
+        "path"          : os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources"),
         "dx"            : 0.2,
         "dy"            : 0.2,
         "h_column"      : 1000,

@@ -7,7 +7,7 @@ import numpy as np
 
 
 def checkSourceDict(sourceDict):
-    SZlist = ["Az", "El", "nAz", "nEl", "Te", "ne0", "beta",
+    SZlist = ["type", "Az", "El", "nAz", "nEl", "Te", "ne0", "beta",
               "v_pec", "rc", "Da", "freqs"]
 
     loadlist = ["path", "filename"]
@@ -32,18 +32,18 @@ def checkSourceDict(sourceDict):
 
 def checkTelescopeDict(telescopeDict):
     checklist = ["Dtel", "Ttel", "Tgnd", "eta_ap", "eta_mir",
-                     "eta_fwd", "f_chop", "dAz_chop"]
+                     "eta_fwd", "freq_chop", "dAz_chop"]
 
     errlist = []
 
     for key in checklist:
         if telescopeDict.get(key) is None:
             errlist.append(key)
-    
+
     return errlist
 
 def checkInstrumentDict(instrumentDict):
-    checklist = ["freqs", "R", "eta_inst", "f_sample"]
+    checklist = ["freqs", "R", "eta_inst", "freq_sample"]
 
     errlist = []
 

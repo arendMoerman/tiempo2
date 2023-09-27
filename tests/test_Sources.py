@@ -27,8 +27,8 @@ class TestSources(unittest.TestCase):
         self.assertEqual(CMB.shape, (ind.SZsource.get("nAz"), ind.SZsource.get("nEl"), 
                                     ind.SZsource.get("freqs").size))
         
-        self.assertEqual(Az.shape, (ind.SZsource.get("nAz"), ind.SZsource.get("nEl")))
-        self.assertEqual(El.shape, (ind.SZsource.get("nAz"), ind.SZsource.get("nEl")))
+        self.assertEqual(Az.shape, (ind.SZsource.get("nAz"),))
+        self.assertEqual(El.shape, (ind.SZsource.get("nEl"),))
     
         if save:
             SZ_l, CMB_l, Az_l, El_l, freqs_l = TSources.loadSZMaps(ind.loadSZsource)

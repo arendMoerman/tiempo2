@@ -5,6 +5,5 @@ src/tiempo2/__pycache__/*
 build/
 *.egg-info/
 *.so
-tests/resources/*
 tests/__pycache__/*
 htmlcov/*

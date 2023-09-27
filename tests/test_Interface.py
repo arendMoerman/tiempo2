@@ -65,6 +65,17 @@ class TestInterface(unittest.TestCase):
         self.interface.setObservationDict(ind.observation)
 
         self.assertIsNotNone(self.interface.observationDict) 
+
+    def test_runSimulation(self):
+        self.interface.setObservationDict(ind.observation)
+        self.interface.setAtmosphereDict(ind.atmosphere)
+        self.interface.setInstrumentDict(ind.instrument)
+        self.interface.setSourceDict(ind.SZsource)
+        self.interface.setTelescopeDict(ind.telescope)
+        
+        self.interface.runSimulation()
+
+
 if __name__ == "__main__":
     import nose2
     nose2.main()

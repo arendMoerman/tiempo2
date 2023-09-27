@@ -20,9 +20,9 @@
 
 extern "C"
 {
-    TIEMPO2_DLL void runTiEMPO2(Instrument instrument, Telescope telescope, Atmosphere atmosphere, Source source, SimParams simparams);
+    TIEMPO2_DLL void runTiEMPO2(Instrument *instrument, Telescope *telescope, Atmosphere *atmosphere, Source *source, SimParams *simparams);
 
-    TIEMPO2_DLL void parallelJobs(Instrument instrument, Telescope telescope, Atmosphere atmosphere, Source source, int start, int stop);
+    TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmosphere *atmosphere, Source *source, int start, int stop);
 
 
 }
