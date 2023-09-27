@@ -33,7 +33,7 @@ struct Telescope {
 
 struct Atmosphere {
     double Tatm;        /**< Temperature of atmosphere in Kelvin.*/
-    double vel_w;       /**< Max windspeed in meters per second.*/
+    double v_wind;      /**< Max windspeed in meters per second.*/
     double h_column;    /**< Reference column height of atmosphere, in meters.*/
     double *x_atm;      /**< Array of doubles, representing x-coordinates of atmospheric screen.*/
     double *y_atm;      /**< Array of doubles, representing y-coordinates of atmospheric screen.*/

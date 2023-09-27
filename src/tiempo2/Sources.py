@@ -76,9 +76,9 @@ def generateSZMaps(SZsourceDict, convolve_beam=False, telescopeDict=None, ret_un
         SZ = _convolveMaps(SZ, Az, El, freq_Hz, telescopeDict.get("Dtel"))# + CMB
 
     if save:
-        _saveSource(sourceName, path, SZ, CMB, Az, El, freq_Hz)
+        _saveSource(sourceName, path, SZ, CMB, Az[:,0], El[0,:], freq_Hz)
 
-    return SZ, CMB, Az, El
+    return SZ, CMB, Az[:,0], El[0,:]
 
 def loadSZMaps(SZsourceDict):
     sourceName = SZsourceDict.get("filename")

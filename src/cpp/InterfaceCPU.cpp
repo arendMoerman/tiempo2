@@ -5,23 +5,23 @@
 
 #include "InterfaceCPU.h"
 
-TIEMPO2_DLL void runTiEMPO2(Instrument instrument, Telescope telescope, Atmosphere atmosphere, Source source, SimParams simparams) {
+TIEMPO2_DLL void runTiEMPO2(Instrument *instrument, Telescope *telescope, Atmosphere *atmosphere, Source *source, SimParams *simparams) {
     std::vector<std::thread> threadPool;
-    threadPool.resize(simparams.nThreads);
+    threadPool.resize(simparams->nThreads);
     
     // Timesteps
-    double dt = 1. / instrument.freq_sample;
+    double dt = 1. / instrument->freq_sample;
     
     // Number of time evaluations. Time is nTimes * dt
-    double nTimes = ceil(simparams.t_obs / dt);
+    double nTimes = ceil(simparams->t_obs / dt);
     
     // Number of steps per thread
-    int step = ceil(nTimes / simparams.nThreads);
+    int step = ceil(nTimes / simparams->nThreads);
     
     int final_step;
 
-    for(int n=0; n < simparams.nThreads; n++) {
-        if(n == (simparams.nThreads - 1)) {
+    for(int n=0; n < simparams->nThreads; n++) {
+        if(n == (simparams->nThreads - 1)) {
             final_step = nTimes;
         }
 
@@ -40,8 +40,8 @@ TIEMPO2_DLL void runTiEMPO2(Instrument instrument, Telescope telescope, Atmosphe
     }
 }
 
-TIEMPO2_DLL void parallelJobs(Instrument instrument, Telescope telescope, Atmosphere atmosphere, Source source, int start, int stop) {
-    printf("under construction\n"); 
+TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmosphere *atmosphere, Source *source, int start, int stop) {
+    printf("under construction\n");
 }
 
 

@@ -2,7 +2,7 @@ instrument = {
         "freqs"         : "Range of frequencies of filterbank in GHz.",
         "R"             : "Resolving power f / df.",
         "eta_inst"      : "Efficiency of entire chip.",
-        "f_sample"      : "Readout frequency in Hertz.",
+        "freq_sample"   : "Readout frequency in Hertz.",
         }
 
 telescope = {
@@ -12,7 +12,7 @@ telescope = {
         "eta_ap"        : "Aperture efficiency of telescope, as function of instrument frequencies. If a single number is given, assume same aperture efficiency across entire frequency range.",
         "eta_mir"       : "Mirror efficiency.",
         "eta_fwd"       : "Front-to-back efficiency.",
-        "f_chop"        : "Chopping frequency in Hertz. If None, no chopping.",
+        "freq_chop"     : "Chopping frequency in Hertz. If None, no chopping.",
         "dAz_chop"      : "Angular separation between chopping paths.",
         }
 
@@ -28,6 +28,7 @@ atmosphere = {
         }
 
 SZsource = {
+        "type"          : "Type of source (SZ).",
         "Az"            : "Azimuthal lower and upper limits of source map in arcseconds.",
         "El"            : "Elevation lower and upper limits of source map in arcseconds.",
         "nAz"           : "Number of Azimuth points.",
@@ -40,6 +41,11 @@ SZsource = {
         "rc"            : "Cluster core radius in kiloparsec.",
         "Da"            : "Angular diameter distance in megaparsec.",
         "freqs"         : "Range of frequencies over which to simulate source signal, in GHz.",
+        }
+
+load_source = {
+        "path"          : "Path to saved source datacube.",
+        "filename"      : "Name of saved source.",
         }
 
 simparams = {
