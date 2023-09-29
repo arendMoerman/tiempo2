@@ -6,4 +6,5 @@ build/
 *.egg-info/
 *.so
 tests/__pycache__/*
+tests/resources/test1.fits
 htmlcov/*

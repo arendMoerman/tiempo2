@@ -37,8 +37,8 @@ class Atmosphere(ctypes.Structure):
     """
 
     _fields_ = [("Tatm", ctypes.c_double),
-                ("h_column", ctypes.c_double),
                 ("v_wind", ctypes.c_double),
+                ("h_column", ctypes.c_double),
                 ("x_atm", ctypes.POINTER(ctypes.c_double)),
                 ("y_atm", ctypes.POINTER(ctypes.c_double)),
                 ("nx", ctypes.c_int),
@@ -47,6 +47,7 @@ class Atmosphere(ctypes.Structure):
                 ("freqs_atm", ctypes.POINTER(ctypes.c_double)),
                 ("nfreqs_atm", ctypes.c_int),
                 ("PWV_atm", ctypes.POINTER(ctypes.c_double)),
+                ("nPWV_atm", ctypes.c_int),
                 ("eta_atm", ctypes.POINTER(ctypes.c_double))]
 
 class Source(ctypes.Structure):
@@ -58,7 +59,9 @@ class Source(ctypes.Structure):
                 ("nAz", ctypes.c_int),
                 ("El", ctypes.POINTER(ctypes.c_double)),
                 ("nEl", ctypes.c_int),
-                ("I_nu", ctypes.POINTER(ctypes.c_double))]
+                ("I_nu", ctypes.POINTER(ctypes.c_double)),
+                ("freqs_src", ctypes.POINTER(ctypes.c_double)),
+                ("nfreqs_src", ctypes.c_int)]
 
 class SimParams(ctypes.Structure):
     """!

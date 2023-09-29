@@ -14,8 +14,11 @@ target_include_directories(interputils PUBLIC src/include)
 add_library(scan SHARED src/include/Scan.cpp)
 target_include_directories(scan PUBLIC src/include)
 
+add_library(observe SHARED src/include/Observe.cpp)
+target_include_directories(observe PUBLIC src/include)
+
 add_library(tiempo2 SHARED src/cpp/InterfaceCPU.cpp)
-target_link_libraries(tiempo2 PRIVATE interputils scan)
+target_link_libraries(tiempo2 PRIVATE interputils scan observe)
 #target_include_directories(tiempo2 PRIVATE src/include)
 
 if(NOT WIN32)

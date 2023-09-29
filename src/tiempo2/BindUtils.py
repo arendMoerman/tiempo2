@@ -48,18 +48,18 @@ def allfillAtmosphere(AtmDict, AtmStruct):
     """
 
     AtmStruct.Tatm = ctypes.c_double(AtmDict["Tatm"])
-    AtmStruct.vel_w = ctypes.c_double(AtmDict["v_wind"])
+    AtmStruct.v_wind = ctypes.c_double(AtmDict["v_wind"])
     AtmStruct.h_column = ctypes.c_double(AtmDict["h_column"])
     AtmStruct.x_atm = (ctypes.c_double * AtmDict["x_atm"].size)(*(AtmDict["x_atm"].ravel().tolist()))
     AtmStruct.y_atm = (ctypes.c_double * AtmDict["y_atm"].size)(*(AtmDict["y_atm"].ravel().tolist())) 
     AtmStruct.nx = ctypes.c_int(AtmDict["x_atm"].size)
     AtmStruct.ny = ctypes.c_int(AtmDict["y_atm"].size)
-    AtmStruct.PWV = (ctypes.c_double * AtmDict["PWV"].size)(*(AtmDict["PWV"].ravel().tolist()))
+    AtmStruct.PWV = (ctypes.c_double * AtmDict["PWV"].ravel().size)(*(AtmDict["PWV"].ravel().tolist()))
     AtmStruct.freqs_atm = (ctypes.c_double * AtmDict["freqs_atm"].size)(*(AtmDict["freqs_atm"].ravel().tolist()))
     AtmStruct.nfreqs_atm = ctypes.c_int(AtmDict["freqs_atm"].size)
     AtmStruct.PWV_atm = (ctypes.c_double * AtmDict["PWV_atm"].size)(*(AtmDict["PWV_atm"].ravel().tolist())) 
     AtmStruct.nPWV_atm = ctypes.c_int(AtmDict["PWV_atm"].size)
-    AtmStruct.eta_atm = (ctypes.c_double * AtmDict["eta_atm"].size)(*(AtmDict["eta_atm"].ravel().tolist())) 
+    AtmStruct.eta_atm = (ctypes.c_double * AtmDict["eta_atm"].ravel().size)(*(AtmDict["eta_atm"].ravel().tolist())) 
 
 def allfillSource(SourceDict, SourceStruct):
     """!
@@ -68,12 +68,16 @@ def allfillSource(SourceDict, SourceStruct):
     @param SourceDict Dictionary containing source angular extents and intensity maps.
     @param SourceStruct Struct to be filled and passed to ctypes.
     """
-    
+   
+    nAzEl = SourceDict["I_nu"].shape[0] * SourceDict["I_nu"].shape[1]
+
     SourceStruct.Az = (ctypes.c_double * SourceDict["Az"].size)(*(SourceDict["Az"].ravel().tolist())) 
     SourceStruct.nAz = ctypes.c_int(SourceDict["Az"].size) 
     SourceStruct.El = (ctypes.c_double * SourceDict["El"].size)(*(SourceDict["El"].ravel().tolist())) 
     SourceStruct.nEl = ctypes.c_int(SourceDict["El"].size) 
-    SourceStruct.I_nu = (ctypes.c_double * SourceDict["I_nu"].size)(*(SourceDict["I_nu"].ravel().tolist())) 
+    SourceStruct.I_nu = (ctypes.c_double * SourceDict["I_nu"].ravel().size)(*(SourceDict["I_nu"].ravel().tolist())) 
+    SourceStruct.freqs_src = (ctypes.c_double * SourceDict["freqs_src"].ravel().size)(*(SourceDict["freqs_src"].ravel().tolist())) 
+    SourceStruct.nfreqs_src = ctypes.c_int(SourceDict["freqs_src"].size) 
 
 def allfillSimParams(SPDict, SPStruct):
     """!

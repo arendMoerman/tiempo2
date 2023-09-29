@@ -54,6 +54,8 @@ struct Source {
     int nEl;            /**< Number of elements in El.*/
     double *I_nu;       /**< Flat array of specific intensities, indexed as [i * ni + k * ni * nj + j].
                           Here, i is axis 0 (Az), j axis 1 (El) and k axis 2 (frequency). Note that size of I_nu = nAz * nEl * nfreqs.*/
+    double *freqs_src;  /**< Frequencies over which the source is defined, in Hertz.*/
+    int nfreqs_src;     /**< Number of frequencies in freq_src.*/
 };
 
 struct SimParams {
