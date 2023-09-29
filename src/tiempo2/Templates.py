@@ -29,8 +29,8 @@ atmosphere = {
 
 SZsource = {
         "type"          : "Type of source (SZ).",
-        "Az"            : "Azimuthal lower and upper limits of source map in arcseconds.",
-        "El"            : "Elevation lower and upper limits of source map in arcseconds.",
+        "Az"            : "Azimuthal lower and upper limits of source map in degrees.",
+        "El"            : "Elevation lower and upper limits of source map in degrees.",
         "nAz"           : "Number of Azimuth points.",
         "nEl"           : "Number of Elevation points.",
         # MockSZ specific

@@ -42,8 +42,8 @@ def generateSZMaps(SZsourceDict, convolve_beam=False, telescopeDict=None, ret_un
     Da      = MConv.pc_m(SZsourceDict.get("Da") * 1e6)      # Mpc -> pc -> m
     v_pec   = SZsourceDict.get("v_pec") * 1e3               # km / s -> m / s
 
-    lims_Az = SZsourceDict.get("Az") / 3600                 # arcsec -> degree
-    lims_El = SZsourceDict.get("El") / 3600                 # arcsec -> degree
+    lims_Az = SZsourceDict.get("Az")                 # degree
+    lims_El = SZsourceDict.get("El")                 # degree
 
     nAz = SZsourceDict.get("nAz")
     nEl = SZsourceDict.get("nEl")
@@ -135,8 +135,10 @@ def _parallelConvolve(args, Rtel, Az, El):
     return SZ
 
 def _AiryDisk(k, R, Az, El):
+    np.seterr(divide='ignore', invalid='ignore')
+    
     theta = np.radians(np.sqrt(Az**2 + El**2))
-    airy = (2*scp.j1(k * R * np.sin(theta)) / (k * R * np.sin(theta)))**2
+    airy = np.nan_to_num((2*scp.j1(k * R * np.sin(theta)) / (k * R * np.sin(theta)))**2, nan=1)
     airy /= np.sum(airy)
     return airy 
 

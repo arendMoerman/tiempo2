@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as pt
 
 import tiempo2.Sources as TSource
 import tiempo2.InputChecker as TCheck
@@ -97,19 +98,19 @@ class Interface(object):
             SZ, CMB, Az, El, freqs = TSource.loadSZMaps(self.sourceDict)
         
         _sourceDict = {
-                "Az"    : Az,
-                "El"    : El,
-                "I_nu"  : SZ + CMB,
-                "freqs" : freqs
+                "Az"        : Az,
+                "El"        : El,
+                "I_nu"      : SZ.T,# + CMB,
+                "freqs_src" : freqs*1e9
                 }
-
+        
         PWV_atm, nx, ny = TAtm.generateAtmospherePWV(self.atmosphereDict, self.telescopeDict)  
         eta_atm, freqs_atm, pwv_curve = TAtm.readAtmTransmission()        
-
-        # At t=0, x=y=0 is in lower left corner
-        x_atm = np.arange(0, nx*self.atmosphereDict.get("dx"), nx)
-        y_atm = np.arange(0, ny*self.atmosphereDict.get("dy"), ny)
-
+        
+        # At t=0, x=y=0 is in middle
+        x_atm = (np.arange(0, nx) - ny/2)*self.atmosphereDict.get("dx")
+        y_atm = (np.arange(0, ny) - ny/2)*self.atmosphereDict.get("dx")
+        
         _atmDict = {
                 "Tatm"      : self.atmosphereDict.get("Tatm"),
                 "v_wind"    : self.atmosphereDict.get("v_wind"),
@@ -119,7 +120,7 @@ class Interface(object):
                 "nx"        : nx,
                 "ny"        : ny,
                 "PWV"       : PWV_atm,
-                "freqs_atm" : freqs_atm,
+                "freqs_atm" : freqs_atm * 1e9,
                 "nfreqs_atm": freqs_atm.size,
                 "PWV_atm"   : pwv_curve,
                 "eta_atm"   : eta_atm
@@ -127,6 +128,8 @@ class Interface(object):
 
         if isinstance(self.telescopeDict.get("eta_ap"), float):
             self.telescopeDict["eta_ap"] *= np.ones(freqs.size)
+
+        self.telescopeDict["dAz_chop"] /= 3600
 
         TBCPU.runTiEMPO2(self.instrumentDict, self.telescopeDict, 
                         _atmDict, _sourceDict, self.observationDict)

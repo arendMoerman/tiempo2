@@ -32,13 +32,10 @@ def generateAtmospherePWV(atmosphereDict, telescopeDict):
     Rtel = telescopeDict.get("Dtel") / 2
 
     flist = os.path.join(path, filename + '.fits')
-    print(flist)
     if len(flist):
         Loadfits = True
-        print('Load fits files..')
     else:
         Loadfits = False
-        print('Load text files..')
 
     # Conversion from dEPL to dPWV from Smith-Weintraub relation.
     a = 6.3003663 
@@ -104,9 +101,7 @@ def readAtmTransmission():
 
         _arr = np.array(data)
         freqs = _arr[:,0]
-
-        eta_atm = _arr[:,1:].T
-    
+        eta_atm = _arr[:,1:]
     return eta_atm, freqs, pwv_curve
 
             

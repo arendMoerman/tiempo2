@@ -32,6 +32,6 @@ int findIndexLow(double a, double *arr, int size_vals);
  * 
  * @returns val_interp Interpolated value of function on x0 and y0.
  **/
-double interpValue(double x0, double y0, double *x, double *y, int size_y, double *vals, int size_vals);
+double interpValue(double x0, double y0, double *x, double *y, int size_x, int size_y, double *vals);
 
 #endif
