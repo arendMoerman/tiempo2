@@ -36,7 +36,7 @@ def generateSZMaps(SZsourceDict, convolve_beam=False, telescopeDict=None, ret_un
 
 
     Te      = MConv.eV_Temp(SZsourceDict.get("Te") * 1e3)   # KeV -> eV -> K
-    ne0     = SZsourceDict.get("ne0") * 1e2                 # n / cm^-2 -> n / m^-2
+    ne0     = SZsourceDict.get("ne0") * 1e4                 # n / cm^-2 -> n / m^-2
     rc      = MConv.pc_m(SZsourceDict.get("rc") * 1e3)      # Kpc -> pc -> m
     beta    = SZsourceDict.get("beta")
     Da      = MConv.pc_m(SZsourceDict.get("Da") * 1e6)      # Mpc -> pc -> m
@@ -48,7 +48,7 @@ def generateSZMaps(SZsourceDict, convolve_beam=False, telescopeDict=None, ret_un
     nAz = SZsourceDict.get("nAz")
     nEl = SZsourceDict.get("nEl")
 
-    freq_Hz = SZsourceDict.get("freqs") * 1e9               # GHz -> Hz 
+    freq_Hz = SZsourceDict.get("freqs_src") * 1e9               # GHz -> Hz 
 
     isob = MModel.IsoBetaModel(Te, ne0, rc, beta, Da, v_pec)
 

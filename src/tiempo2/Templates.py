@@ -1,5 +1,5 @@
 instrument = {
-        "freqs"         : "Range of frequencies of filterbank in GHz.",
+        "freqs_filt"    : "Range of frequencies of filterbank in GHz.",
         "R"             : "Resolving power f / df.",
         "eta_inst"      : "Efficiency of entire chip.",
         "freq_sample"   : "Readout frequency in Hertz.",
@@ -40,7 +40,7 @@ SZsource = {
         "v_pec"         : "Peculiar cluster velocity, relative to CMB, in kilometers per second.",
         "rc"            : "Cluster core radius in kiloparsec.",
         "Da"            : "Angular diameter distance in megaparsec.",
-        "freqs"         : "Range of frequencies over which to simulate source signal, in GHz.",
+        "freqs_src"     : "Range of frequencies over which to simulate source signal, in GHz.",
         }
 
 load_source = {

@@ -11,11 +11,12 @@ class Instrument(ctypes.Structure):
     Struct representing the simulated instrument.
     """
 
-    _fields_ = [("freqs", ctypes.POINTER(ctypes.c_double)),
-                ("nfreqs", ctypes.c_int),
+    _fields_ = [("freqs_filt", ctypes.POINTER(ctypes.c_double)),
+                ("nfreqs_filt", ctypes.c_int),
                 ("R", ctypes.c_int),
                 ("eta_inst", ctypes.c_double),
-                ("freq_sample", ctypes.c_double)]
+                ("freq_sample", ctypes.c_double),
+                ("filterbank", ctypes.POINTER(ctypes.c_double))]
 
 class Telescope(ctypes.Structure):
     """!
@@ -70,3 +71,11 @@ class SimParams(ctypes.Structure):
 
     _fields_ = [("t_obs", ctypes.c_double),
                 ("nThreads", ctypes.c_int)]
+
+class Output(ctypes.Structure):
+    """!
+    Struct used as output container.
+    """
+
+    _fields_ = [("P_on", ctypes.POINTER(ctypes.c_double)),
+                ("P_off", ctypes.POINTER(ctypes.c_double))]

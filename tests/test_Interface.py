@@ -73,7 +73,7 @@ class TestInterface(unittest.TestCase):
         self.interface.setSourceDict(ind.SZsource)
         self.interface.setTelescopeDict(ind.telescope)
         
-        self.interface.runSimulation()
+        out = self.interface.runSimulation()
 
 
 if __name__ == "__main__":
