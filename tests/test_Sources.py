@@ -23,9 +23,9 @@ class TestSources(unittest.TestCase):
                                                   telescopeDict=ind.telescope)
 
         self.assertEqual(SZ.shape, (ind.SZsource.get("nAz"), ind.SZsource.get("nEl"), 
-                                    ind.SZsource.get("freqs").size))
+                                    ind.SZsource.get("freqs_src").size))
         self.assertEqual(CMB.shape, (ind.SZsource.get("nAz"), ind.SZsource.get("nEl"), 
-                                    ind.SZsource.get("freqs").size))
+                                    ind.SZsource.get("freqs_src").size))
         
         self.assertEqual(Az.shape, (ind.SZsource.get("nAz"),))
         self.assertEqual(El.shape, (ind.SZsource.get("nEl"),))
@@ -45,7 +45,7 @@ class TestSources(unittest.TestCase):
             for Eli, El_li in zip(El.ravel(), El_l.ravel()):
                 self.assertEqual(Eli, El_li)
             
-            for freqsi, freqs_li in zip(ind.SZsource.get("freqs"), freqs_l):
+            for freqsi, freqs_li in zip(ind.SZsource.get("freqs_src"), freqs_l):
                 self.assertEqual(freqsi*1e9, freqs_li)
 
     def test_parallelConvolve(self):

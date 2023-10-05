@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as pt
 
+import tiempo2.Filterbank as TFilter
 import tiempo2.Sources as TSource
 import tiempo2.InputChecker as TCheck
 import tiempo2.Atmosphere as TAtm
@@ -9,6 +10,12 @@ import tiempo2.BindCPU as TBCPU
 class FieldError(Exception):
     """!
     Field error. Raised when a required field is not specified in an input dictionary. 
+    """
+    pass
+
+class InitialError(Exception):
+    """!
+    Initial error. Raised when attempting to run a simulation without submitting all required dictionaries. 
     """
     pass
 
@@ -87,12 +94,21 @@ class Interface(object):
         """
 
         if self.count < 5:
+            raise InitialError
             exit(1)
+
+        # Generate filterbank
+        if self.instrumentDict.get("R"):
+            self.instrumentDict["filterbank"] = TFilter.generateFilterbankFromR(self.instrumentDict, self.sourceDict)
+
+        else:
+            pass
+            # Here we need to call function that reads a filterbank matrix
 
         # Load or generate source
         if self.sourceDict.get("type") == "SZ":
             SZ, CMB, Az, El = TSource.generateSZMaps(self.sourceDict, telescopeDict=self.telescopeDict)
-            freqs = self.sourceDict.get("freqs")
+            freqs = self.sourceDict.get("freqs_src")
         
         else:
             SZ, CMB, Az, El, freqs = TSource.loadSZMaps(self.sourceDict)
@@ -100,7 +116,7 @@ class Interface(object):
         _sourceDict = {
                 "Az"        : Az,
                 "El"        : El,
-                "I_nu"      : SZ.T,# + CMB,
+                "I_nu"      : SZ.T + CMB.T,
                 "freqs_src" : freqs*1e9
                 }
         
@@ -131,7 +147,8 @@ class Interface(object):
 
         self.telescopeDict["dAz_chop"] /= 3600
 
-        TBCPU.runTiEMPO2(self.instrumentDict, self.telescopeDict, 
+        res = TBCPU.runTiEMPO2(self.instrumentDict, self.telescopeDict, 
                         _atmDict, _sourceDict, self.observationDict)
-
+        
+        return res
 

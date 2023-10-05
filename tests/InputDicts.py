@@ -18,7 +18,7 @@ SZsource = {
         "v_pec"         : 100,
         "rc"            : 116,
         "Da"            : 1500,
-        "freqs"         : np.linspace(120, 440, 100)
+        "freqs_src"     : np.linspace(120, 440, 100)
         }
 
 loadSZsource = {
@@ -39,7 +39,7 @@ telescope = {
         }
 
 instrument = {
-        "freqs"         : np.linspace(120, 440, 10),
+        "freqs_filt"    : np.linspace(120, 440, 100),
         "R"             : 300,
         "eta_inst"      : 0.4,
         "freq_sample"   : 160

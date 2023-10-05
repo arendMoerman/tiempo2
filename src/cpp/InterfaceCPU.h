@@ -19,13 +19,17 @@
 #ifndef __InterfaceCPU_h
 #define __InterfaceCPU_h
 
-#define SI_TO_MJY               1E-32 /* SI to MJy*/
+#define SI_TO_MJY               1E20 /* SI to MJy*/
 
 extern "C"
 {
-    TIEMPO2_DLL void runTiEMPO2(Instrument *instrument, Telescope *telescope, Atmosphere *atmosphere, Source *source, SimParams *simparams);
+    TIEMPO2_DLL void runTiEMPO2(Instrument *instrument, Telescope *telescope, Atmosphere *atmosphere, Source *source, 
+        SimParams *simparams, Output *output);
 
-    TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmosphere *atmosphere, Source *source, int start, int stop, double dt, int nTimes, int nThreads);
+    TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmosphere *atmosphere, Source *source, 
+        int start, int stop, double dt, int num_AzEl, 
+        double* ret_on, double* ret_off, double* slice_container, 
+        double* I_atm, double* I_gnd, double* I_tel);
 
 
 }

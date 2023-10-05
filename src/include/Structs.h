@@ -11,13 +11,15 @@ struct Telescope;
 struct Atmosphere;
 struct Source;
 struct SimParams;
+struct Output;
 
 struct Instrument {
-    double *freqs;      /**< Array with frequencies in Hertz.*/
-    int nfreqs;         /**< Number of elements in freqs.*/
+    double *freqs_filt; /**< Array with frequencies in Hertz.*/
+    int nfreqs_filt;    /**< Number of elements in freqs.*/
     int R;              /**< Resolving power of instrument: R = f / df.*/
     double eta_inst;    /**< Instrument efficiency. Defined to contain all efficiencies of the instrument and coupling to telescope.*/
     double freq_sample; /**< Readout frequency of instrument in Hertz.*/
+    double *filterbank; /**< Array with filterbank matrix, flattened.*/
 };
 
 struct Telescope {
@@ -61,6 +63,11 @@ struct Source {
 struct SimParams {
     double t_obs;       /**< Observation time in seconds.*/
     int nThreads;       /**< Number of threads to use for computation.*/
+};
+
+struct Output {
+    double *P_on;       /**< On-source integrated power.*/
+    double *P_off;      /**< Off-source integrated power.*/
 };
 
 #endif

@@ -16,11 +16,12 @@ def allfillInstrument(InstDict, InstStruct):
     @param InstStruct Struct to be filled and passed to ctypes.
     """
     
-    InstStruct.freqs = (ctypes.c_double * InstDict["freqs"].size)(*(InstDict["freqs"].ravel().tolist()))
-    InstStruct.nfreqs = ctypes.c_int(InstDict["freqs"].size)
+    InstStruct.freqs_filt = (ctypes.c_double * InstDict["freqs_filt"].size)(*(InstDict["freqs_filt"].ravel().tolist()))
+    InstStruct.nfreqs_filt = ctypes.c_int(InstDict["freqs_filt"].size)
     InstStruct.R = ctypes.c_int(InstDict["R"])
     InstStruct.eta_inst = ctypes.c_double(InstDict["eta_inst"])
     InstStruct.freq_sample = ctypes.c_double(InstDict["freq_sample"])
+    InstStruct.filterbank = (ctypes.c_double * InstDict["filterbank"].size)(*(InstDict["filterbank"].ravel().tolist()))
 
 def allfillTelescope(TelDict, TelStruct):
     """!
@@ -89,4 +90,33 @@ def allfillSimParams(SPDict, SPStruct):
     SPStruct.t_obs = ctypes.c_double(SPDict["t_obs"])
     SPStruct.nThreads = ctypes.c_int(SPDict["nThreads"])
 
+def allocateOutput(OutputStruct, size, ct_t):
+    """!
+    Allocate memory for an output struct.
 
+    @param OutputStruct Struct to be allocated and passed to ctypes.
+    @param size Size of arrays to be allocated.
+    @param ct_t Ctypes type of array.
+    """
+    fill = np.zeros(size)
+    OutputStruct.P_on = (ct_t * size)(*(fill.tolist()))
+    OutputStruct.P_off = (ct_t * size)(*(fill.tolist()))
+
+def OutputStructToDict(OutputStruct, shape, np_t):
+    """!
+    Convert an output struct to a dictionary.
+
+    @param OutputStruct Struct filled with output.
+    @param shape Shape of resulting arrays in dictionary.
+    @param np_t Numpy type of array elements.
+    """
+
+    on = np.ctypeslib.as_array(OutputStruct.P_on, shape=shape).astype(np_t)
+    off = np.ctypeslib.as_array(OutputStruct.P_off, shape=shape).astype(np_t)
+
+    OutputDict = {
+            "P_on"    : on,
+            "P_off"   : off
+            }
+
+    return OutputDict

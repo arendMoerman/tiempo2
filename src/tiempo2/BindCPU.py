@@ -30,7 +30,7 @@ def loadTiEMPO2lib():
 
     lib.runTiEMPO2.argtypes = [ctypes.POINTER(TStructs.Instrument), ctypes.POINTER(TStructs.Telescope),
                             ctypes.POINTER(TStructs.Atmosphere), ctypes.POINTER(TStructs.Source),
-                            ctypes.POINTER(TStructs.SimParams)]
+                            ctypes.POINTER(TStructs.SimParams), ctypes.POINTER(TStructs.Output)]
     
     lib.runTiEMPO2.restype = None
 
@@ -56,14 +56,22 @@ def runTiEMPO2(instrument, telescope, atmosphere, source, simparams):
     _source = TStructs.Source()
     _simparams = TStructs.SimParams()
 
+    _output = TStructs.Output()
+
     TBUtils.allfillInstrument(instrument, _instrument)
     TBUtils.allfillTelescope(telescope, _telescope)
     TBUtils.allfillAtmosphere(atmosphere, _atmosphere)
     TBUtils.allfillSource(source, _source)
     TBUtils.allfillSimParams(simparams, _simparams)
-    
-    args = [_instrument, _telescope, _atmosphere, _source, _simparams]
+
+    TBUtils.allocateOutput(_output, instrument.get("freqs_filt").size, ctypes.c_double)
+
+    args = [_instrument, _telescope, _atmosphere, _source, _simparams, _output]
 
     mgr.new_thread(target=lib.runTiEMPO2, args=args)
+
+    res = TBUtils.OutputStructToDict(_output, instrument.get("freqs_filt").shape, np_t=np.float64)
+
+    return res
 
 
