@@ -112,6 +112,8 @@ $(document).ready(function(){initNavTree('structSource.html',''); initResizable(
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
+<tr class="memitem:a7d71abeb1a9c4c9868aff0332cbe00cd"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structSource.html#a7d71abeb1a9c4c9868aff0332cbe00cd">present</a></td></tr>
+<tr class="separator:a7d71abeb1a9c4c9868aff0332cbe00cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad759a5a8b1676a3cf476cfc50e3d75e9"><td class="memItemLeft" align="right" valign="top">double *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structSource.html#ad759a5a8b1676a3cf476cfc50e3d75e9">Az</a></td></tr>
 <tr class="separator:ad759a5a8b1676a3cf476cfc50e3d75e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a31cba4dcb68b00e5f312a2e9e1907c96"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structSource.html#a31cba4dcb68b00e5f312a2e9e1907c96">nAz</a></td></tr>
@@ -122,6 +124,10 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a3532957c5927eadbaa84dd6d2e7d7fb4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af936fccbbd5c1e76570892db12ed4f6b"><td class="memItemLeft" align="right" valign="top">double *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structSource.html#af936fccbbd5c1e76570892db12ed4f6b">I_nu</a></td></tr>
 <tr class="separator:af936fccbbd5c1e76570892db12ed4f6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeec2092ab4955ccd788bc1350181ca5e"><td class="memItemLeft" align="right" valign="top">double *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structSource.html#aeec2092ab4955ccd788bc1350181ca5e">freqs_src</a></td></tr>
+<tr class="separator:aeec2092ab4955ccd788bc1350181ca5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab5620672248e4dbf99374d3d041edc10"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structSource.html#ab5620672248e4dbf99374d3d041edc10">nfreqs_src</a></td></tr>
+<tr class="separator:ab5620672248e4dbf99374d3d041edc10"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Data Documentation</h2>
 <a id="ad759a5a8b1676a3cf476cfc50e3d75e9" name="ad759a5a8b1676a3cf476cfc50e3d75e9"></a>
@@ -151,6 +157,21 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <p>Array containing elevation angles on-sky, relative to source center. </p>
+
+</div>
+</div>
+<a id="aeec2092ab4955ccd788bc1350181ca5e" name="aeec2092ab4955ccd788bc1350181ca5e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeec2092ab4955ccd788bc1350181ca5e">&#9670;&#160;</a></span>freqs_src</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double* Source::freqs_src</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Frequencies over which the source is defined, in Hertz. </p>
 
 </div>
 </div>
@@ -196,6 +217,36 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <p>Number of elements in El. </p>
+
+</div>
+</div>
+<a id="ab5620672248e4dbf99374d3d041edc10" name="ab5620672248e4dbf99374d3d041edc10"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab5620672248e4dbf99374d3d041edc10">&#9670;&#160;</a></span>nfreqs_src</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int Source::nfreqs_src</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Number of frequencies in freq_src. </p>
+
+</div>
+</div>
+<a id="a7d71abeb1a9c4c9868aff0332cbe00cd" name="a7d71abeb1a9c4c9868aff0332cbe00cd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7d71abeb1a9c4c9868aff0332cbe00cd">&#9670;&#160;</a></span>present</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int Source::present</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Whether or not a source is actually present. </p>
 
 </div>
 </div>

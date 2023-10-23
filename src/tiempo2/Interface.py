@@ -60,6 +60,7 @@ class Interface(object):
         else:
             errstr = f"Errors encountered in instrument dictionary in fields :{errlist}."
             raise FieldError(errstr)
+        
     
     def setAtmosphereDict(self, atmosphereDict):
         errlist = TCheck.checkAtmosphereDict(atmosphereDict)
@@ -96,32 +97,46 @@ class Interface(object):
         if self.count < 5:
             raise InitialError
             exit(1)
-
+        
         # Generate filterbank
-        if self.instrumentDict.get("R"):
-            self.instrumentDict["filterbank"] = TFilter.generateFilterbankFromR(self.instrumentDict, self.sourceDict)
+        if isinstance(self.instrumentDict.get("eta_filt"), float):
+            self.instrumentDict["eta_filt"] *= np.ones(self.instrumentDict.get("n_freqs"))
 
+        if self.instrumentDict.get("R"):
+            self.instrumentDict["freqs_filt"] = self.instrumentDict.get("freq_0") * (1 + 1 / self.instrumentDict.get("R"))**np.arange(self.instrumentDict.get("n_freqs"))
+            self.instrumentDict["filterbank"] = TFilter.generateFilterbankFromR(self.instrumentDict, self.sourceDict)
         else:
             pass
             # Here we need to call function that reads a filterbank matrix
 
+
         # Load or generate source
         if self.sourceDict.get("type") == "SZ":
             SZ, CMB, Az, El = TSource.generateSZMaps(self.sourceDict, telescopeDict=self.telescopeDict)
+            I_nu = SZ.T + CMB.T
             freqs = self.sourceDict.get("freqs_src")
         
+        elif self.sourceDict.get("type") == "atmosphere":
+            I_nu = np.array([0])
+            Az = np.array([0])
+            El = np.array([0])
+            freqs = self.sourceDict.get("freqs_src")
+
         else:
             SZ, CMB, Az, El, freqs = TSource.loadSZMaps(self.sourceDict)
+            I_nu = SZ.T + CMB.T
         
         _sourceDict = {
+                "type"      : self.sourceDict.get("type"),
                 "Az"        : Az,
                 "El"        : El,
-                "I_nu"      : SZ.T + CMB.T,
+                "I_nu"      : I_nu*1e0,
                 "freqs_src" : freqs*1e9
                 }
         
+        
         PWV_atm, nx, ny = TAtm.generateAtmospherePWV(self.atmosphereDict, self.telescopeDict)  
-        eta_atm, freqs_atm, pwv_curve = TAtm.readAtmTransmission()        
+        eta_atm, freqs_atm, pwv_curve = TAtm.readAtmTransmissionText()        
         
         # At t=0, x=y=0 is in middle
         x_atm = (np.arange(0, nx) - ny/2)*self.atmosphereDict.get("dx")

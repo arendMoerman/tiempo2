@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstdio>
 #include "InterpUtils.h"
+#include "Structs.h"
 
 #ifndef __OBSERVE_h
 #define __OBSERVE_h

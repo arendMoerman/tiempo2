@@ -113,16 +113,25 @@ $(document).ready(function(){initNavTree('Observe_8h_source.html',''); initResiz
 <div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span><span class="preprocessor">#include &lt;cmath&gt;</span></div>
 <div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span><span class="preprocessor">#include &lt;cstdio&gt;</span></div>
 <div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span><span class="preprocessor">#include &quot;<a class="code" href="InterpUtils_8h.html">InterpUtils.h</a>&quot;</span></div>
-<div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span> </div>
-<div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span><span class="preprocessor">#ifndef __OBSERVE_h</span></div>
-<div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span><span class="preprocessor">#define __OBSERVE_h</span></div>
-<div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span> </div>
-<div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span><span class="preprocessor"># define M_PI           3.14159265358979323846  </span><span class="comment">/* pi */</span><span class="preprocessor"></span></div>
-<div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span> </div>
-<div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span> </div>
-<div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span> </div>
-<div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span><span class="preprocessor">#include &quot;<a class="code" href="Structs_8h.html">Structs.h</a>&quot;</span></div>
+<div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span> </div>
+<div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span><span class="preprocessor">#ifndef __OBSERVE_h</span></div>
+<div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span><span class="preprocessor">#define __OBSERVE_h</span></div>
+<div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span> </div>
+<div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span><span class="keyword">const</span> <span class="keywordtype">double</span> PI = 3.14159265358979323846;  <span class="comment">/* pi */</span></div>
+<div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span><span class="keyword">const</span> <span class="keywordtype">double</span> CL = 299792458; <span class="comment">/* Speed of light */</span></div>
+<div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span><span class="keyword">const</span> <span class="keywordtype">double</span> HP = 6.62607015e-34;</div>
+<div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span><span class="keyword">const</span> <span class="keywordtype">double</span> KB = 1.380649e-23;</div>
+<div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span><span class="comment"></span> </div>
+<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span><span class="comment">/**</span></div>
+<div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span><span class="comment"> * Get specific intensity of an object at temperature T and frequency nu.</span></div>
+<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="comment"> */</span></div>
+<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="keywordtype">double</span> <a class="code hl_function" href="Observe_8h.html#a7c7d35814c5395656366203c0e6e1005">getPlanck</a>(<span class="keywordtype">double</span> T, <span class="keywordtype">double</span> nu);</div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span> </div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#endif</span></div>
 <div class="ttc" id="aInterpUtils_8h_html"><div class="ttname"><a href="InterpUtils_8h.html">InterpUtils.h</a></div><div class="ttdoc">Utilities for linear interpolation.</div></div>
+<div class="ttc" id="aObserve_8h_html_a7c7d35814c5395656366203c0e6e1005"><div class="ttname"><a href="Observe_8h.html#a7c7d35814c5395656366203c0e6e1005">getPlanck</a></div><div class="ttdeci">double getPlanck(double T, double nu)</div><div class="ttdef"><b>Definition:</b> Observe.cpp:3</div></div>
+<div class="ttc" id="aStructs_8h_html"><div class="ttname"><a href="Structs_8h.html">Structs.h</a></div><div class="ttdoc">Data structures for receiving data from Python interface.</div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->

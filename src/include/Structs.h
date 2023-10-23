@@ -13,6 +13,7 @@ struct Source;
 struct SimParams;
 struct Output;
 
+// Ctypes structs - for communicating with python
 struct Instrument {
     double *freqs_filt; /**< Array with frequencies in Hertz.*/
     int nfreqs_filt;    /**< Number of elements in freqs.*/
@@ -20,14 +21,18 @@ struct Instrument {
     double eta_inst;    /**< Instrument efficiency. Defined to contain all efficiencies of the instrument and coupling to telescope.*/
     double freq_sample; /**< Readout frequency of instrument in Hertz.*/
     double *filterbank; /**< Array with filterbank matrix, flattened.*/
+    double delta;       /**< Superconducting bandgap energy in Joules.*/
+    double eta_pb;      /**< Pair breaking efficiency of superconductor.*/
 };
 
 struct Telescope {
     double Ttel;        /**< Telescope temperature in Kelvin.*/
     double Tgnd;        /**< Ground temperature in Kelvin.*/
-    double Dtel;       /**< Primary aperture diameter in meters.*/
+    double Dtel;        /**< Primary aperture diameter in meters.*/
+    int chop_mode;      /**< Chopping mode. 0 is 'none', 1 is 'direct', 2 is 'abba'.*/
     double dAz_chop;    /**< Azimuthal separation between chopping paths.*/
     double freq_chop;   /**< Chopping frequency in Hertz. If < 0, no chopping.*/
+    double freq_nod;    /**< Nodding frequency in Hertz.*/
     double *eta_ap;     /**< Array of aperture efficiencies, as function of frequency (set by Instrument). Size is nfreqs of instrument.*/
     double eta_mir;     /**< Mirror reflection efficiency.*/
     double eta_fwd;     /**< Telescope forward efficiency.*/
@@ -50,6 +55,7 @@ struct Atmosphere {
 };
 
 struct Source {
+    int present;        /**< Whether or not a source is actually present.*/
     double *Az;         /**< Array containing azimuth angles of source on-sky, relative to source center.*/
     int nAz;            /**< Number of elements in Az.*/
     double *El;         /**< Array containing elevation angles on-sky, relative to source center.*/
@@ -63,11 +69,21 @@ struct Source {
 struct SimParams {
     double t_obs;       /**< Observation time in seconds.*/
     int nThreads;       /**< Number of threads to use for computation.*/
+    double t0;          /**< Starting time of simulation. If not given will default to 0.*/
 };
 
 struct Output {
-    double *P_on;       /**< On-source integrated power.*/
-    double *P_off;      /**< Off-source integrated power.*/
+    double *P_ON;       /**< Output integrated power on-source.*/
+    double *P_OFF_L;    /**< Output integrated power off-source, nod A.*/
+    double *P_OFF_R;    /**< Output integrated power off-source, nod B.*/
+    double *times;      /**< Total time spent on-source, off-source (nod A) and off-source (nod B).*/           
+};
+
+// Local structs - for use internally
+struct Effs {
+    double eta_tot_chain; /**< Total constant efficiency after atmosphere.*/
+    double eta_tot_gnd;   /**< Total constant efficiency after groundi, including ground emissivity.*/
+    double eta_tot_mir;   /**< Total constant efficiency after mirrors, including mirror emissivity.*/
 };
 
 #endif

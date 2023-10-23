@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['telescope_0',['Telescope',['../structTelescope.html',1,'Telescope'],['../classtiempo2_1_1Structs_1_1Telescope.html',1,'tiempo2.Structs.Telescope']]]
+  ['output_0',['Output',['../structOutput.html',1,'Output'],['../classtiempo2_1_1Structs_1_1Output.html',1,'tiempo2.Structs.Output']]]
 ];

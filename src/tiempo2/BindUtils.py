@@ -17,11 +17,13 @@ def allfillInstrument(InstDict, InstStruct):
     """
     
     InstStruct.freqs_filt = (ctypes.c_double * InstDict["freqs_filt"].size)(*(InstDict["freqs_filt"].ravel().tolist()))
-    InstStruct.nfreqs_filt = ctypes.c_int(InstDict["freqs_filt"].size)
+    InstStruct.nfreqs_filt = ctypes.c_int(InstDict["n_freqs"])
     InstStruct.R = ctypes.c_int(InstDict["R"])
     InstStruct.eta_inst = ctypes.c_double(InstDict["eta_inst"])
     InstStruct.freq_sample = ctypes.c_double(InstDict["freq_sample"])
     InstStruct.filterbank = (ctypes.c_double * InstDict["filterbank"].size)(*(InstDict["filterbank"].ravel().tolist()))
+    InstStruct.delta = ctypes.c_double(InstDict["delta"])
+    InstStruct.eta_pb = ctypes.c_double(InstDict["eta_pb"])
 
 def allfillTelescope(TelDict, TelStruct):
     """!
@@ -34,8 +36,10 @@ def allfillTelescope(TelDict, TelStruct):
     TelStruct.Ttel = ctypes.c_double(TelDict["Ttel"])
     TelStruct.Tgnd = ctypes.c_double(TelDict["Tgnd"])
     TelStruct.Dtel = ctypes.c_double(TelDict["Dtel"])
+    TelStruct.chop_mode = ctypes.c_int(TelDict["chop_mode"])
     TelStruct.dAz_chop = ctypes.c_double(TelDict["dAz_chop"])
     TelStruct.freq_chop = ctypes.c_double(TelDict["freq_chop"])
+    TelStruct.freq_nod = ctypes.c_double(TelDict["freq_nod"])
     TelStruct.eta_ap = (ctypes.c_double * TelDict["eta_ap"].size)(*(TelDict["eta_ap"].ravel().tolist()))
     TelStruct.eta_mir = ctypes.c_double(TelDict["eta_mir"])
     TelStruct.eta_fwd = ctypes.c_double(TelDict["eta_fwd"])
@@ -69,9 +73,14 @@ def allfillSource(SourceDict, SourceStruct):
     @param SourceDict Dictionary containing source angular extents and intensity maps.
     @param SourceStruct Struct to be filled and passed to ctypes.
     """
-   
-    nAzEl = SourceDict["I_nu"].shape[0] * SourceDict["I_nu"].shape[1]
-
+       
+    nAzEl = SourceDict["I_nu"].ravel().size
+    
+    present = 1
+    if SourceDict.get("type") == "atmosphere":
+        present = 0
+    
+    SourceStruct.present = ctypes.c_int(present)
     SourceStruct.Az = (ctypes.c_double * SourceDict["Az"].size)(*(SourceDict["Az"].ravel().tolist())) 
     SourceStruct.nAz = ctypes.c_int(SourceDict["Az"].size) 
     SourceStruct.El = (ctypes.c_double * SourceDict["El"].size)(*(SourceDict["El"].ravel().tolist())) 
@@ -89,6 +98,7 @@ def allfillSimParams(SPDict, SPStruct):
     """
     SPStruct.t_obs = ctypes.c_double(SPDict["t_obs"])
     SPStruct.nThreads = ctypes.c_int(SPDict["nThreads"])
+    SPStruct.t0 = ctypes.c_double(SPDict["t0"])
 
 def allocateOutput(OutputStruct, size, ct_t):
     """!
@@ -99,8 +109,10 @@ def allocateOutput(OutputStruct, size, ct_t):
     @param ct_t Ctypes type of array.
     """
     fill = np.zeros(size)
-    OutputStruct.P_on = (ct_t * size)(*(fill.tolist()))
-    OutputStruct.P_off = (ct_t * size)(*(fill.tolist()))
+    OutputStruct.P_ON = (ct_t * size)(*(fill.tolist()))
+    OutputStruct.P_OFF_L = (ct_t * size)(*(fill.tolist()))
+    OutputStruct.P_OFF_R = (ct_t * size)(*(fill.tolist()))
+    OutputStruct.times = (ct_t * 3)(0, 0, 0)
 
 def OutputStructToDict(OutputStruct, shape, np_t):
     """!
@@ -111,12 +123,16 @@ def OutputStructToDict(OutputStruct, shape, np_t):
     @param np_t Numpy type of array elements.
     """
 
-    on = np.ctypeslib.as_array(OutputStruct.P_on, shape=shape).astype(np_t)
-    off = np.ctypeslib.as_array(OutputStruct.P_off, shape=shape).astype(np_t)
+    on = np.ctypeslib.as_array(OutputStruct.P_ON, shape=shape).astype(np_t)
+    off_l = np.ctypeslib.as_array(OutputStruct.P_OFF_L, shape=shape).astype(np_t)
+    off_r = np.ctypeslib.as_array(OutputStruct.P_OFF_R, shape=shape).astype(np_t)
+    times = np.ctypeslib.as_array(OutputStruct.times, shape=(3,)).astype(np_t)
 
     OutputDict = {
-            "P_on"    : on,
-            "P_off"   : off
+            "P_ON"      : on,
+            "P_OFF_L"   : off_l,
+            "P_OFF_R"   : off_r,
+            "times"     : times,
             }
 
     return OutputDict

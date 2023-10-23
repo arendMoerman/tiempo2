@@ -129,6 +129,12 @@ Functions</h2></td></tr>
 <tr class="memitem:a24735d45073769bdad962294f39e93b0"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="BindUtils_8py.html#a24735d45073769bdad962294f39e93b0">tiempo2.BindUtils.allfillSimParams</a> (SPDict, SPStruct)</td></tr>
 <tr class="memdesc:a24735d45073769bdad962294f39e93b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate and fill parameters and settings that govern the simulation.  <br /></td></tr>
 <tr class="separator:a24735d45073769bdad962294f39e93b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4c1fac5e6f369cdf0acdd5330b93ed78"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="BindUtils_8py.html#a4c1fac5e6f369cdf0acdd5330b93ed78">tiempo2.BindUtils.allocateOutput</a> (OutputStruct, size, ct_t)</td></tr>
+<tr class="memdesc:a4c1fac5e6f369cdf0acdd5330b93ed78"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate memory for an output struct.  <br /></td></tr>
+<tr class="separator:a4c1fac5e6f369cdf0acdd5330b93ed78"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a751c9d541d30507827e90abbee47ddf4"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="BindUtils_8py.html#a751c9d541d30507827e90abbee47ddf4">tiempo2.BindUtils.OutputStructToDict</a> (OutputStruct, shape, np_t)</td></tr>
+<tr class="memdesc:a751c9d541d30507827e90abbee47ddf4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert an output struct to a dictionary.  <br /></td></tr>
+<tr class="separator:a751c9d541d30507827e90abbee47ddf4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>File containing utility functions for the ctypes bindings. </p>
@@ -313,6 +319,94 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">TelDict</td><td>Dictionary containing telescope parameters. </td></tr>
     <tr><td class="paramname">TelStruct</td><td>Struct to be filled and passed to ctypes. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a4c1fac5e6f369cdf0acdd5330b93ed78" name="a4c1fac5e6f369cdf0acdd5330b93ed78"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4c1fac5e6f369cdf0acdd5330b93ed78">&#9670;&#160;</a></span>allocateOutput()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def tiempo2.BindUtils.allocateOutput </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>OutputStruct</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>size</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>ct_t</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Allocate memory for an output struct. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">OutputStruct</td><td>Struct to be allocated and passed to ctypes. </td></tr>
+    <tr><td class="paramname">size</td><td>Size of arrays to be allocated. </td></tr>
+    <tr><td class="paramname">ct_t</td><td>Ctypes type of array. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a751c9d541d30507827e90abbee47ddf4" name="a751c9d541d30507827e90abbee47ddf4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a751c9d541d30507827e90abbee47ddf4">&#9670;&#160;</a></span>OutputStructToDict()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def tiempo2.BindUtils.OutputStructToDict </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>OutputStruct</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>shape</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>np_t</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Convert an output struct to a dictionary. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">OutputStruct</td><td>Struct filled with output. </td></tr>
+    <tr><td class="paramname">shape</td><td>Shape of resulting arrays in dictionary. </td></tr>
+    <tr><td class="paramname">np_t</td><td>Numpy type of array elements. </td></tr>
   </table>
   </dd>
 </dl>

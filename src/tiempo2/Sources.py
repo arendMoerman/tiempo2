@@ -36,7 +36,7 @@ def generateSZMaps(SZsourceDict, convolve_beam=False, telescopeDict=None, ret_un
 
 
     Te      = MConv.eV_Temp(SZsourceDict.get("Te") * 1e3)   # KeV -> eV -> K
-    ne0     = SZsourceDict.get("ne0") * 1e4                 # n / cm^-2 -> n / m^-2
+    ne0     = SZsourceDict.get("ne0") * 1e6                 # n / cm^-3 -> n / m^-3
     rc      = MConv.pc_m(SZsourceDict.get("rc") * 1e3)      # Kpc -> pc -> m
     beta    = SZsourceDict.get("beta")
     Da      = MConv.pc_m(SZsourceDict.get("Da") * 1e6)      # Mpc -> pc -> m
@@ -55,20 +55,9 @@ def generateSZMaps(SZsourceDict, convolve_beam=False, telescopeDict=None, ret_un
     Az, El = np.mgrid[lims_Az[0]:lims_Az[1]:nAz * 1j, lims_El[0]:lims_El[1]:nEl * 1j]
     theta = np.sqrt(Az**2 + El**2)
 
-    if ret_unit == "MJy":
-        tSZ = MConv.SI_JySr(isob.tSZMap(theta, freq_Hz)) * 1e-6 # MJy / sr
-        kSZ = MConv.SI_JySr(isob.kSZMap(theta, freq_Hz)) * 1e-6 # MJy / sr
-        CMB = MConv.SI_JySr(MBack.getSpecificIntensityCMB(freq_Hz)) * 1e-6
-
-    elif ret_unit == "SI":
-        tSZ = isob.tSZMap(theta, freq_Hz)
-        kSZ = isob.kSZMap(theta, freq_Hz)
-        CMB = MBack.getSpecificIntensityCMB(freq_Hz)
-
-    elif ret_unit == "mK":
-        tSZ = MConv.SI_Temp(isob.tSZMap(theta, freq_Hz), freq_Hz) * 1e3 # mK
-        kSZ = MConv.SI_Temp(isob.kSZMap(theta, freq_Hz), freq_Hz) * 1e3 # mK
-        CMB = MConv.SI_Temp(MBack.getSpecificIntensityCMB(freq_Hz), freq_Hz) * 1e3
+    tSZ = isob.tSZMap(theta, freq_Hz) # W / m**2 / sr / Hz
+    kSZ = isob.kSZMap(theta, freq_Hz) # W / m**2 / sr / Hz
+    CMB = MBack.getSpecificIntensityCMB(freq_Hz) # W / m**2 / sr / Hz
 
     SZ = tSZ + kSZ
     CMB = np.ones(SZ.shape) * CMB

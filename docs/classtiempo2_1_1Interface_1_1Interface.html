@@ -135,12 +135,9 @@ def&#160;</td><td class="memItemRight" valign="bottom"><b>setAtmosphereDict</b> 
 <tr class="memitem:a5b2479e94c573221e4c2ac8bd5387904"><td class="memItemLeft" align="right" valign="top"><a id="a5b2479e94c573221e4c2ac8bd5387904" name="a5b2479e94c573221e4c2ac8bd5387904"></a>
 def&#160;</td><td class="memItemRight" valign="bottom"><b>setObservationDict</b> (self, observationDict)</td></tr>
 <tr class="separator:a5b2479e94c573221e4c2ac8bd5387904"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa1c389995c8945d8c975a1647e6cc735"><td class="memItemLeft" align="right" valign="top"><a id="aa1c389995c8945d8c975a1647e6cc735" name="aa1c389995c8945d8c975a1647e6cc735"></a>
-def&#160;</td><td class="memItemRight" valign="bottom"><b>runSimulation</b> (self)</td></tr>
+<tr class="memitem:aa1c389995c8945d8c975a1647e6cc735"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtiempo2_1_1Interface_1_1Interface.html#aa1c389995c8945d8c975a1647e6cc735">runSimulation</a> (self)</td></tr>
+<tr class="memdesc:aa1c389995c8945d8c975a1647e6cc735"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start and run a simulation.  <br /></td></tr>
 <tr class="separator:aa1c389995c8945d8c975a1647e6cc735"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4e58d697bf6834f51fe38dd7df43fc22"><td class="memItemLeft" align="right" valign="top"><a id="a4e58d697bf6834f51fe38dd7df43fc22" name="a4e58d697bf6834f51fe38dd7df43fc22"></a>
-def&#160;</td><td class="memItemRight" valign="bottom"><b>generateSources</b> (self)</td></tr>
-<tr class="separator:a4e58d697bf6834f51fe38dd7df43fc22"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -177,7 +174,33 @@ None&#160;</td><td class="memItemRight" valign="bottom"><b>instrumentDict</b> = 
 <tr class="memitem:acda1459b911262a697192fc6e13f5b51"><td class="memItemLeft" align="right" valign="top"><a id="acda1459b911262a697192fc6e13f5b51" name="acda1459b911262a697192fc6e13f5b51"></a>
 None&#160;</td><td class="memItemRight" valign="bottom"><b>observationDict</b> = None</td></tr>
 <tr class="separator:acda1459b911262a697192fc6e13f5b51"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a22e54218183f8776e40e1d62027480c9"><td class="memItemLeft" align="right" valign="top"><a id="a22e54218183f8776e40e1d62027480c9" name="a22e54218183f8776e40e1d62027480c9"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><b>count</b> = 0</td></tr>
+<tr class="separator:a22e54218183f8776e40e1d62027480c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="aa1c389995c8945d8c975a1647e6cc735" name="aa1c389995c8945d8c975a1647e6cc735"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa1c389995c8945d8c975a1647e6cc735">&#9670;&#160;</a></span>runSimulation()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def tiempo2.Interface.Interface.runSimulation </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Start and run a simulation. </p>
+<p>This is the main routine of TiEMPO2 and should be called after filling all dictionaries. Generate or load a source datacube, atmosphere PWV screen, transmission curves.</p>
+<p>Will return exception if not all dictionaries have been set. </p>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following file:<ul>
 <li>src/tiempo2/Interface.py</li>
 </ul>

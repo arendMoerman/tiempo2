@@ -76,11 +76,41 @@ def generateAtmospherePWV(atmosphereDict, telescopeDict):
 
     return PWV_Gauss, nx, ny
 
-def readAtmTransmission():
+def readAtmTransmissionText():
+    """!
+    Parser for reading atmospheric transmission curves from text file.
+    """
+
+    dat_loc = os.path.join(os.path.dirname(__file__), "resources", "trans_data.dat")
+
+    with open(dat_loc, 'r') as file:
+        eta_atm = []
+        freqs = []
+
+        for line in file:
+            if line[0] == "#":
+                continue
+            elif line[0] == " ":
+                line = list(line.strip().split(" "))
+                while("" in line):
+                    line.remove("")
+                pwv_curve = np.array(line, dtype=np.float64)
+                continue
+            
+            line = list(line.strip().split(" "))
+            while("" in line):
+                line.remove("")
+            
+            eta_atm.append(np.array(line[1:]))
+            freqs.append(line[0])
+
+        freqs = np.array(freqs, dtype=np.float64)
+        eta_atm = np.array(eta_atm, dtype=np.float64)
+    return eta_atm, freqs, pwv_curve
+
+def readAtmTransmissionCSV():
     """!
     Parser for reading atmospheric transmission curves from csv file.
-
-    @param line Line of text 
     """
     csv_loc = os.path.join(os.path.dirname(__file__), "resources", "atm.csv")
 

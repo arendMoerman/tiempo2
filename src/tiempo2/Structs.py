@@ -16,7 +16,9 @@ class Instrument(ctypes.Structure):
                 ("R", ctypes.c_int),
                 ("eta_inst", ctypes.c_double),
                 ("freq_sample", ctypes.c_double),
-                ("filterbank", ctypes.POINTER(ctypes.c_double))]
+                ("filterbank", ctypes.POINTER(ctypes.c_double)),
+                ("delta", ctypes.c_double),
+                ("eta_pb", ctypes.c_double)]
 
 class Telescope(ctypes.Structure):
     """!
@@ -26,8 +28,10 @@ class Telescope(ctypes.Structure):
     _fields_ = [("Ttel", ctypes.c_double),
                 ("Tgnd", ctypes.c_double),
                 ("Dtel", ctypes.c_double),
+                ("chop_mode", ctypes.c_int),
                 ("dAz_chop", ctypes.c_double),
                 ("freq_chop", ctypes.c_double),
+                ("freq_nod", ctypes.c_double),
                 ("eta_ap", ctypes.POINTER(ctypes.c_double)),
                 ("eta_mir", ctypes.c_double),
                 ("eta_fwd", ctypes.c_double)]
@@ -56,7 +60,8 @@ class Source(ctypes.Structure):
     Struct representing simulated astronomical source.
     """
 
-    _fields_ = [("Az", ctypes.POINTER(ctypes.c_double)),
+    _fields_ = [("present", ctypes.c_int),
+                ("Az", ctypes.POINTER(ctypes.c_double)),
                 ("nAz", ctypes.c_int),
                 ("El", ctypes.POINTER(ctypes.c_double)),
                 ("nEl", ctypes.c_int),
@@ -70,12 +75,15 @@ class SimParams(ctypes.Structure):
     """
 
     _fields_ = [("t_obs", ctypes.c_double),
-                ("nThreads", ctypes.c_int)]
+                ("nThreads", ctypes.c_int),
+                ("t0", ctypes.c_double)]
 
 class Output(ctypes.Structure):
     """!
     Struct used as output container.
     """
 
-    _fields_ = [("P_on", ctypes.POINTER(ctypes.c_double)),
-                ("P_off", ctypes.POINTER(ctypes.c_double))]
+    _fields_ = [("P_ON", ctypes.POINTER(ctypes.c_double)),
+                ("P_OFF_L", ctypes.POINTER(ctypes.c_double)),
+                ("P_OFF_R", ctypes.POINTER(ctypes.c_double)),
+                ("times", ctypes.POINTER(ctypes.c_double))]
