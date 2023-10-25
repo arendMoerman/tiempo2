@@ -94,17 +94,21 @@ TIEMPO2_DLL void runTiEMPO2(Instrument *instrument, Telescope *telescope, Atmosp
             t.join();
         }
     }
+
     for(int n=0; n < simparams->nThreads; n++)
     {
         for(int k=0; k<3; k++) {
             output->times[k] += n_times[n][k] * dt;
+            if (n_times[n][k] == 0) {
+                n_times[n][k] = 1; // To avoid averaging by zero
+            }
         }
 
         for(int j=0; j<instrument->nfreqs_filt; j++)
         {
-            output->P_ON[j] += ret_container_on[n][j];
-            output->P_OFF_L[j] += ret_container_off_l[n][j];
-            output->P_OFF_R[j] += ret_container_off_r[n][j];
+            output->P_ON[j] += ret_container_on[n][j] / (n_times[n][0] * dt);
+            output->P_OFF_L[j] += ret_container_off_l[n][j] / (n_times[n][1] * dt);
+            output->P_OFF_R[j] += ret_container_off_r[n][j] / (n_times[n][2] * dt);
             
         }
     }
@@ -220,7 +224,7 @@ TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmo
 
         // Add wind to this - currently only along x-axis and pretty manual
         point_atm.xAz = point_atm.xAz + atmosphere->v_wind * t;
-        
+        //printf("%16e\n", point_atm.xAz);  
         // Interpolate on PWV_Gauss
         PWV_Gauss_interp = interpValue(point_atm.xAz, point_atm.yEl, 
                 atmosphere->x_atm, atmosphere->y_atm, atmosphere->nx, 

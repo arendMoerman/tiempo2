@@ -140,8 +140,7 @@ class Interface(object):
         
         # At t=0, x=y=0 is in middle
         x_atm = (np.arange(0, nx) - ny/2)*self.atmosphereDict.get("dx")
-        y_atm = (np.arange(0, ny) - ny/2)*self.atmosphereDict.get("dx")
-        
+        y_atm = (np.arange(0, ny) - ny/2)*self.atmosphereDict.get("dy")
         _atmDict = {
                 "Tatm"      : self.atmosphereDict.get("Tatm"),
                 "v_wind"    : self.atmosphereDict.get("v_wind"),
