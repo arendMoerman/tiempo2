@@ -16,20 +16,13 @@ TIEMPO2_DLL void runTiEMPO2(Instrument *instrument, Telescope *telescope, Atmosp
     // Integers
     int num_AzEl;   // Number of source points in one Az-El slice, for one frequency.
     int step;       // Stepsize for each thread.
-    int nTimes;     // Number of required time evaluations.
 
     // Double array types
     double* I_atm = new double[source->nfreqs_src];
     double* I_gnd = new double[source->nfreqs_src];
     double* I_tel = new double[source->nfreqs_src];
 
-    double** ret_container_on = new double*[simparams->nThreads];   // Container for storing on-source power.
-    double** ret_container_off_l = new double*[simparams->nThreads];   // Container for storing off-source power, nod A.
-    double** ret_container_off_r = new double*[simparams->nThreads];   // Container for storing off-source power, nod B.
     double** slice_container = new double*[simparams->nThreads];    // Container for storing source slices.
-    double** P_nu = new double*[simparams->nThreads];    // Container for storing power in each bin.
-
-    int** n_times = new int*[simparams->nThreads]; // Timer for each thread to keep track of on, off (nod A) and off (nod B). 
 
     // Initialise constant efficiency struct
     Effs effs;
@@ -43,9 +36,10 @@ TIEMPO2_DLL void runTiEMPO2(Instrument *instrument, Telescope *telescope, Atmosp
     
     // PREAMBLE
     dt = 1. / instrument->freq_sample;
-    nTimes = ceil(simparams->t_obs / dt);
-    step = ceil(nTimes / simparams->nThreads);
-
+    step = ceil(simparams->nTimes / simparams->nThreads);
+    
+    printf("\033[1;32m\r");
+    
     // Calculate I_atm, I_gnd, I_tel before entering time loop.
     // These stay constant during observation anyways.
     for(int j=0; j<source->nfreqs_src; j++)
@@ -61,13 +55,6 @@ TIEMPO2_DLL void runTiEMPO2(Instrument *instrument, Telescope *telescope, Atmosp
     num_AzEl = source->nAz * source->nEl;
     for(int n=0; n < simparams->nThreads; n++) {
         slice_container[n] = new double[num_AzEl]();
-
-        ret_container_on[n] = new double[instrument->nfreqs_filt]();
-        ret_container_off_l[n] = new double[instrument->nfreqs_filt]();
-        ret_container_off_r[n] = new double[instrument->nfreqs_filt]();
-        P_nu[n] = new double[source->nfreqs_src]();
-
-        n_times[n] = new int[3]();
     }
     
     // Main thread spawning loop
@@ -75,17 +62,16 @@ TIEMPO2_DLL void runTiEMPO2(Instrument *instrument, Telescope *telescope, Atmosp
         int final_step; // Final step for 
         
         if(n == (simparams->nThreads - 1)) {
-            final_step = nTimes;
+            final_step = simparams->nTimes;
         }
 
         else {
             final_step = (n+1) * step;
         }
         
-        threadPool[n] = std::thread(&parallelJobs, instrument, telescope, atmosphere, source, simparams, 
-                &effs, n * step, final_step, dt, num_AzEl, P_nu[n],
-                ret_container_on[n], ret_container_off_l[n], ret_container_off_r[n], slice_container[n],
-                n_times[n], I_atm, I_gnd, I_tel);
+        threadPool[n] = std::thread(&parallelJobs, instrument, telescope, atmosphere, source, simparams, output, 
+                &effs, n * step, final_step, dt, num_AzEl,
+                slice_container[n], I_atm, I_gnd, I_tel, n);
     }
 
     // Wait with execution until all threads are done
@@ -94,64 +80,40 @@ TIEMPO2_DLL void runTiEMPO2(Instrument *instrument, Telescope *telescope, Atmosp
             t.join();
         }
     }
-
-    for(int n=0; n < simparams->nThreads; n++)
-    {
-        for(int k=0; k<3; k++) {
-            output->times[k] += n_times[n][k] * dt;
-            if (n_times[n][k] == 0) {
-                n_times[n][k] = 1; // To avoid averaging by zero
-            }
-        }
-
-        for(int j=0; j<instrument->nfreqs_filt; j++)
-        {
-            output->P_ON[j] += ret_container_on[n][j] / (n_times[n][0] * dt);
-            output->P_OFF_L[j] += ret_container_off_l[n][j] / (n_times[n][1] * dt);
-            output->P_OFF_R[j] += ret_container_off_r[n][j] / (n_times[n][2] * dt);
-            
-        }
-    }
+    printf("\033[0m\n");
     
     for(int n=0; n < simparams->nThreads; n++) {
-        delete[] ret_container_on[n]; 
-        delete[] ret_container_off_l[n]; 
-        delete[] ret_container_off_r[n]; 
-        
         delete[] slice_container[n];
-        delete[] P_nu[n];
-        delete[] n_times[n];
     }
-
-    delete[] ret_container_on; 
-    delete[] ret_container_off_l; 
-    delete[] ret_container_off_r; 
     delete[] slice_container;
-    delete[] P_nu;
 
     delete[] I_atm;
     delete[] I_gnd;
     delete[] I_tel;
-
-    delete[] n_times;
 }
 
-TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmosphere *atmosphere, Source *source, SimParams* simparams, 
-        Effs* effs, int start, int stop, double dt, int num_AzEl, double* P_nu, 
-        double* ret_on, double* ret_off_l, double* ret_off_r, double* slice_container, 
-        int* n_times, double* I_atm, double* I_gnd, double* I_tel) {
+TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmosphere *atmosphere, Source *source, SimParams* simparams, Output* output, 
+        Effs* effs, int start, int stop, double dt, int num_AzEl, double* slice_container, 
+        double* I_atm, double* I_gnd, double* I_tel, int threadIdx) {
     
     // Calculate total constant efficiencies
     
     // Get starting time and chop parameters
-    double t, PWV_Gauss_interp, eta_atm_interp, freq, I_nu, sigma_k, P_noise_k, Ap;
+    double t_real; // Real time.
+    double t_start; // Time from start of observation.
+    double PWV_Gauss_interp; // Interpolated PWV of Gaussian smoothed screen.
+    double eta_atm_interp; // Interpolated eta_atm, over frequency and PWV
+    double freq; // Bin frequency
+    double I_nu; // Specific intensity of source.
+    double sigma_k; // Noise per channel.
     double eta_kj; // Filter efficiency for bin j, at channel k
     double sqrt_samp = sqrt(0.5 * instrument->freq_sample); // Constant term needed for noise calculation
 
     int n_chop, n_nod, start_slice, end_slice;
 
     double dfreq = source->freqs_src[1] - source->freqs_src[0];
-    Ap = M_PI * telescope->Dtel * telescope->Dtel / 4; 
+
+    double* PSD_nu = new double[source->nfreqs_src];
 
     // Structs for storing sky and atmosphere co-ordinates
     AzEl center;
@@ -169,18 +131,32 @@ TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmo
     bool debug = false;
 
     int position; // A (left) = 0, B (right) = 1
+                  //
+    int total = stop - start; // Total evaluations, for progress monitoring
+    double prog_chunk = total / 100; // Divide total in chunks, s.t. about 100 chunks fit in total
+    int chunk_count = 0;
 
     for(int i=start; i<stop; i++)
     { // Update time 
-        t = i * dt + simparams->t0;
-        n_chop = floor(t * telescope->freq_chop);
-        n_nod = floor(t * telescope->freq_nod);
-        // even -> chopper = open
+        
+        if(threadIdx == 0 and chunk_count <= 100) {
+            if(i >= chunk_count * prog_chunk) {
+                printf("*** Progress: %d / 100 ***\r", chunk_count);
+                fflush(stdout);
+                chunk_count++;
+            }
+        }
+
+        t_real = i * dt + simparams->t0;
+        t_start = i * dt;
+
+        n_chop = floor(t_start * telescope->freq_chop);
+        n_nod = floor(t_start * telescope->freq_nod);
+        
         chop_flag = (n_chop % 2 != 0); // If even (false), ON. Odd (true), OFF.
         nod_flag = (n_nod % 2 != 0); // If even (false), AB. Odd (true), BA.
-        //printf("%d\n", chop_flag);
-        is_in_lower_half = (t - n_nod / telescope->freq_nod) < (1 / telescope->freq_nod / 2);
-        //printf("%f, %f, %f, %f, %f\n", t, 1 / telescope->freq_nod / 2, ret_on[0], ret_off_l[0], ret_off_r[0]);        
+        
+        is_in_lower_half = (t_start - n_nod / telescope->freq_nod) < (1 / telescope->freq_nod / 2);
         if(nod_flag)
         {
             if(is_in_lower_half) {
@@ -204,27 +180,16 @@ TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmo
                 position = 1;
             }
         }
-
-        // Stamp time in correct container
-        if (!chop_flag){
-            n_times[0]++;
-        }
         
-        else {
-            if (!position) {
-                n_times[1]++;
-            }
-
-            else {
-                n_times[2]++;
-            }
-        }
+        // STORAGE: Add current pointing to output array
+        output->Az[i] = pointing.Az;
+        output->El[i] = pointing.El;
 
         point_atm = convertAnglesToSpatialAtm(pointing, atmosphere->h_column);
 
         // Add wind to this - currently only along x-axis and pretty manual
-        point_atm.xAz = point_atm.xAz + atmosphere->v_wind * t;
-        //printf("%16e\n", point_atm.xAz);  
+        point_atm.xAz = point_atm.xAz + atmosphere->v_wind * t_real;
+
         // Interpolate on PWV_Gauss
         PWV_Gauss_interp = interpValue(point_atm.xAz, point_atm.yEl, 
                 atmosphere->x_atm, atmosphere->y_atm, atmosphere->nx, 
@@ -253,10 +218,10 @@ TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmo
             
             // Currently only uses optimal throughput
             // Store P_nu in array for later use
-            P_nu[j] = (telescope->eta_ap[j] * eta_atm_interp * effs->eta_tot_chain * I_nu
+            PSD_nu[j] = (telescope->eta_ap[j] * eta_atm_interp * effs->eta_tot_chain * I_nu
                 + effs->eta_tot_chain * (1 - eta_atm_interp) * I_atm[j] 
                 + effs->eta_tot_gnd * I_gnd[j] 
-                + effs->eta_tot_mir * I_tel[j]) * CL*CL / (freq*freq) * dfreq;
+                + effs->eta_tot_mir * I_tel[j]) * CL*CL / (freq*freq);
         }
         
         // In this loop, calculate P_k, NEP_k and noise
@@ -269,28 +234,32 @@ TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmo
                 freq = source->freqs_src[j];
                 eta_kj = instrument->filterbank[k*source->nfreqs_src + j];
                 
-                NEP_accum += P_nu[j] * eta_kj * (HP * freq + P_nu[j] * eta_kj / dfreq + 2 * instrument->delta / instrument->eta_pb);
-                P_k += P_nu[j] * eta_kj;
+                NEP_accum += PSD_nu[j] * eta_kj * (HP * freq + PSD_nu[j] * eta_kj + 2 * instrument->delta / instrument->eta_pb);
+                P_k += PSD_nu[j] * eta_kj;
             }
 
-            sigma_k = sqrt(2 * NEP_accum) * sqrt_samp;
-            P_noise_k = drawGaussian(sigma_k);
-            //printf("%15e, %15e\n", P_k, P_noise_k);
-            //printf("%15e, %15e\n", P_noise_k, sigma_k);
-            P_k += P_noise_k;
-            //P_k = sqrt(2 * NEP_accum);//P_noise_k;
-            
+            sigma_k = sqrt(2 * NEP_accum * dfreq) * sqrt_samp;
+            P_k *= dfreq;
+
+            if(simparams->use_noise) {
+                P_k += drawGaussian(sigma_k);
+            }
+           
+            // STORAGE: Add signal to signal array in output
+            output->signal[i * instrument->nfreqs_filt + k] = P_k; 
+
+            // STORAGE: Add correct flag to output array
             if (!chop_flag){
-                ret_on[k] = P_k;
+                output->flag[i] = 0;
             }
             
             else {
                 if (!position) {
-                    ret_off_l[k] = P_k;
+                    output->flag[i] = 2;
                 }
 
                 else {
-                    ret_off_r[k] = P_k;
+                    output->flag[i] = 1;
                 }
             }
         }

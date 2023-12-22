@@ -26,9 +26,8 @@ extern "C"
     TIEMPO2_DLL void runTiEMPO2(Instrument *instrument, Telescope *telescope, Atmosphere *atmosphere, Source *source, 
         SimParams *simparams, Output *output);
 
-    TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmosphere *atmosphere, Source *source, SimParams* simparams, 
-        Effs* effs, int start, int stop, double dt, int num_AzEl, double* P_nu, 
-        double* ret_on, double* ret_off_l, double* ret_off_r, double* slice_container, 
-        int* n_times, double* I_atm, double* I_gnd, double* I_tel);
+    TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmosphere *atmosphere, Source *source, SimParams* simparams, Output* output, 
+        Effs* effs, int start, int stop, double dt, int num_AzEl, 
+        double* slice_container, double* I_atm, double* I_gnd, double* I_tel, int threadIdx);
 }
 #endif

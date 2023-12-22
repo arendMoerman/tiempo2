@@ -75,15 +75,17 @@ class SimParams(ctypes.Structure):
     """
 
     _fields_ = [("t_obs", ctypes.c_double),
+                ("nTimes", ctypes.c_int),
                 ("nThreads", ctypes.c_int),
-                ("t0", ctypes.c_double)]
+                ("t0", ctypes.c_double),
+                ("use_noise", ctypes.c_int)]
 
 class Output(ctypes.Structure):
     """!
     Struct used as output container.
     """
 
-    _fields_ = [("P_ON", ctypes.POINTER(ctypes.c_double)),
-                ("P_OFF_L", ctypes.POINTER(ctypes.c_double)),
-                ("P_OFF_R", ctypes.POINTER(ctypes.c_double)),
-                ("times", ctypes.POINTER(ctypes.c_double))]
+    _fields_ = [("signal", ctypes.POINTER(ctypes.c_double)),
+                ("Az", ctypes.POINTER(ctypes.c_double)),
+                ("El", ctypes.POINTER(ctypes.c_double)),
+                ("flag", ctypes.POINTER(ctypes.c_int))]

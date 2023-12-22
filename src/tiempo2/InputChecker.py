@@ -93,6 +93,9 @@ def checkObservationDict(observationDict):
     if observationDict.get("t0") is None:
         observationDict["t0"] = 0.
 
+    if observationDict.get("use_noise") is None:
+        observationDict["use_noise"] = 1
+
     for key in checklist:
         if observationDict.get(key) is None:
             errlist.append(key)

@@ -1,11 +1,22 @@
+import math
+import os
+import time
+
 import numpy as np
 import matplotlib.pyplot as pt
+import scipy.fft as fft
+import scipy.signal as signal
 
 import tiempo2.Filterbank as TFilter
 import tiempo2.Sources as TSource
 import tiempo2.InputChecker as TCheck
 import tiempo2.Atmosphere as TAtm
 import tiempo2.BindCPU as TBCPU
+
+import logging
+from tiempo2.CustomLogger import CustomLogger
+
+logging.getLogger(__name__)
 
 class FieldError(Exception):
     """!
@@ -27,7 +38,10 @@ class Interface(object):
     observationDict = None
 
     count = 0
-
+    
+    clog_mgr = CustomLogger(os.path.basename(__file__))
+    clog = clog_mgr.getCustomLogger()
+    
     def setSourceDict(self, sourceDict):
         errlist = TCheck.checkSourceDict(sourceDict)
 
@@ -93,11 +107,20 @@ class Interface(object):
 
         Will return exception if not all dictionaries have been set.
         """
+        self.clog.info("\033[1;32m*** STARTING TiEMPO2 SIMULATION ***")
+        
+        start = time.time()
 
         if self.count < 5:
             raise InitialError
             exit(1)
-        
+       
+        #### INITIALISING OBSERVATION PARAMETERS ####
+        # Calculate number of time evaluations
+        self.observationDict["nTimes"] = math.ceil(self.observationDict["t_obs"] * self.instrumentDict["freq_sample"])
+        self.observationDict["time_range"] = np.arange(self.observationDict["nTimes"]) / self.instrumentDict["freq_sample"]
+
+        #### INITIALISING INSTRUMENT PARAMETERS ####
         # Generate filterbank
         if isinstance(self.instrumentDict.get("eta_filt"), float):
             self.instrumentDict["eta_filt"] *= np.ones(self.instrumentDict.get("n_freqs"))
@@ -105,11 +128,13 @@ class Interface(object):
         if self.instrumentDict.get("R"):
             self.instrumentDict["freqs_filt"] = self.instrumentDict.get("freq_0") * (1 + 1 / self.instrumentDict.get("R"))**np.arange(self.instrumentDict.get("n_freqs"))
             self.instrumentDict["filterbank"] = TFilter.generateFilterbankFromR(self.instrumentDict, self.sourceDict)
+            pt.plot(self.instrumentDict["filterbank"].T)
+            pt.show()
         else:
             pass
-            # Here we need to call function that reads a filterbank matrix
+            # Here we need to call function that reads a filterbank matrix from Louis files.
 
-
+        #### INITIALISING ASTRONOMICAL SOURCE ####
         # Load or generate source
         if self.sourceDict.get("type") == "SZ":
             SZ, CMB, Az, El = TSource.generateSZMaps(self.sourceDict, telescopeDict=self.telescopeDict)
@@ -130,12 +155,13 @@ class Interface(object):
                 "type"      : self.sourceDict.get("type"),
                 "Az"        : Az,
                 "El"        : El,
-                "I_nu"      : I_nu*1e0,
+                "I_nu"      : I_nu,
                 "freqs_src" : freqs*1e9
                 }
         
         
-        PWV_atm, nx, ny = TAtm.generateAtmospherePWV(self.atmosphereDict, self.telescopeDict)  
+        #### INITIALISING ATMOSPHERE PARAMETERS ####
+        PWV_atm, nx, ny = TAtm.generateAtmospherePWV(self.atmosphereDict, self.telescopeDict, self.clog)  
         eta_atm, freqs_atm, pwv_curve = TAtm.readAtmTransmissionText()        
         
         # At t=0, x=y=0 is in middle
@@ -156,13 +182,43 @@ class Interface(object):
                 "eta_atm"   : eta_atm
                 }
 
+        #### INITIALISING TELESCOPE PARAMETERS ####
         if isinstance(self.telescopeDict.get("eta_ap"), float):
             self.telescopeDict["eta_ap"] *= np.ones(freqs.size)
 
         self.telescopeDict["dAz_chop"] /= 3600
 
+        self.clog.info("Starting observation.")
         res = TBCPU.runTiEMPO2(self.instrumentDict, self.telescopeDict, 
                         _atmDict, _sourceDict, self.observationDict)
+        end = time.time()        
         
-        return res
+        self.clog.info("\033[1;32m*** FINISHED TiEMPO2 SIMULATION ***")
+        self.clog.info(f"\033[1;32m*** Elapsed time: {end-start:.2f} seconds ***")
+        
+        return res, self.observationDict["time_range"], self.instrumentDict["freqs_filt"]
+    
+    def calcSignalPSD(self, output, axis=0):
+        """!
+        Calculate signal PSD of a simulation output.
+
+        @param output Output structure obtained from a callc to runSimulation.
+        @param axis Axis over which to calculate signal PSD. 0 is time axis (constant channel), 1 is frequency axis (constant timeslice).
+
+        @returns signal_psd Signal PSD.
+        @returns freq_psd Frequencies at which the signal PSD is defined, in Hertz.
+        """
+
+        if axis == 0:
+            dstep = 1 / self.instrumentDict["freq_sample"]
+            N = self.observationDict["nTimes"]
+        else:
+            dstep = self.instrumentDict["freqs_filt"] / self.instrumentDict["R"]
+            N = self.instrumentDict["n_freqs"]
+
+        signal_psd = 2 * dstep / N * np.absolute(fft.fftshift(fft.fft(output["signal"], axis=axis)))**2
+        freq_signal = fft.fftshift(fft.fftfreq(N, dstep))
+        
+        return signal_psd, freq_signal
+
 

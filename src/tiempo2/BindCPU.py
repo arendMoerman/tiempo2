@@ -64,13 +64,13 @@ def runTiEMPO2(instrument, telescope, atmosphere, source, simparams):
     TBUtils.allfillSource(source, _source)
     TBUtils.allfillSimParams(simparams, _simparams)
 
-    TBUtils.allocateOutput(_output, instrument.get("freqs_filt").size, ctypes.c_double)
+    TBUtils.allocateOutput(_output, simparams["nTimes"], instrument["freqs_filt"].size, ctypes.c_double)
 
     args = [_instrument, _telescope, _atmosphere, _source, _simparams, _output]
 
     mgr.new_thread(target=lib.runTiEMPO2, args=args)
 
-    res = TBUtils.OutputStructToDict(_output, instrument.get("freqs_filt").shape, np_t=np.float64)
+    res = TBUtils.OutputStructToDict(_output, simparams["nTimes"], instrument["freqs_filt"].size, np_t=np.float64)
 
     return res
 

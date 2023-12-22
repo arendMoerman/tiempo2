@@ -68,15 +68,17 @@ struct Source {
 
 struct SimParams {
     double t_obs;       /**< Observation time in seconds.*/
+    int nTimes;         /**< Total number of time calculations.*/
     int nThreads;       /**< Number of threads to use for computation.*/
     double t0;          /**< Starting time of simulation. If not given will default to 0.*/
+    int use_noise;      /**< Whether to add photon noise. For real life situations, this should be 1. Only set to 0 for debug purposes.*/
 };
 
 struct Output {
-    double *P_ON;       /**< Output integrated power on-source.*/
-    double *P_OFF_L;    /**< Output integrated power off-source, nod A.*/
-    double *P_OFF_R;    /**< Output integrated power off-source, nod B.*/
-    double *times;      /**< Total time spent on-source, off-source (nod A) and off-source (nod B).*/           
+    double *signal;     /**< Timestream of output signal, time = slow axis, frequency = fast axis.*/
+    double *Az;         /**< Timestream of Azimuth angle, in degrees.*/
+    double *El;         /**< Timestream of Elevation angle, in degrees.*/
+    int *flag;          /**< Timestream of flags specifying chop/nod position. 0 for ON, 1 for OFF-RIGHT, 2 for OFF-LEFT.*/           
 };
 
 // Local structs - for use internally

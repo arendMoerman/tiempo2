@@ -97,42 +97,48 @@ def allfillSimParams(SPDict, SPStruct):
     @param SPStruct Struct to be filled and passed to ctypes.
     """
     SPStruct.t_obs = ctypes.c_double(SPDict["t_obs"])
+    SPStruct.nTimes = ctypes.c_int(SPDict["nTimes"])
     SPStruct.nThreads = ctypes.c_int(SPDict["nThreads"])
     SPStruct.t0 = ctypes.c_double(SPDict["t0"])
+    SPStruct.use_noise = ctypes.c_int(SPDict["use_noise"])
 
-def allocateOutput(OutputStruct, size, ct_t):
+def allocateOutput(OutputStruct, size_t, size_f, ct_t):
     """!
     Allocate memory for an output struct.
 
     @param OutputStruct Struct to be allocated and passed to ctypes.
-    @param size Size of arrays to be allocated.
+    @param size_t Number of time evaluations.
+    @param size_f Number of channels in filterbank.
     @param ct_t Ctypes type of array.
     """
-    fill = np.zeros(size)
-    OutputStruct.P_ON = (ct_t * size)(*(fill.tolist()))
-    OutputStruct.P_OFF_L = (ct_t * size)(*(fill.tolist()))
-    OutputStruct.P_OFF_R = (ct_t * size)(*(fill.tolist()))
-    OutputStruct.times = (ct_t * 3)(0, 0, 0)
+    
+    fill_sig = np.zeros(size_t * size_f)
+    fill_t = np.zeros(size_t)
 
-def OutputStructToDict(OutputStruct, shape, np_t):
+    OutputStruct.signal = (ct_t * (size_t * size_f))(*(fill_sig.tolist()))
+    OutputStruct.Az = (ct_t * size_t)(*(fill_t.tolist()))
+    OutputStruct.El = (ct_t * size_t)(*(fill_t.tolist()))
+    OutputStruct.flag = (ctypes.c_int * size_t)(*(fill_t.astype(int).tolist()))
+
+
+def OutputStructToDict(OutputStruct, size_t, size_f, np_t):
     """!
     Convert an output struct to a dictionary.
 
     @param OutputStruct Struct filled with output.
-    @param shape Shape of resulting arrays in dictionary.
+    @param size_t Number of time evaluations.
+    @param size_f Number of channels in filterbank.
     @param np_t Numpy type of array elements.
     """
 
-    on = np.ctypeslib.as_array(OutputStruct.P_ON, shape=shape).astype(np_t)
-    off_l = np.ctypeslib.as_array(OutputStruct.P_OFF_L, shape=shape).astype(np_t)
-    off_r = np.ctypeslib.as_array(OutputStruct.P_OFF_R, shape=shape).astype(np_t)
-    times = np.ctypeslib.as_array(OutputStruct.times, shape=(3,)).astype(np_t)
+    sig_shape = (size_t, size_f)
+    t_shape = (size_t,)
 
     OutputDict = {
-            "P_ON"      : on,
-            "P_OFF_L"   : off_l,
-            "P_OFF_R"   : off_r,
-            "times"     : times,
-            }
+    "signal" : np.ctypeslib.as_array(OutputStruct.signal, shape=sig_shape).astype(np_t),
+    "Az" : np.ctypeslib.as_array(OutputStruct.Az, shape=t_shape).astype(np_t),
+    "El" : np.ctypeslib.as_array(OutputStruct.El, shape=t_shape).astype(np_t),
+    "flag" : np.ctypeslib.as_array(OutputStruct.flag, shape=t_shape).astype(ctypes.c_int),
+    }
 
     return OutputDict
