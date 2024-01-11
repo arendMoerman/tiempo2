@@ -117,9 +117,15 @@ Functions</h2></td></tr>
 <tr class="memitem:aa3747f06e52674ab94a2bbf1f4b1dbfd"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="BindCPU_8py.html#aa3747f06e52674ab94a2bbf1f4b1dbfd">tiempo2.BindCPU.loadTiEMPO2lib</a> ()</td></tr>
 <tr class="memdesc:aa3747f06e52674ab94a2bbf1f4b1dbfd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Load the TiEMPO2 shared library.  <br /></td></tr>
 <tr class="separator:aa3747f06e52674ab94a2bbf1f4b1dbfd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a154a155c119b5e54d99fde3549c836d5"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="BindCPU_8py.html#a154a155c119b5e54d99fde3549c836d5">tiempo2.BindCPU.loadTiEMPO2lib_CUDA</a> ()</td></tr>
+<tr class="memdesc:a154a155c119b5e54d99fde3549c836d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Load the TiEMPO2 shared library.  <br /></td></tr>
+<tr class="separator:a154a155c119b5e54d99fde3549c836d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad006ca3489b08e841587c45cdbaefdb8"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="BindCPU_8py.html#ad006ca3489b08e841587c45cdbaefdb8">tiempo2.BindCPU.runTiEMPO2</a> (instrument, telescope, atmosphere, source, simparams)</td></tr>
 <tr class="memdesc:ad006ca3489b08e841587c45cdbaefdb8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Binding for running the TiEMPO2 simulation.  <br /></td></tr>
 <tr class="separator:ad006ca3489b08e841587c45cdbaefdb8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a737c984d7beeefe8345e594f7fa29dea"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="BindCPU_8py.html#a737c984d7beeefe8345e594f7fa29dea">tiempo2.BindCPU.runTiEMPO2_CUDA</a> (instrument, telescope, atmosphere, source, simparams)</td></tr>
+<tr class="memdesc:a737c984d7beeefe8345e594f7fa29dea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Binding for running the TiEMPO2 simulation on GPU.  <br /></td></tr>
+<tr class="separator:a737c984d7beeefe8345e594f7fa29dea"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Bindings for the ctypes interface for TiEMPO2. </p>
@@ -132,6 +138,27 @@ Functions</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">def tiempo2.BindCPU.loadTiEMPO2lib </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Load the TiEMPO2 shared library. </p>
+<p>Will detect the operating system and link the library accordingly.</p>
+<dl class="section return"><dt>Returns</dt><dd>lib The ctypes library containing the C/C++ functions. </dd></dl>
+
+</div>
+</div>
+<a id="a154a155c119b5e54d99fde3549c836d5" name="a154a155c119b5e54d99fde3549c836d5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a154a155c119b5e54d99fde3549c836d5">&#9670;&#160;</a></span>loadTiEMPO2lib_CUDA()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def tiempo2.BindCPU.loadTiEMPO2lib_CUDA </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -190,6 +217,64 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Binding for running the TiEMPO2 simulation. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">instrument</td><td>Dictionary containing instrument parameters. </td></tr>
+    <tr><td class="paramname">telescope</td><td>Dictionary containing telescope parameters. </td></tr>
+    <tr><td class="paramname">atmosphere</td><td>Dictionary containing atmosphere parameters. </td></tr>
+    <tr><td class="paramname">source</td><td>Dictionary containing astronomical source parameters. </td></tr>
+    <tr><td class="paramname">simparams</td><td>Dictionary containing simulation parameters. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a737c984d7beeefe8345e594f7fa29dea" name="a737c984d7beeefe8345e594f7fa29dea"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a737c984d7beeefe8345e594f7fa29dea">&#9670;&#160;</a></span>runTiEMPO2_CUDA()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def tiempo2.BindCPU.runTiEMPO2_CUDA </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>instrument</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>telescope</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>atmosphere</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>source</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>simparams</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Binding for running the TiEMPO2 simulation on GPU. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">instrument</td><td>Dictionary containing instrument parameters. </td></tr>

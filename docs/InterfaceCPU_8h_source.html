@@ -108,42 +108,53 @@ $(document).ready(function(){initNavTree('InterfaceCPU_8h_source.html',''); init
 <div class="contents">
 <a href="InterfaceCPU_8h.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a id="l00001" name="l00001"></a><span class="lineno">    1</span><span class="comment">/*! \file InterfaceCPU.h</span></div>
 <div class="line"><a id="l00002" name="l00002"></a><span class="lineno">    2</span><span class="comment">    \brief Declarations of library functions for simulations on CPU.</span></div>
-<div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="comment"></span> </div>
-<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="comment">*/</span></div>
+<div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="comment">*/</span></div>
+<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span> </div>
 <div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span><span class="preprocessor">#include &lt;thread&gt;</span></div>
 <div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span><span class="preprocessor">#include &lt;vector&gt;</span></div>
-<div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span> </div>
-<div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span><span class="preprocessor">#include &quot;<a class="code" href="InterpUtils_8h.html">InterpUtils.h</a>&quot;</span></div>
-<div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span><span class="preprocessor">#include &quot;<a class="code" href="Structs_8h.html">Structs.h</a>&quot;</span></div>
-<div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span><span class="preprocessor">#include &quot;<a class="code" href="Scan_8h.html">Scan.h</a>&quot;</span></div>
-<div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span> </div>
-<div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span><span class="preprocessor">#ifdef _WIN32</span></div>
-<div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span><span class="preprocessor">#   define TIEMPO2_DLL __declspec(dllexport)</span></div>
-<div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span><span class="preprocessor">#else</span></div>
-<div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span><span class="preprocessor">#   define TIEMPO2_DLL</span></div>
-<div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span> </div>
-<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span><span class="preprocessor">#ifndef __InterfaceCPU_h</span></div>
-<div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span><span class="preprocessor">#define __InterfaceCPU_h</span></div>
-<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span> </div>
-<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="keyword">extern</span> <span class="stringliteral">&quot;C&quot;</span></div>
-<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span>{</div>
-<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span>    TIEMPO2_DLL <span class="keywordtype">void</span> <a class="code hl_function" href="BindCPU_8py.html#ad006ca3489b08e841587c45cdbaefdb8">runTiEMPO2</a>(<a class="code hl_struct" href="structInstrument.html">Instrument</a> instrument, <a class="code hl_struct" href="structTelescope.html">Telescope</a> telescope, <a class="code hl_struct" href="structAtmosphere.html">Atmosphere</a> atmosphere, <a class="code hl_struct" href="structSource.html">Source</a> source, <a class="code hl_struct" href="structSimParams.html">SimParams</a> simparams);</div>
-<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span> </div>
-<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span>    TIEMPO2_DLL <span class="keywordtype">void</span> parallelJobs(<a class="code hl_struct" href="structInstrument.html">Instrument</a> instrument, <a class="code hl_struct" href="structTelescope.html">Telescope</a> telescope, <a class="code hl_struct" href="structAtmosphere.html">Atmosphere</a> atmosphere, <a class="code hl_struct" href="structSource.html">Source</a> source, <span class="keywordtype">int</span> start, <span class="keywordtype">int</span> stop);</div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span> </div>
-<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span> </div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>}</div>
-<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="preprocessor">#endif</span></div>
-<div class="ttc" id="aBindCPU_8py_html_ad006ca3489b08e841587c45cdbaefdb8"><div class="ttname"><a href="BindCPU_8py.html#ad006ca3489b08e841587c45cdbaefdb8">tiempo2.BindCPU.runTiEMPO2</a></div><div class="ttdeci">def runTiEMPO2(instrument, telescope, atmosphere, source, simparams)</div><div class="ttdoc">Binding for running the TiEMPO2 simulation.</div><div class="ttdef"><b>Definition:</b> BindCPU.py:39</div></div>
+<div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span><span class="preprocessor">#include &lt;random&gt;</span></div>
+<div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span> </div>
+<div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span><span class="preprocessor">#include &quot;<a class="code" href="InterpUtils_8h.html">InterpUtils.h</a>&quot;</span></div>
+<div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span><span class="preprocessor">#include &quot;<a class="code" href="Structs_8h.html">Structs.h</a>&quot;</span></div>
+<div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span><span class="preprocessor">#include &quot;<a class="code" href="Scan_8h.html">Scan.h</a>&quot;</span></div>
+<div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span> </div>
+<div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span><span class="preprocessor">#ifdef _WIN32</span></div>
+<div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span><span class="preprocessor">#   define TIEMPO2_DLL __declspec(dllexport)</span></div>
+<div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span><span class="preprocessor">#else</span></div>
+<div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span><span class="preprocessor">#   define TIEMPO2_DLL</span></div>
+<div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span> </div>
+<div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span><span class="preprocessor">#ifndef __InterfaceCPU_h</span></div>
+<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="preprocessor">#define __InterfaceCPU_h</span></div>
+<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span> </div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#define SI_TO_MJY               1E20 </span><span class="comment">/* SI to MJy*/</span><span class="preprocessor"></span></div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span> </div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#define PI 3.14159265358979323846  </span><span class="comment">/* pi */</span><span class="preprocessor"></span></div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="preprocessor">#define CL 299792458 </span><span class="comment">/* Speed of light */</span><span class="preprocessor"></span></div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="preprocessor">#define HP 6.62607015e-34</span></div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="preprocessor">#define KB 1.380649e-23</span></div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span> </div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="keyword">extern</span> <span class="stringliteral">&quot;C&quot;</span></div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>{</div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>    TIEMPO2_DLL <span class="keywordtype">void</span> <a class="code hl_function" href="BindCPU_8py.html#ad006ca3489b08e841587c45cdbaefdb8">runTiEMPO2</a>(<a class="code hl_struct" href="structInstrument.html">Instrument</a> *instrument, <a class="code hl_struct" href="structTelescope.html">Telescope</a> *telescope, <a class="code hl_struct" href="structAtmosphere.html">Atmosphere</a> *atmosphere, <a class="code hl_struct" href="structSource.html">Source</a> *source, </div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>        <a class="code hl_struct" href="structSimParams.html">SimParams</a> *simparams, <a class="code hl_struct" href="structOutput.html">Output</a> *output);</div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span> </div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>    TIEMPO2_DLL <span class="keywordtype">void</span> parallelJobs(<a class="code hl_struct" href="structInstrument.html">Instrument</a> *instrument, <a class="code hl_struct" href="structTelescope.html">Telescope</a> *telescope, <a class="code hl_struct" href="structAtmosphere.html">Atmosphere</a> *atmosphere, <a class="code hl_struct" href="structSource.html">Source</a> *source, <a class="code hl_struct" href="structSimParams.html">SimParams</a>* simparams, <a class="code hl_struct" href="structOutput.html">Output</a>* output, </div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>        <a class="code hl_struct" href="structEffs.html">Effs</a>* effs, <span class="keywordtype">int</span> start, <span class="keywordtype">int</span> stop, <span class="keywordtype">double</span> dt, <span class="keywordtype">int</span> num_AzEl, </div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>        <span class="keywordtype">double</span>* I_atm, <span class="keywordtype">double</span>* I_gnd, <span class="keywordtype">double</span>* I_tel, <span class="keywordtype">int</span> threadIdx);</div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>}</div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span><span class="preprocessor">#endif</span></div>
+<div class="ttc" id="aBindCPU_8py_html_ad006ca3489b08e841587c45cdbaefdb8"><div class="ttname"><a href="BindCPU_8py.html#ad006ca3489b08e841587c45cdbaefdb8">tiempo2.BindCPU.runTiEMPO2</a></div><div class="ttdeci">def runTiEMPO2(instrument, telescope, atmosphere, source, simparams)</div><div class="ttdoc">Binding for running the TiEMPO2 simulation.</div><div class="ttdef"><b>Definition:</b> BindCPU.py:63</div></div>
 <div class="ttc" id="aInterpUtils_8h_html"><div class="ttname"><a href="InterpUtils_8h.html">InterpUtils.h</a></div><div class="ttdoc">Utilities for linear interpolation.</div></div>
 <div class="ttc" id="aScan_8h_html"><div class="ttname"><a href="Scan_8h.html">Scan.h</a></div><div class="ttdoc">File containing scanning patterns and their implementations.</div></div>
 <div class="ttc" id="aStructs_8h_html"><div class="ttname"><a href="Structs_8h.html">Structs.h</a></div><div class="ttdoc">Data structures for receiving data from Python interface.</div></div>
-<div class="ttc" id="astructAtmosphere_html"><div class="ttname"><a href="structAtmosphere.html">Atmosphere</a></div><div class="ttdef"><b>Definition:</b> Structs.h:34</div></div>
-<div class="ttc" id="astructInstrument_html"><div class="ttname"><a href="structInstrument.html">Instrument</a></div><div class="ttdef"><b>Definition:</b> Structs.h:15</div></div>
-<div class="ttc" id="astructSimParams_html"><div class="ttname"><a href="structSimParams.html">SimParams</a></div><div class="ttdef"><b>Definition:</b> Structs.h:59</div></div>
-<div class="ttc" id="astructSource_html"><div class="ttname"><a href="structSource.html">Source</a></div><div class="ttdef"><b>Definition:</b> Structs.h:50</div></div>
-<div class="ttc" id="astructTelescope_html"><div class="ttname"><a href="structTelescope.html">Telescope</a></div><div class="ttdef"><b>Definition:</b> Structs.h:23</div></div>
+<div class="ttc" id="astructAtmosphere_html"><div class="ttname"><a href="structAtmosphere.html">Atmosphere</a></div><div class="ttdef"><b>Definition:</b> Structs.h:41</div></div>
+<div class="ttc" id="astructEffs_html"><div class="ttname"><a href="structEffs.html">Effs</a></div><div class="ttdef"><b>Definition:</b> Structs.h:85</div></div>
+<div class="ttc" id="astructInstrument_html"><div class="ttname"><a href="structInstrument.html">Instrument</a></div><div class="ttdef"><b>Definition:</b> Structs.h:17</div></div>
+<div class="ttc" id="astructOutput_html"><div class="ttname"><a href="structOutput.html">Output</a></div><div class="ttdef"><b>Definition:</b> Structs.h:77</div></div>
+<div class="ttc" id="astructSimParams_html"><div class="ttname"><a href="structSimParams.html">SimParams</a></div><div class="ttdef"><b>Definition:</b> Structs.h:69</div></div>
+<div class="ttc" id="astructSource_html"><div class="ttname"><a href="structSource.html">Source</a></div><div class="ttdef"><b>Definition:</b> Structs.h:57</div></div>
+<div class="ttc" id="astructTelescope_html"><div class="ttname"><a href="structTelescope.html">Telescope</a></div><div class="ttdef"><b>Definition:</b> Structs.h:28</div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->

@@ -133,25 +133,31 @@ Macros</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a3f098b0119c200f0583d9d66146093d6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structAzEl.html">AzEl</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Scan_8h.html#a3f098b0119c200f0583d9d66146093d6">scanPoint</a> (<a class="el" href="structAzEl.html">AzEl</a> center, bool chop, double sep=0.)</td></tr>
-<tr class="separator:a3f098b0119c200f0583d9d66146093d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aea4a7b82d457a3302615ad9425e2ac7a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structxy__atm.html">xy_atm</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Scan_8h.html#aea4a7b82d457a3302615ad9425e2ac7a">convertAnglesToSpatialAtm</a> (<a class="el" href="structAzEl.html">AzEl</a> angles, double h_column)</td></tr>
-<tr class="separator:aea4a7b82d457a3302615ad9425e2ac7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1cdbadfef6dfd2e8fb9448c2dfe53df0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Scan_8h.html#a1cdbadfef6dfd2e8fb9448c2dfe53df0">scanPoint</a> (<a class="el" href="structAzEl.html">AzEl</a> *center, <a class="el" href="structAzEl.html">AzEl</a> *out, bool chop, double sep=0.)</td></tr>
+<tr class="separator:a1cdbadfef6dfd2e8fb9448c2dfe53df0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afa79f7ffbbb914a3f9fa90af78956262"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Scan_8h.html#afa79f7ffbbb914a3f9fa90af78956262">convertAnglesToSpatialAtm</a> (<a class="el" href="structAzEl.html">AzEl</a> *angles, <a class="el" href="structxy__atm.html">xy_atm</a> *out, double h_column)</td></tr>
+<tr class="separator:afa79f7ffbbb914a3f9fa90af78956262"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>File containing scanning patterns and their implementations. </p>
 </div><h2 class="groupheader">Function Documentation</h2>
-<a id="aea4a7b82d457a3302615ad9425e2ac7a" name="aea4a7b82d457a3302615ad9425e2ac7a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aea4a7b82d457a3302615ad9425e2ac7a">&#9670;&#160;</a></span>convertAnglesToSpatialAtm()</h2>
+<a id="afa79f7ffbbb914a3f9fa90af78956262" name="afa79f7ffbbb914a3f9fa90af78956262"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afa79f7ffbbb914a3f9fa90af78956262">&#9670;&#160;</a></span>convertAnglesToSpatialAtm()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="structxy__atm.html">xy_atm</a> convertAnglesToSpatialAtm </td>
+          <td class="memname">void convertAnglesToSpatialAtm </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="structAzEl.html">AzEl</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="structAzEl.html">AzEl</a> *&#160;</td>
           <td class="paramname"><em>angles</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structxy__atm.html">xy_atm</a> *&#160;</td>
+          <td class="paramname"><em>out</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -166,29 +172,37 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Convert an azimuth and elevation angle on-sky to a position on atmospheric screen.</p>
+<p>Calculate new Azimuth-Elevation co-ordinate, accoding to chop position.</p>
+<p>This function just "scans" a single point, so seems sort of pointless. Still implemented for completeness.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">angles</td><td>Struct containing azimuth and elevation angles. </td></tr>
-    <tr><td class="paramname">h_column</td><td>Reference height of atmospheric column.</td></tr>
+    <tr><td class="paramname">center</td><td>Az-El co-ordinate of point to observe, w.r.t. source Az-El. </td></tr>
+    <tr><td class="paramname">out</td><td>Container for storing output Az-El co-ordinate. </td></tr>
+    <tr><td class="paramname">chop</td><td>Whether chopper is in A (false) or B (true). </td></tr>
+    <tr><td class="paramname">sep</td><td>Angular throw between chop A and B, in degrees. </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>out Struct containing x and y-coordinates on atmosphere corresponding to supplied angles. </dd></dl>
 
 </div>
 </div>
-<a id="a3f098b0119c200f0583d9d66146093d6" name="a3f098b0119c200f0583d9d66146093d6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3f098b0119c200f0583d9d66146093d6">&#9670;&#160;</a></span>scanPoint()</h2>
+<a id="a1cdbadfef6dfd2e8fb9448c2dfe53df0" name="a1cdbadfef6dfd2e8fb9448c2dfe53df0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1cdbadfef6dfd2e8fb9448c2dfe53df0">&#9670;&#160;</a></span>scanPoint()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="structAzEl.html">AzEl</a> scanPoint </td>
+          <td class="memname">void scanPoint </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="structAzEl.html">AzEl</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="structAzEl.html">AzEl</a> *&#160;</td>
           <td class="paramname"><em>center</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structAzEl.html">AzEl</a> *&#160;</td>
+          <td class="paramname"><em>out</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -209,16 +223,17 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Obtain azimuth and elevation angle corresponding to point on sky.</p>
+<p>Calculate new Azimuth-Elevation co-ordinate, accoding to chop position.</p>
+<p>This function just "scans" a single point, so seems sort of pointless. Still implemented for completeness.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">center</td><td>Struct containing center azimuth and elevation angles. If chopping, corresponds to path containing source. </td></tr>
-    <tr><td class="paramname">chop</td><td>Whether to chop or not. </td></tr>
-    <tr><td class="paramname">sep</td><td>If chopping, angular separation between the two paths.</td></tr>
+    <tr><td class="paramname">center</td><td>Az-El co-ordinate of point to observe, w.r.t. source Az-El. </td></tr>
+    <tr><td class="paramname">out</td><td>Container for storing output Az-El co-ordinate. </td></tr>
+    <tr><td class="paramname">chop</td><td>Whether chopper is in A (false) or B (true). </td></tr>
+    <tr><td class="paramname">sep</td><td>Angular throw between chop A and B, in degrees. </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>out Struct containing azimuth and elevation angles of point on sky. </dd></dl>
 
 </div>
 </div>

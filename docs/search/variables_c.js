@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['y_5fatm_0',['y_atm',['../structAtmosphere.html#ace5ff44b3ce060b4ee9974af3ad33a1e',1,'Atmosphere']]],
-  ['yel_1',['yEl',['../structxy__atm.html#a6b0467aa1d714d5e62eda85ba7137ead',1,'xy_atm']]]
+  ['use_5fnoise_0',['use_noise',['../structCuSimParams.html#af056f01810e1deb7a9bfc5a26f2b863d',1,'CuSimParams::use_noise()'],['../structSimParams.html#a04a16adec545657b640ff75ac95747e4',1,'SimParams::use_noise()']]]
 ];

@@ -12,6 +12,7 @@ telescope = {
         "eta_ap"        : "Aperture efficiency of telescope, as function of instrument frequencies. If a single number is given, assume same aperture efficiency across entire frequency range.",
         "eta_mir"       : "Mirror efficiency.",
         "eta_fwd"       : "Front-to-back efficiency.",
+        "chop_mode"     : "How to chop. Can choose 'none', 'direct', 'abba'."
         "freq_chop"     : "Chopping frequency in Hertz. If None, no chopping.",
         "dAz_chop"      : "Angular separation between chopping paths.",
         }

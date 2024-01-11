@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 
 #def generateAtmospherePWV(prefix_filename, path_data, pwv0, pwvgrid, max_windspeed, obs_duration, dish_radius,
  #           max_num_strips=1, x_length_strip=0, OFFdist=233.6, Rscan=60., EL0=60., h_column=1000., load_spline=False):
-def generateAtmospherePWV(atmosphereDict, telescopeDict):
+def generateAtmospherePWV(atmosphereDict, telescopeDict, clog):
     """!   
     Generation of PWV maps from ARIS data
 
@@ -32,6 +32,9 @@ def generateAtmospherePWV(atmosphereDict, telescopeDict):
     Rtel = telescopeDict.get("Dtel") / 2
 
     flist = os.path.join(path, filename + '.fits')
+
+    clog.info(f"Reading atmospheric screen from: {flist}")
+
     if len(flist):
         Loadfits = True
     else:
@@ -73,14 +76,46 @@ def generateAtmospherePWV(atmosphereDict, telescopeDict):
     truncate = Rtel/std
    
     PWV_Gauss = gaussian_filter(PWV, std, mode='mirror', truncate=truncate)
+    
+    clog.info(f"Finished reading atmospheric screen.")
 
     return PWV_Gauss, nx, ny
 
-def readAtmTransmission():
+def readAtmTransmissionText():
+    """!
+    Parser for reading atmospheric transmission curves from text file.
+    """
+
+    dat_loc = os.path.join(os.path.dirname(__file__), "resources", "trans_data.dat")
+
+    with open(dat_loc, 'r') as file:
+        eta_atm = []
+        freqs = []
+
+        for line in file:
+            if line[0] == "#":
+                continue
+            elif line[0] == " ":
+                line = list(line.strip().split(" "))
+                while("" in line):
+                    line.remove("")
+                pwv_curve = np.array(line, dtype=np.float64)
+                continue
+            
+            line = list(line.strip().split(" "))
+            while("" in line):
+                line.remove("")
+            
+            eta_atm.append(np.array(line[1:]))
+            freqs.append(line[0])
+
+        freqs = np.array(freqs, dtype=np.float64)
+        eta_atm = np.array(eta_atm, dtype=np.float64)
+    return eta_atm, freqs, pwv_curve
+
+def readAtmTransmissionCSV():
     """!
     Parser for reading atmospheric transmission curves from csv file.
-
-    @param line Line of text 
     """
     csv_loc = os.path.join(os.path.dirname(__file__), "resources", "atm.csv")
 

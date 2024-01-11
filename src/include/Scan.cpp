@@ -1,27 +1,25 @@
+/*! \file Scan.cpp
+ * \brief Definition of scanning patterns and their implementations.
+ **/
+
 #include "Scan.h"
 
-AzEl scanPoint(AzEl center, bool chop, double sep) {
-    AzEl out;
-    
+void scanPoint(AzEl* center, AzEl* out, bool chop, double sep) {
     double offset = 0.;
     
     if (chop) {
         offset = sep;
     }    
     
-    out.Az = center.Az + offset;
-    out.El = center.El;
-
-    return out;
+    out->Az = center->Az + offset;
+    out->El = center->El;
 }
 
-xy_atm convertAnglesToSpatialAtm(AzEl angles, double h_column) {
-    xy_atm out;
-
-    double coord = tan(M_PI * angles.Az / 180.) * h_column;
-    out.xAz = coord;
-    coord = tan(M_PI * angles.El / 180.) * h_column;
-    out.yEl = coord;
-
-    return out;
+void convertAnglesToSpatialAtm(AzEl* angles, xy_atm* out, double h_column) {
+    
+    double coord = tan(M_PI * angles->Az / 180.) * h_column;
+    
+    out->xAz = coord;
+    coord = tan(M_PI * angles->El / 180.) * h_column;
+    out->yEl = coord;
 }

@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['xy_5fatm_0',['xy_atm',['../structxy__atm.html',1,'']]]
+  ['manager_0',['Manager',['../classtiempo2_1_1Threadmgr_1_1Manager.html',1,'tiempo2::Threadmgr']]]
 ];
