@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['x_5fatm_0',['x_atm',['../structAtmosphere.html#ace34111a265e23ee1fbdf41f95eea498',1,'Atmosphere']]],
-  ['xy_5fatm_1',['xy_atm',['../structxy__atm.html',1,'']]]
+  ['use_5fnoise_0',['use_noise',['../structCuSimParams.html#af056f01810e1deb7a9bfc5a26f2b863d',1,'CuSimParams::use_noise()'],['../structSimParams.html#a04a16adec545657b640ff75ac95747e4',1,'SimParams::use_noise()']]]
 ];

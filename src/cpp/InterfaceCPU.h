@@ -1,14 +1,14 @@
 /*! \file InterfaceCPU.h
     \brief Declarations of library functions for simulations on CPU.
 */
+
 #include <thread>
 #include <vector>
+#include <random>
 
 #include "InterpUtils.h"
 #include "Structs.h"
 #include "Scan.h"
-#include "Observe.h"
-#include "DrawGaussian.h"
 
 #ifdef _WIN32
 #   define TIEMPO2_DLL __declspec(dllexport)
@@ -21,6 +21,11 @@
 
 #define SI_TO_MJY               1E20 /* SI to MJy*/
 
+#define PI 3.14159265358979323846  /* pi */
+#define CL 299792458 /* Speed of light */
+#define HP 6.62607015e-34
+#define KB 1.380649e-23
+
 extern "C"
 {
     TIEMPO2_DLL void runTiEMPO2(Instrument *instrument, Telescope *telescope, Atmosphere *atmosphere, Source *source, 
@@ -28,6 +33,6 @@ extern "C"
 
     TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmosphere *atmosphere, Source *source, SimParams* simparams, Output* output, 
         Effs* effs, int start, int stop, double dt, int num_AzEl, 
-        double* slice_container, double* I_atm, double* I_gnd, double* I_tel, int threadIdx);
+        double* I_atm, double* I_gnd, double* I_tel, int threadIdx);
 }
 #endif

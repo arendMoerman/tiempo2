@@ -114,11 +114,10 @@ $(document).ready(function(){initNavTree('InterfaceCPU_8h.html',''); initResizab
 <a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;thread&gt;</code><br />
 <code>#include &lt;vector&gt;</code><br />
+<code>#include &lt;random&gt;</code><br />
 <code>#include &quot;<a class="el" href="InterpUtils_8h_source.html">InterpUtils.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="Structs_8h_source.html">Structs.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="Scan_8h_source.html">Scan.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="Observe_8h_source.html">Observe.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="DrawGaussian_8h_source.html">DrawGaussian.h</a>&quot;</code><br />
 </div>
 <p><a href="InterfaceCPU_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
@@ -133,15 +132,27 @@ Macros</h2></td></tr>
 <tr class="memitem:a34e4070c4ba739be35c82d123c60266c"><td class="memItemLeft" align="right" valign="top"><a id="a34e4070c4ba739be35c82d123c60266c" name="a34e4070c4ba739be35c82d123c60266c"></a>
 #define&#160;</td><td class="memItemRight" valign="bottom"><b>SI_TO_MJY</b>&#160;&#160;&#160;1E20 /* SI to MJy*/</td></tr>
 <tr class="separator:a34e4070c4ba739be35c82d123c60266c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a598a3330b3c21701223ee0ca14316eca"><td class="memItemLeft" align="right" valign="top"><a id="a598a3330b3c21701223ee0ca14316eca" name="a598a3330b3c21701223ee0ca14316eca"></a>
+#define&#160;</td><td class="memItemRight" valign="bottom"><b>PI</b>&#160;&#160;&#160;3.14159265358979323846  /* pi */</td></tr>
+<tr class="separator:a598a3330b3c21701223ee0ca14316eca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8f4ea5fa21d42f950b5f95a91e9ff227"><td class="memItemLeft" align="right" valign="top"><a id="a8f4ea5fa21d42f950b5f95a91e9ff227" name="a8f4ea5fa21d42f950b5f95a91e9ff227"></a>
+#define&#160;</td><td class="memItemRight" valign="bottom"><b>CL</b>&#160;&#160;&#160;299792458 /* Speed of light */</td></tr>
+<tr class="separator:a8f4ea5fa21d42f950b5f95a91e9ff227"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a25c96de86d72a52c95e4e8c14ccd4f59"><td class="memItemLeft" align="right" valign="top"><a id="a25c96de86d72a52c95e4e8c14ccd4f59" name="a25c96de86d72a52c95e4e8c14ccd4f59"></a>
+#define&#160;</td><td class="memItemRight" valign="bottom"><b>HP</b>&#160;&#160;&#160;6.62607015e-34</td></tr>
+<tr class="separator:a25c96de86d72a52c95e4e8c14ccd4f59"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1841fd1a462d245d8c73dce55e2f45da"><td class="memItemLeft" align="right" valign="top"><a id="a1841fd1a462d245d8c73dce55e2f45da" name="a1841fd1a462d245d8c73dce55e2f45da"></a>
+#define&#160;</td><td class="memItemRight" valign="bottom"><b>KB</b>&#160;&#160;&#160;1.380649e-23</td></tr>
+<tr class="separator:a1841fd1a462d245d8c73dce55e2f45da"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:a23d298ef113068320285c52ae77a32cd"><td class="memItemLeft" align="right" valign="top"><a id="a23d298ef113068320285c52ae77a32cd" name="a23d298ef113068320285c52ae77a32cd"></a>
 TIEMPO2_DLL void&#160;</td><td class="memItemRight" valign="bottom"><b>runTiEMPO2</b> (<a class="el" href="structInstrument.html">Instrument</a> *instrument, <a class="el" href="structTelescope.html">Telescope</a> *telescope, <a class="el" href="structAtmosphere.html">Atmosphere</a> *atmosphere, <a class="el" href="structSource.html">Source</a> *source, <a class="el" href="structSimParams.html">SimParams</a> *simparams, <a class="el" href="structOutput.html">Output</a> *output)</td></tr>
 <tr class="separator:a23d298ef113068320285c52ae77a32cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acf444d2424bacf14bd9334fee2974f0b"><td class="memItemLeft" align="right" valign="top"><a id="acf444d2424bacf14bd9334fee2974f0b" name="acf444d2424bacf14bd9334fee2974f0b"></a>
-TIEMPO2_DLL void&#160;</td><td class="memItemRight" valign="bottom"><b>parallelJobs</b> (<a class="el" href="structInstrument.html">Instrument</a> *instrument, <a class="el" href="structTelescope.html">Telescope</a> *telescope, <a class="el" href="structAtmosphere.html">Atmosphere</a> *atmosphere, <a class="el" href="structSource.html">Source</a> *source, <a class="el" href="structSimParams.html">SimParams</a> *simparams, <a class="el" href="structEffs.html">Effs</a> *effs, int start, int stop, double dt, int num_AzEl, double *P_nu, double *ret_on, double *ret_off_l, double *ret_off_r, double *slice_container, int *n_times, double *I_atm, double *I_gnd, double *I_tel)</td></tr>
-<tr class="separator:acf444d2424bacf14bd9334fee2974f0b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a54fc522d02c02d93fc6dde76ae5aef94"><td class="memItemLeft" align="right" valign="top"><a id="a54fc522d02c02d93fc6dde76ae5aef94" name="a54fc522d02c02d93fc6dde76ae5aef94"></a>
+TIEMPO2_DLL void&#160;</td><td class="memItemRight" valign="bottom"><b>parallelJobs</b> (<a class="el" href="structInstrument.html">Instrument</a> *instrument, <a class="el" href="structTelescope.html">Telescope</a> *telescope, <a class="el" href="structAtmosphere.html">Atmosphere</a> *atmosphere, <a class="el" href="structSource.html">Source</a> *source, <a class="el" href="structSimParams.html">SimParams</a> *simparams, <a class="el" href="structOutput.html">Output</a> *output, <a class="el" href="structEffs.html">Effs</a> *effs, int start, int stop, double dt, int num_AzEl, double *I_atm, double *I_gnd, double *I_tel, int threadIdx)</td></tr>
+<tr class="separator:a54fc522d02c02d93fc6dde76ae5aef94"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Declarations of library functions for simulations on CPU. </p>

@@ -1,4 +1,4 @@
-/*! \file
+/*! \file Scan.h
  * \brief File containing scanning patterns and their implementations.
  **/
 
@@ -21,24 +21,29 @@ struct xy_atm {
 };
 
 /**
- * Obtain azimuth and elevation angle corresponding to point on sky.
- *
- * @param center Struct containing center azimuth and elevation angles. If chopping, corresponds to path containing source.
- * @param chop Whether to chop or not.
- * @param sep If chopping, angular separation between the two paths.
- *
- * @returns out Struct containing azimuth and elevation angles of point on sky.
- **/
-AzEl scanPoint(AzEl center, bool chop, double sep = 0.);
+  Calculate new Azimuth-Elevation co-ordinate, accoding to chop position.
+
+  This function just "scans" a single point, so seems sort of pointless. 
+  Still implemented for completeness.
+
+  @param center Az-El co-ordinate of point to observe, w.r.t. source Az-El.
+  @param out Container for storing output Az-El co-ordinate.
+  @param chop Whether chopper is in A (false) or B (true).
+  @param sep Angular throw between chop A and B, in degrees.
+ */
+void scanPoint(AzEl* center, AzEl* out, bool chop, double sep = 0.);
 
 /**
- * Convert an azimuth and elevation angle on-sky to a position on atmospheric screen.
- *
- * @param angles Struct containing azimuth and elevation angles.
- * @param h_column Reference height of atmospheric column.
- *
- * @returns out Struct containing x and y-coordinates on atmosphere corresponding to supplied angles.
- **/
-xy_atm convertAnglesToSpatialAtm(AzEl angles, double h_column);
+  Calculate new Azimuth-Elevation co-ordinate, accoding to chop position.
+
+  This function just "scans" a single point, so seems sort of pointless. 
+  Still implemented for completeness.
+
+  @param center Az-El co-ordinate of point to observe, w.r.t. source Az-El.
+  @param out Container for storing output Az-El co-ordinate.
+  @param chop Whether chopper is in A (false) or B (true).
+  @param sep Angular throw between chop A and B, in degrees.
+ */
+void convertAnglesToSpatialAtm(AzEl* angles, xy_atm* out, double h_column);
 
 #endif

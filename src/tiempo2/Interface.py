@@ -13,11 +13,15 @@ import tiempo2.InputChecker as TCheck
 import tiempo2.Atmosphere as TAtm
 import tiempo2.BindCPU as TBCPU
 
+import psutil
 import logging
 from tiempo2.CustomLogger import CustomLogger
 
 logging.getLogger(__name__)
 
+MEMFRAC = 0.5
+MEMBUFF = MEMFRAC * psutil.virtual_memory().total
+print(MEMBUFF)
 class FieldError(Exception):
     """!
     Field error. Raised when a required field is not specified in an input dictionary. 
@@ -98,7 +102,7 @@ class Interface(object):
             errstr = f"Errors encountered in observation dictionary in fields :{errlist}."
             raise FieldError(errstr)
 
-    def runSimulation(self):
+    def runSimulation(self, device="CPU"):
         """!
         Start and run a simulation.
 
@@ -163,10 +167,26 @@ class Interface(object):
         #### INITIALISING ATMOSPHERE PARAMETERS ####
         PWV_atm, nx, ny = TAtm.generateAtmospherePWV(self.atmosphereDict, self.telescopeDict, self.clog)  
         eta_atm, freqs_atm, pwv_curve = TAtm.readAtmTransmissionText()        
-        
+      
+        #PWV_atm = np.ones((nx, ny)) * 0.1
+
+        fig, ax = pt.subplots(1,1)
+        ax.imshow(PWV_atm, aspect='auto')
+        pt.show()
+
         # At t=0, x=y=0 is in middle
         x_atm = (np.arange(0, nx) - ny/2)*self.atmosphereDict.get("dx")
         y_atm = (np.arange(0, ny) - ny/2)*self.atmosphereDict.get("dy")
+        
+        # Check if atmosphere screen is long enough for given time and windspeed
+        length_req = self.atmosphereDict.get("v_wind") * self.observationDict.get("t_obs")
+
+        if length_req > np.max(x_atm):
+            t_obs_new = np.floor(np.max(x_atm) / self.atmosphereDict.get("v_wind"))
+            self.clog.warning(f"Atmospheric screen too small for windspeed of {self.atmosphereDict.get('v_wind')} m/s and observation time of {self.observationDict.get('t_obs')} s. Reducing observation time to {t_obs_new} s.")
+
+            self.observationDict["t_obs"] = t_obs_new
+
         _atmDict = {
                 "Tatm"      : self.atmosphereDict.get("Tatm"),
                 "v_wind"    : self.atmosphereDict.get("v_wind"),
@@ -189,8 +209,15 @@ class Interface(object):
         self.telescopeDict["dAz_chop"] /= 3600
 
         self.clog.info("Starting observation.")
-        res = TBCPU.runTiEMPO2(self.instrumentDict, self.telescopeDict, 
+
+        if device == "CPU":
+            res = TBCPU.runTiEMPO2(self.instrumentDict, self.telescopeDict, 
                         _atmDict, _sourceDict, self.observationDict)
+        
+        elif device == "GPU":
+            res = TBCPU.runTiEMPO2_CUDA(self.instrumentDict, self.telescopeDict, 
+                        _atmDict, _sourceDict, self.observationDict)
+        
         end = time.time()        
         
         self.clog.info("\033[1;32m*** FINISHED TiEMPO2 SIMULATION ***")

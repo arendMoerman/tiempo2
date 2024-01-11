@@ -106,7 +106,7 @@ $(document).ready(function(){initNavTree('InterpUtils_8h_source.html',''); initR
   <div class="headertitle"><div class="title">InterpUtils.h</div></div>
 </div><!--header-->
 <div class="contents">
-<a href="InterpUtils_8h.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a id="l00001" name="l00001"></a><span class="lineno">    1</span><span class="comment">/*! \file</span></div>
+<a href="InterpUtils_8h.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a id="l00001" name="l00001"></a><span class="lineno">    1</span><span class="comment">/*! \file InterpUtils.h</span></div>
 <div class="line"><a id="l00002" name="l00002"></a><span class="lineno">    2</span><span class="comment"> * \brief Utilities for linear interpolation.</span></div>
 <div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="comment"> **/</span></div>
 <div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span> </div>
@@ -115,36 +115,38 @@ $(document).ready(function(){initNavTree('InterpUtils_8h_source.html',''); initR
 <div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span> </div>
 <div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span><span class="preprocessor">#ifndef __INTERPUTILS_H</span></div>
 <div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span><span class="preprocessor">#define __INTERPUTILS_H</span></div>
-<div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span> </div>
-<div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span><span class="comment">/*</span></div>
-<div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span><span class="comment"> * Find index of lower bound of interval containing some specified number.</span></div>
-<div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span><span class="comment"> *</span></div>
-<div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span><span class="comment"> * @param a Value to find interval for.</span></div>
-<div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span><span class="comment"> * @param arr Array of doubles, specifying interval start and ends. Note: should be complete interval, not a chunk.</span></div>
-<div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span><span class="comment"> * @param size_vals Size of array containing values.</span></div>
-<div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span><span class="comment"> * @param debug Run method in debug mode.</span></div>
-<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span><span class="comment"> *</span></div>
-<div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span><span class="comment"> * @returns idx Index of value in `arr&#39;, corresponding to lower bound of interval containing `a&#39;.</span></div>
-<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="comment"> **/</span></div>
-<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="keywordtype">int</span> findIndexLow(<span class="keywordtype">double</span> a, <span class="keywordtype">double</span> *arr, <span class="keywordtype">int</span> size_vals, <span class="keywordtype">bool</span> debug);</div>
-<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span> </div>
-<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="comment">/*</span></div>
-<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="comment"> * Linearly interpolate bivariate function.</span></div>
-<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="comment"> *</span></div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="comment"> * @param x0 Point in x to interpolate on.</span></div>
-<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="comment"> * @param y0 Point in y to interpolate on.</span></div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="comment"> * @param x Array of points representing x-coordinates.</span></div>
-<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="comment"> * @param y Array of points representing y-coordinates.</span></div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="comment"> * @param size_y Size of array containing y-coordinates.</span></div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="comment"> * @param vals Function values on grid spanning x and y.</span></div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span><span class="comment"> * @param size_vals Size of array containing values.</span></div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="comment"> * @param debug Run method in debug mode. Default is false and is passed to findIndexLow.</span></div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span><span class="comment"> * </span></div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span><span class="comment"> * @returns val_interp Interpolated value of function on x0 and y0.</span></div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span><span class="comment"> **/</span></div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span><span class="keywordtype">double</span> interpValue(<span class="keywordtype">double</span> x0, <span class="keywordtype">double</span> y0, <span class="keywordtype">double</span> *x, <span class="keywordtype">double</span> *y, <span class="keywordtype">int</span> size_x, <span class="keywordtype">int</span> size_y, <span class="keywordtype">double</span> *vals, <span class="keywordtype">bool</span> debug=<span class="keyword">false</span>);</div>
+<div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span><span class="comment"></span> </div>
+<div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span><span class="comment">/**</span></div>
+<div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span><span class="comment">  Find index of lower bound of interval containing some specified number.</span></div>
+<div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span><span class="comment"> </span></div>
+<div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span><span class="comment">  @param a Value to find interval for.</span></div>
+<div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span><span class="comment">  @param arr Array of doubles, specifying interval starts and ends. Note: should be complete interval, not a chunk.</span></div>
+<div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span><span class="comment">  @param size_vals Size of array containing values.</span></div>
+<div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span><span class="comment">  @param debug Run method in debug mode.</span></div>
+<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span><span class="comment"> </span></div>
+<div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span><span class="comment">  @returns idx Index of value in `arr&#39;, corresponding to lower bound of interval containing `a&#39;.</span></div>
+<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="comment"> */</span></div>
+<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="keywordtype">int</span> <a class="code hl_function" href="InterpUtils_8h.html#a86719b3817013e6df55f2a0ccca49afb">findIndexLow</a>(<span class="keywordtype">double</span> a, <span class="keywordtype">double</span> *arr, <span class="keywordtype">int</span> size_vals, <span class="keywordtype">bool</span> debug);</div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="comment"></span> </div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="comment">/**</span></div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="comment">  Linearly interpolate bivariate function.</span></div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="comment"> </span></div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="comment">  @param x0 Point in x to interpolate on.</span></div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="comment">  @param y0 Point in y to interpolate on.</span></div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="comment">  @param x Array of points representing x-coordinates.</span></div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="comment">  @param y Array of points representing y-coordinates.</span></div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="comment">  @param size_y Size of array containing y-coordinates.</span></div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="comment">  @param vals Function values on grid spanning x and y.</span></div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span><span class="comment">  @param size_vals Size of array containing values.</span></div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="comment">  @param debug Run method in debug mode. Default is false and is passed to findIndexLow.</span></div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span><span class="comment">  </span></div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span><span class="comment">  @returns val_interp Interpolated value of function on x0 and y0.</span></div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span><span class="comment"> */</span></div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span><span class="keywordtype">double</span> <a class="code hl_function" href="InterpUtils_8h.html#a38015dfa82acb574207d53e8b2671299">interpValue</a>(<span class="keywordtype">double</span> x0, <span class="keywordtype">double</span> y0, <span class="keywordtype">double</span> *x, <span class="keywordtype">double</span> *y, <span class="keywordtype">int</span> size_x, <span class="keywordtype">int</span> size_y, <span class="keywordtype">double</span> *vals, <span class="keywordtype">int</span> offset = 0, <span class="keywordtype">bool</span> debug=<span class="keyword">false</span>);</div>
 <div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span> </div>
 <div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span><span class="preprocessor">#endif</span></div>
+<div class="ttc" id="aInterpUtils_8h_html_a38015dfa82acb574207d53e8b2671299"><div class="ttname"><a href="InterpUtils_8h.html#a38015dfa82acb574207d53e8b2671299">interpValue</a></div><div class="ttdeci">double interpValue(double x0, double y0, double *x, double *y, int size_x, int size_y, double *vals, int offset=0, bool debug=false)</div><div class="ttdef"><b>Definition:</b> InterpUtils.cpp:34</div></div>
+<div class="ttc" id="aInterpUtils_8h_html_a86719b3817013e6df55f2a0ccca49afb"><div class="ttname"><a href="InterpUtils_8h.html#a86719b3817013e6df55f2a0ccca49afb">findIndexLow</a></div><div class="ttdeci">int findIndexLow(double a, double *arr, int size_vals, bool debug)</div><div class="ttdef"><b>Definition:</b> InterpUtils.cpp:7</div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->

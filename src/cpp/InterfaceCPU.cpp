@@ -5,6 +5,13 @@
 
 #include "InterfaceCPU.h"
 
+double inline getPlanck(double T, double nu)
+{
+    double prefac = 2 * HP * nu*nu*nu / (CL*CL);
+    double dist = 1 / (exp(HP*nu / (KB*T)) - 1);
+    return prefac * dist;
+}
+
 TIEMPO2_DLL void runTiEMPO2(Instrument *instrument, Telescope *telescope, Atmosphere *atmosphere, Source *source, 
         SimParams *simparams, Output *output) {
     
@@ -21,8 +28,6 @@ TIEMPO2_DLL void runTiEMPO2(Instrument *instrument, Telescope *telescope, Atmosp
     double* I_atm = new double[source->nfreqs_src];
     double* I_gnd = new double[source->nfreqs_src];
     double* I_tel = new double[source->nfreqs_src];
-
-    double** slice_container = new double*[simparams->nThreads];    // Container for storing source slices.
 
     // Initialise constant efficiency struct
     Effs effs;
@@ -53,9 +58,6 @@ TIEMPO2_DLL void runTiEMPO2(Instrument *instrument, Telescope *telescope, Atmosp
     
     // Allocate sub-arrays outside of thread loop - safer I guess
     num_AzEl = source->nAz * source->nEl;
-    for(int n=0; n < simparams->nThreads; n++) {
-        slice_container[n] = new double[num_AzEl]();
-    }
     
     // Main thread spawning loop
     for(int n=0; n < simparams->nThreads; n++) {
@@ -71,7 +73,7 @@ TIEMPO2_DLL void runTiEMPO2(Instrument *instrument, Telescope *telescope, Atmosp
         
         threadPool[n] = std::thread(&parallelJobs, instrument, telescope, atmosphere, source, simparams, output, 
                 &effs, n * step, final_step, dt, num_AzEl,
-                slice_container[n], I_atm, I_gnd, I_tel, n);
+                I_atm, I_gnd, I_tel, n);
     }
 
     // Wait with execution until all threads are done
@@ -81,11 +83,6 @@ TIEMPO2_DLL void runTiEMPO2(Instrument *instrument, Telescope *telescope, Atmosp
         }
     }
     printf("\033[0m\n");
-    
-    for(int n=0; n < simparams->nThreads; n++) {
-        delete[] slice_container[n];
-    }
-    delete[] slice_container;
 
     delete[] I_atm;
     delete[] I_gnd;
@@ -93,7 +90,7 @@ TIEMPO2_DLL void runTiEMPO2(Instrument *instrument, Telescope *telescope, Atmosp
 }
 
 TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmosphere *atmosphere, Source *source, SimParams* simparams, Output* output, 
-        Effs* effs, int start, int stop, double dt, int num_AzEl, double* slice_container, 
+        Effs* effs, int start, int stop, double dt, int num_AzEl, 
         double* I_atm, double* I_gnd, double* I_tel, int threadIdx) {
     
     // Calculate total constant efficiencies
@@ -117,6 +114,7 @@ TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmo
 
     // Structs for storing sky and atmosphere co-ordinates
     AzEl center;
+
     center.Az = 0;
     center.El = 0;
 
@@ -135,6 +133,9 @@ TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmo
     int total = stop - start; // Total evaluations, for progress monitoring
     double prog_chunk = total / 100; // Divide total in chunks, s.t. about 100 chunks fit in total
     int chunk_count = 0;
+    
+    std::random_device rd{};
+    std::mt19937 geno{rd()};
 
     for(int i=start; i<stop; i++)
     { // Update time 
@@ -160,11 +161,11 @@ TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmo
         if(nod_flag)
         {
             if(is_in_lower_half) {
-                pointing = scanPoint(center, chop_flag, -1 * telescope->dAz_chop);
+                scanPoint(&center, &pointing, chop_flag, -1 * telescope->dAz_chop);
                 position = 1;
             }
             else {
-                pointing = scanPoint(center, chop_flag, telescope->dAz_chop);
+                scanPoint(&center, &pointing, chop_flag, telescope->dAz_chop);
                 position = 0;
             }
         }
@@ -172,11 +173,11 @@ TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmo
         else
         {
             if(is_in_lower_half) {
-                pointing = scanPoint(center, chop_flag, telescope->dAz_chop);
+                scanPoint(&center, &pointing, chop_flag, telescope->dAz_chop);
                 position = 0;
             }
             else {
-                pointing = scanPoint(center, chop_flag, -1 * telescope->dAz_chop);
+                scanPoint(&center, &pointing, chop_flag, -1 * telescope->dAz_chop);
                 position = 1;
             }
         }
@@ -185,7 +186,7 @@ TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmo
         output->Az[i] = pointing.Az;
         output->El[i] = pointing.El;
 
-        point_atm = convertAnglesToSpatialAtm(pointing, atmosphere->h_column);
+        convertAnglesToSpatialAtm(&pointing, &point_atm, atmosphere->h_column);
 
         // Add wind to this - currently only along x-axis and pretty manual
         point_atm.xAz = point_atm.xAz + atmosphere->v_wind * t_real;
@@ -204,17 +205,10 @@ TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmo
                     atmosphere->nPWV_atm, atmosphere->eta_atm);
 
             start_slice = num_AzEl * j;
-            end_slice = num_AzEl * (j + 1);
-
-            for(int k=start_slice; k<end_slice; k++)
-            {
-                slice_container[k - start_slice] = source->I_nu[k];
-            }
             
-            // Interpolate on source
             I_nu = interpValue(pointing.Az, pointing.El, 
                 source->Az, source->El, source->nAz, 
-                source->nEl, slice_container, debug);
+                source->nEl, source->I_nu, start_slice, debug);
             
             // Currently only uses optimal throughput
             // Store P_nu in array for later use
@@ -242,7 +236,8 @@ TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmo
             P_k *= dfreq;
 
             if(simparams->use_noise) {
-                P_k += drawGaussian(sigma_k);
+                std::normal_distribution<double> gg{0., sigma_k};
+                P_k += gg(geno);
             }
            
             // STORAGE: Add signal to signal array in output

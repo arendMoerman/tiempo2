@@ -135,9 +135,12 @@ def&#160;</td><td class="memItemRight" valign="bottom"><b>setAtmosphereDict</b> 
 <tr class="memitem:a5b2479e94c573221e4c2ac8bd5387904"><td class="memItemLeft" align="right" valign="top"><a id="a5b2479e94c573221e4c2ac8bd5387904" name="a5b2479e94c573221e4c2ac8bd5387904"></a>
 def&#160;</td><td class="memItemRight" valign="bottom"><b>setObservationDict</b> (self, observationDict)</td></tr>
 <tr class="separator:a5b2479e94c573221e4c2ac8bd5387904"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa1c389995c8945d8c975a1647e6cc735"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtiempo2_1_1Interface_1_1Interface.html#aa1c389995c8945d8c975a1647e6cc735">runSimulation</a> (self)</td></tr>
-<tr class="memdesc:aa1c389995c8945d8c975a1647e6cc735"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start and run a simulation.  <br /></td></tr>
-<tr class="separator:aa1c389995c8945d8c975a1647e6cc735"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a69a319511bfee52f986c3fb11490dd79"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtiempo2_1_1Interface_1_1Interface.html#a69a319511bfee52f986c3fb11490dd79">runSimulation</a> (self, device=&quot;CPU&quot;)</td></tr>
+<tr class="memdesc:a69a319511bfee52f986c3fb11490dd79"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start and run a simulation.  <br /></td></tr>
+<tr class="separator:a69a319511bfee52f986c3fb11490dd79"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a795ce903407c59c2389b09de0bc79dd1"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtiempo2_1_1Interface_1_1Interface.html#a795ce903407c59c2389b09de0bc79dd1">calcSignalPSD</a> (self, output, axis=0)</td></tr>
+<tr class="memdesc:a795ce903407c59c2389b09de0bc79dd1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate signal PSD of a simulation output.  <br /></td></tr>
+<tr class="separator:a795ce903407c59c2389b09de0bc79dd1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -177,10 +180,62 @@ None&#160;</td><td class="memItemRight" valign="bottom"><b>observationDict</b> =
 <tr class="memitem:a22e54218183f8776e40e1d62027480c9"><td class="memItemLeft" align="right" valign="top"><a id="a22e54218183f8776e40e1d62027480c9" name="a22e54218183f8776e40e1d62027480c9"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>count</b> = 0</td></tr>
 <tr class="separator:a22e54218183f8776e40e1d62027480c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1a5b489375aef56d0a0db09e839a24aa"><td class="memItemLeft" align="right" valign="top"><a id="a1a5b489375aef56d0a0db09e839a24aa" name="a1a5b489375aef56d0a0db09e839a24aa"></a>
+<a class="el" href="classtiempo2_1_1CustomLogger_1_1CustomLogger.html">CustomLogger</a>&#160;</td><td class="memItemRight" valign="bottom"><b>clog_mgr</b> = <a class="el" href="classtiempo2_1_1CustomLogger_1_1CustomLogger.html">CustomLogger</a>(os.path.basename(__file__))</td></tr>
+<tr class="separator:a1a5b489375aef56d0a0db09e839a24aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad2af3079f5eb25c14ec9f1e8c2bac7ec"><td class="memItemLeft" align="right" valign="top"><a id="ad2af3079f5eb25c14ec9f1e8c2bac7ec" name="ad2af3079f5eb25c14ec9f1e8c2bac7ec"></a>
+<a class="el" href="classtiempo2_1_1CustomLogger_1_1CustomLogger.html">CustomLogger</a>&#160;</td><td class="memItemRight" valign="bottom"><b>clog</b> = clog_mgr.getCustomLogger()</td></tr>
+<tr class="separator:ad2af3079f5eb25c14ec9f1e8c2bac7ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="aa1c389995c8945d8c975a1647e6cc735" name="aa1c389995c8945d8c975a1647e6cc735"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa1c389995c8945d8c975a1647e6cc735">&#9670;&#160;</a></span>runSimulation()</h2>
+<a id="a795ce903407c59c2389b09de0bc79dd1" name="a795ce903407c59c2389b09de0bc79dd1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a795ce903407c59c2389b09de0bc79dd1">&#9670;&#160;</a></span>calcSignalPSD()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def tiempo2.Interface.Interface.calcSignalPSD </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>output</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>axis</em> = <code>0</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Calculate signal PSD of a simulation output. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">output</td><td><a class="el" href="structOutput.html">Output</a> structure obtained from a callc to runSimulation. </td></tr>
+    <tr><td class="paramname">axis</td><td>Axis over which to calculate signal PSD. 0 is time axis (constant channel), 1 is frequency axis (constant timeslice).</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>signal_psd Signal PSD. </dd>
+<dd>
+freq_psd Frequencies at which the signal PSD is defined, in Hertz. </dd></dl>
+
+</div>
+</div>
+<a id="a69a319511bfee52f986c3fb11490dd79" name="a69a319511bfee52f986c3fb11490dd79"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a69a319511bfee52f986c3fb11490dd79">&#9670;&#160;</a></span>runSimulation()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -189,8 +244,18 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>count</b> = 0</td></tr
           <td class="memname">def tiempo2.Interface.Interface.runSimulation </td>
           <td>(</td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em></td><td>)</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>device</em> = <code>&quot;CPU&quot;</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">

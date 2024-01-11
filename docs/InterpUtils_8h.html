@@ -118,16 +118,151 @@ $(document).ready(function(){initNavTree('InterpUtils_8h.html',''); initResizabl
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a86719b3817013e6df55f2a0ccca49afb"><td class="memItemLeft" align="right" valign="top"><a id="a86719b3817013e6df55f2a0ccca49afb" name="a86719b3817013e6df55f2a0ccca49afb"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><b>findIndexLow</b> (double a, double *arr, int size_vals, bool debug)</td></tr>
+<tr class="memitem:a86719b3817013e6df55f2a0ccca49afb"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="InterpUtils_8h.html#a86719b3817013e6df55f2a0ccca49afb">findIndexLow</a> (double a, double *arr, int size_vals, bool debug)</td></tr>
 <tr class="separator:a86719b3817013e6df55f2a0ccca49afb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4d9450e895cbd4021d7bb23664401fa8"><td class="memItemLeft" align="right" valign="top"><a id="a4d9450e895cbd4021d7bb23664401fa8" name="a4d9450e895cbd4021d7bb23664401fa8"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>interpValue</b> (double x0, double y0, double *x, double *y, int size_x, int size_y, double *vals, bool debug=false)</td></tr>
-<tr class="separator:a4d9450e895cbd4021d7bb23664401fa8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a38015dfa82acb574207d53e8b2671299"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="InterpUtils_8h.html#a38015dfa82acb574207d53e8b2671299">interpValue</a> (double x0, double y0, double *x, double *y, int size_x, int size_y, double *vals, int offset=0, bool debug=false)</td></tr>
+<tr class="separator:a38015dfa82acb574207d53e8b2671299"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Utilities for linear interpolation. </p>
-</div></div><!-- contents -->
+</div><h2 class="groupheader">Function Documentation</h2>
+<a id="a86719b3817013e6df55f2a0ccca49afb" name="a86719b3817013e6df55f2a0ccca49afb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a86719b3817013e6df55f2a0ccca49afb">&#9670;&#160;</a></span>findIndexLow()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int findIndexLow </td>
+          <td>(</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>a</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double *&#160;</td>
+          <td class="paramname"><em>arr</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>size_vals</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>debug</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Find index of lower bound of interval containing some specified number.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">a</td><td>Value to find interval for. </td></tr>
+    <tr><td class="paramname">arr</td><td>Array of doubles, specifying interval starts and ends. Note: should be complete interval, not a chunk. </td></tr>
+    <tr><td class="paramname">size_vals</td><td>Size of array containing values. </td></tr>
+    <tr><td class="paramname">debug</td><td>Run method in debug mode.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>idx Index of value in &lsquo;arr&rsquo;, corresponding to lower bound of interval containing &lsquo;a&rsquo;. </dd></dl>
+
+</div>
+</div>
+<a id="a38015dfa82acb574207d53e8b2671299" name="a38015dfa82acb574207d53e8b2671299"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a38015dfa82acb574207d53e8b2671299">&#9670;&#160;</a></span>interpValue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double interpValue </td>
+          <td>(</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>x0</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>y0</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double *&#160;</td>
+          <td class="paramname"><em>x</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double *&#160;</td>
+          <td class="paramname"><em>y</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>size_x</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>size_y</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double *&#160;</td>
+          <td class="paramname"><em>vals</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>offset</em> = <code>0</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>debug</em> = <code>false</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Linearly interpolate bivariate function.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">x0</td><td>Point in x to interpolate on. </td></tr>
+    <tr><td class="paramname">y0</td><td>Point in y to interpolate on. </td></tr>
+    <tr><td class="paramname">x</td><td>Array of points representing x-coordinates. </td></tr>
+    <tr><td class="paramname">y</td><td>Array of points representing y-coordinates. </td></tr>
+    <tr><td class="paramname">size_y</td><td>Size of array containing y-coordinates. </td></tr>
+    <tr><td class="paramname">vals</td><td>Function values on grid spanning x and y. </td></tr>
+    <tr><td class="paramname">size_vals</td><td>Size of array containing values. </td></tr>
+    <tr><td class="paramname">debug</td><td>Run method in debug mode. Default is false and is passed to findIndexLow.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>val_interp Interpolated value of function on x0 and y0. </dd></dl>
+
+</div>
+</div>
+</div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->

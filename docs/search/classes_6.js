@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['random_0',['Random',['../classRandom.html',1,'']]]
+  ['manager_0',['Manager',['../classtiempo2_1_1Threadmgr_1_1Manager.html',1,'tiempo2::Threadmgr']]]
 ];

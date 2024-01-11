@@ -114,10 +114,14 @@ $(document).ready(function(){initNavTree('structSimParams.html',''); initResizab
 Public Attributes</h2></td></tr>
 <tr class="memitem:a9bf870d655952539f05e8920428c2e69"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structSimParams.html#a9bf870d655952539f05e8920428c2e69">t_obs</a></td></tr>
 <tr class="separator:a9bf870d655952539f05e8920428c2e69"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af20cef40904921dda1c47114ac216b82"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structSimParams.html#af20cef40904921dda1c47114ac216b82">nTimes</a></td></tr>
+<tr class="separator:af20cef40904921dda1c47114ac216b82"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5e387ddc5ae3592eb9518084b54d1150"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structSimParams.html#a5e387ddc5ae3592eb9518084b54d1150">nThreads</a></td></tr>
 <tr class="separator:a5e387ddc5ae3592eb9518084b54d1150"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a81808446166b8d856d349503cb1df6cf"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structSimParams.html#a81808446166b8d856d349503cb1df6cf">t0</a></td></tr>
 <tr class="separator:a81808446166b8d856d349503cb1df6cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a04a16adec545657b640ff75ac95747e4"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structSimParams.html#a04a16adec545657b640ff75ac95747e4">use_noise</a></td></tr>
+<tr class="separator:a04a16adec545657b640ff75ac95747e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Data Documentation</h2>
 <a id="a5e387ddc5ae3592eb9518084b54d1150" name="a5e387ddc5ae3592eb9518084b54d1150"></a>
@@ -132,6 +136,21 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <p>Number of threads to use for computation. </p>
+
+</div>
+</div>
+<a id="af20cef40904921dda1c47114ac216b82" name="af20cef40904921dda1c47114ac216b82"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af20cef40904921dda1c47114ac216b82">&#9670;&#160;</a></span>nTimes</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SimParams::nTimes</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Total number of time calculations. </p>
 
 </div>
 </div>
@@ -162,6 +181,21 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <p>Observation time in seconds. </p>
+
+</div>
+</div>
+<a id="a04a16adec545657b640ff75ac95747e4" name="a04a16adec545657b640ff75ac95747e4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a04a16adec545657b640ff75ac95747e4">&#9670;&#160;</a></span>use_noise</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SimParams::use_noise</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Whether to add photon noise. For real life situations, this should be 1. Only set to 0 for debug purposes. </p>
 
 </div>
 </div>
