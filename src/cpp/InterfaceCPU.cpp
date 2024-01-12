@@ -158,29 +158,29 @@ TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmo
         nod_flag = (n_nod % 2 != 0); // If even (false), AB. Odd (true), BA.
         
         is_in_lower_half = (t_start - n_nod / telescope->freq_nod) < (1 / telescope->freq_nod / 2);
-        if(nod_flag)
+        if(nod_flag) // BA
         {
-            if(is_in_lower_half) {
-                scanPoint(&center, &pointing, chop_flag, -1 * telescope->dAz_chop);
-                position = 1;
+            if(is_in_lower_half) { // B
+                position = -1;
             }
-            else {
-                scanPoint(&center, &pointing, chop_flag, telescope->dAz_chop);
-                position = 0;
+            else { // A
+                position = 1;
             }
         }
 
-        else
+        else // AB
         {
-            if(is_in_lower_half) {
-                scanPoint(&center, &pointing, chop_flag, telescope->dAz_chop);
-                position = 0;
-            }
-            else {
-                scanPoint(&center, &pointing, chop_flag, -1 * telescope->dAz_chop);
+            if(is_in_lower_half) { // A
                 position = 1;
             }
+            else { // B
+                position = -1;
+            }
         }
+        
+        scanPoint(&center, &pointing, chop_flag, position * telescope->dAz_chop);
+       
+        output->flag[i] = chop_flag * position;
         
         // STORAGE: Add current pointing to output array
         output->Az[i] = pointing.Az;
@@ -241,20 +241,6 @@ TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmo
             // STORAGE: Add signal to signal array in output
             output->signal[i * instrument->nfreqs_filt + k] = P_k; 
 
-            // STORAGE: Add correct flag to output array
-            if (!chop_flag){
-                output->flag[i] = 0;
-            }
-            
-            else {
-                if (!position) {
-                    output->flag[i] = 1;
-                }
-
-                else {
-                    output->flag[i] = 2;
-                }
-            }
         }
     }
 }

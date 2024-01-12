@@ -262,8 +262,7 @@ class Interface(object):
 
         N = output.get("signal")[output.get("flag") == 0]
         A = output.get("signal")[output.get("flag") == 1]
-        B = output.get("signal")[output.get("flag") == 2]
-        
+        B = output.get("signal")[output.get("flag") == -1]
         subtract = (np.mean(A, axis=0) + np.mean(B, axis=0)) / 2
 
         spectrum = np.mean(N, axis=0) - subtract
