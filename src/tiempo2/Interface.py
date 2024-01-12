@@ -21,7 +21,7 @@ logging.getLogger(__name__)
 
 MEMFRAC = 0.5
 MEMBUFF = MEMFRAC * psutil.virtual_memory().total
-print(MEMBUFF)
+
 class FieldError(Exception):
     """!
     Field error. Raised when a required field is not specified in an input dictionary. 
@@ -248,4 +248,24 @@ class Interface(object):
         
         return signal_psd, freq_signal
 
+    def avgDirectSubtract(self, output):
+        """!
+        Calculate a spectrum by averaging over the time-domain signal.
+        
+        Atmosphere removal is done by direct subtraction.
 
+        @param output Output object obtained from a simulation.
+
+        @returns spectrum Averaged and direct-subtracted spectrum.
+        """
+
+
+        N = output.get("signal")[output.get("flag") == 0]
+        A = output.get("signal")[output.get("flag") == 1]
+        B = output.get("signal")[output.get("flag") == 2]
+        
+        subtract = (np.mean(A, axis=0) + np.mean(B, axis=0)) / 2
+
+        spectrum = np.mean(N, axis=0) - subtract
+
+        return spectrum

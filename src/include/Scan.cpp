@@ -4,6 +4,7 @@
 
 #include "Scan.h"
 
+
 void scanPoint(AzEl* center, AzEl* out, bool chop, double sep) {
     double offset = 0.;
     

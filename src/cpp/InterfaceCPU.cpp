@@ -235,10 +235,8 @@ TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmo
             sigma_k = sqrt(2 * NEP_accum * dfreq) * sqrt_samp;
             P_k *= dfreq;
 
-            if(simparams->use_noise) {
-                std::normal_distribution<double> gg{0., sigma_k};
-                P_k += gg(geno);
-            }
+            std::normal_distribution<double> gg{0., sigma_k};
+            P_k += gg(geno);
            
             // STORAGE: Add signal to signal array in output
             output->signal[i * instrument->nfreqs_filt + k] = P_k; 
@@ -250,11 +248,11 @@ TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmo
             
             else {
                 if (!position) {
-                    output->flag[i] = 2;
+                    output->flag[i] = 1;
                 }
 
                 else {
-                    output->flag[i] = 1;
+                    output->flag[i] = 2;
                 }
             }
         }

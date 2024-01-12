@@ -181,7 +181,7 @@ __global__ void setup_kernel(curandState *state, unsigned long long int seed = 6
   @param state Array with states for drawing random Gaussian values for noise calculations.
  */
 __global__ void runSimulation(float *I_atm, float *I_gnd, float *I_tel,
-        float *sigout, int *flagout,
+        float *sigout, float *azout, float *elout, int *flagout,
         float *freqs_src, float *azsrc, float *elsrc, float *eta_ap,
         float *x_atm, float *y_atm, float *PWV_screen, float *freqs_atm,
         float *PWV_atm, float *eta_atm, float *filterbank, float *source, curandState *state) {
@@ -225,29 +225,32 @@ __global__ void runSimulation(float *I_atm, float *I_gnd, float *I_tel,
         nod_flag = (n_nod % 2 != 0); // If even (false), AB. Odd (true), BA.
         
         is_in_lower_half = (t_start - n_nod / cfreq_nod) < (1 / cfreq_nod / 2);
-        if(nod_flag)
+        if(nod_flag) // BA
         {
-            if(is_in_lower_half) {
+            if(is_in_lower_half) { // B
                 scanPoint(&center, &pointing, chop_flag, -1 * cdAz_chop);
                 position = 1;
             }
-            else {
+            else { // A
                 scanPoint(&center, &pointing, chop_flag, cdAz_chop);
                 position = 0;
             }
         }
 
-        else
+        else // AB
         {
-            if(is_in_lower_half) {
+            if(is_in_lower_half) { // A
                 scanPoint(&center, &pointing, chop_flag, cdAz_chop);
                 position = 0;
             }
-            else {
-                scanPoint(&center, &pointing, chop_flag, cdAz_chop);
+            else { // B
+                scanPoint(&center, &pointing, chop_flag, -1 * cdAz_chop);
                 position = 1;
             }
         }
+        // STORAGE: Add current pointing to output array
+        azout[idx] = pointing.Az;
+        elout[idx] = pointing.El;
 
         convertAnglesToSpatialAtm(&pointing, &point_atm, ch_column);
 
@@ -303,16 +306,16 @@ __global__ void runSimulation(float *I_atm, float *I_gnd, float *I_tel,
 
             // STORAGE: Add correct flag to output array
             if (!chop_flag){
-                flagout[idx] = 0;
+                flagout[idx] = 0; // No chop
             }
             
             else {
                 if (!position) {
-                    flagout[idx] = 2;
+                    flagout[idx] = 1; // Chop, A
                 }
 
                 else {
-                    flagout[idx] = 1;
+                    flagout[idx] = 2; // Chop, B
                 }
             }
         }
@@ -412,6 +415,9 @@ void runTiEMPO2_CUDA(CuInstrument *instrument, CuTelescope *telescope, CuAtmosph
     // Allocate output arrays
     float *sigout;
     gpuErrchk( cudaMalloc((void**)&sigout, (source->nfreqs_src * simparams->nTimes) * sizeof(float)) );
+    float *azout, *elout;
+    gpuErrchk( cudaMalloc((void**)&azout, simparams->nTimes * sizeof(float)) );
+    gpuErrchk( cudaMalloc((void**)&elout, simparams->nTimes * sizeof(float)) );
     
     int *flagout;
     gpuErrchk( cudaMalloc((void**)&flagout, simparams->nTimes * sizeof(int)) );
@@ -428,13 +434,16 @@ void runTiEMPO2_CUDA(CuInstrument *instrument, CuTelescope *telescope, CuAtmosph
     
     // CALL TO MAIN SIMULATION KERNEL
     runSimulation<<<BT[0], BT[1]>>>(dI_atm, dI_gnd, dI_tel,
-            sigout, flagout,
+            sigout, azout, elout, flagout,
             dfreqs_src, dAz_src, dEl_src, deta_ap, dx_atm, dy_atm, dPWV_screen, dfreqs_atm,
             dPWV_atm, deta_atm, dfilterbank, dI_nu, devStates);
 
     gpuErrchk( cudaDeviceSynchronize() );
     gpuErrchk( cudaMemcpy(output->signal, sigout, (instrument->nfreqs_filt * simparams->nTimes) * sizeof(float), cudaMemcpyDeviceToHost) );
 
+    gpuErrchk( cudaMemcpy(output->Az, azout, simparams->nTimes * sizeof(int), cudaMemcpyDeviceToHost) );
+    gpuErrchk( cudaMemcpy(output->El, elout, simparams->nTimes * sizeof(int), cudaMemcpyDeviceToHost) );
+    
     gpuErrchk( cudaMemcpy(output->flag, flagout, simparams->nTimes * sizeof(int), cudaMemcpyDeviceToHost) );
 
     gpuErrchk( cudaDeviceReset() );
