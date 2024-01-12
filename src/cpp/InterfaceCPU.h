@@ -22,7 +22,7 @@
 #define SI_TO_MJY               1E20 /* SI to MJy*/
 
 #define PI 3.14159265358979323846  /* pi */
-#define CL 299792458 /* Speed of light */
+#define CL 2.9979246E8 // m s^-1
 #define HP 6.62607015e-34
 #define KB 1.380649e-23
 
