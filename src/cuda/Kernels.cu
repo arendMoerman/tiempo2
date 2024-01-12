@@ -228,26 +228,26 @@ __global__ void runSimulation(float *I_atm, float *I_gnd, float *I_tel,
         if(nod_flag) // BA
         {
             if(is_in_lower_half) { // B
-                scanPoint(&center, &pointing, chop_flag, -1 * cdAz_chop);
-                position = 1;
+                position = -1;
             }
             else { // A
-                scanPoint(&center, &pointing, chop_flag, cdAz_chop);
-                position = 0;
+                position = 1;
             }
         }
 
         else // AB
         {
             if(is_in_lower_half) { // A
-                scanPoint(&center, &pointing, chop_flag, cdAz_chop);
-                position = 0;
-            }
-            else { // B
-                scanPoint(&center, &pointing, chop_flag, -1 * cdAz_chop);
                 position = 1;
             }
+            else { // B
+                position = -1;
+            }
         }
+        
+        scanPoint(&center, &pointing, chop_flag, position * cdAz_chop);
+        flagout[idx] = chop_flag * position; 
+        
         // STORAGE: Add current pointing to output array
         azout[idx] = pointing.Az;
         elout[idx] = pointing.El;
@@ -304,20 +304,6 @@ __global__ void runSimulation(float *I_atm, float *I_gnd, float *I_tel,
             // STORAGE: Add signal to signal array in output
             sigout[idx * cnf_filt + k] = P_k; 
 
-            // STORAGE: Add correct flag to output array
-            if (!chop_flag){
-                flagout[idx] = 0; // No chop
-            }
-            
-            else {
-                if (!position) {
-                    flagout[idx] = 1; // Chop, A
-                }
-
-                else {
-                    flagout[idx] = 2; // Chop, B
-                }
-            }
         }
         delete[] PSD_nu;
     }
