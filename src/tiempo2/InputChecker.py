@@ -86,7 +86,7 @@ def checkAtmosphereDict(atmosphereDict):
     return errlist
 
 def checkObservationDict(observationDict):
-    checklist = ["name_sim", "t_obs", "nThreads", "outDir"]
+    checklist = ["name_sim", "t_obs", "nThreads", "outDir", "get_t_diag"]
 
     errlist = []
 
@@ -95,6 +95,9 @@ def checkObservationDict(observationDict):
 
     if observationDict.get("use_noise") is None:
         observationDict["use_noise"] = 1
+    
+    if observationDict.get("get_t_diag") is None:
+        observationDict["get_t_diag"] = 1
 
     for key in checklist:
         if observationDict.get(key) is None:

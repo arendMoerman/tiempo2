@@ -79,6 +79,7 @@ struct CuOutput {
     float *Az;         /**< Timestream of Azimuth angle, in degrees.*/
     float *El;         /**< Timestream of Elevation angle, in degrees.*/
     int *flag;          /**< Timestream of flags specifying chop/nod position. 0 for ON, 1 for OFF-RIGHT, 2 for OFF-LEFT.*/           
+    float *t_diag;      /**< Calculation/allocation times, for diagnostics.*/
 };
 
 #endif

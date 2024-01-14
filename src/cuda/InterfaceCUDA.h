@@ -16,6 +16,7 @@
 #include "CuStructs.h"
 #include "CuScan.h"
 #include "CuInterpUtils.h"
+#include "Timer.h"
 
 #define CEFFSSIZE 4
 

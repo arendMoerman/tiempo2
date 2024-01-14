@@ -9,6 +9,7 @@
 #include "InterpUtils.h"
 #include "Structs.h"
 #include "Scan.h"
+#include "Timer.h"
 
 #ifdef _WIN32
 #   define TIEMPO2_DLL __declspec(dllexport)
