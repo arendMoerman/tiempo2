@@ -12,6 +12,10 @@ double inline getPlanck(double T, double nu)
     return prefac * dist;
 }
 
+int sgn(double val, int &out) {
+    out = (double(0) < val) - (val < double(0));
+}
+
 TIEMPO2_DLL void runTiEMPO2(Instrument *instrument, Telescope *telescope, Atmosphere *atmosphere, Source *source, 
         SimParams *simparams, Output *output) {
     
@@ -58,7 +62,10 @@ TIEMPO2_DLL void runTiEMPO2(Instrument *instrument, Telescope *telescope, Atmosp
     
     // Allocate sub-arrays outside of thread loop - safer I guess
     num_AzEl = source->nAz * source->nEl;
-    
+   
+    Timer timer;
+
+    timer.start();
     // Main thread spawning loop
     for(int n=0; n < simparams->nThreads; n++) {
         int final_step; // Final step for 
@@ -82,6 +89,10 @@ TIEMPO2_DLL void runTiEMPO2(Instrument *instrument, Telescope *telescope, Atmosp
             t.join();
         }
     }
+
+    timer.stop();
+    output->t_thread = timer.get();
+    
     printf("\033[0m\n");
 
     delete[] I_atm;
@@ -122,8 +133,9 @@ TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmo
     xy_atm point_atm;
 
     bool chop_flag;
-    bool nod_flag;
-    bool is_in_lower_half;
+    int nod_flag;
+    
+    double is_in_lower_half;
 
     // Debug utils
     bool debug = false;
@@ -155,28 +167,12 @@ TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmo
         n_nod = floor(t_start * telescope->freq_nod);
         
         chop_flag = (n_chop % 2 != 0); // If even (false), ON. Odd (true), OFF.
-        nod_flag = (n_nod % 2 != 0); // If even (false), AB. Odd (true), BA.
+        nod_flag = 1 - 2 * (n_nod % 2 != 0); // If even (false), AB. Odd (true), BA.
         
-        is_in_lower_half = (t_start - n_nod / telescope->freq_nod) < (1 / telescope->freq_nod / 2);
-        if(nod_flag) // BA
-        {
-            if(is_in_lower_half) { // B
-                position = -1;
-            }
-            else { // A
-                position = 1;
-            }
-        }
-
-        else // AB
-        {
-            if(is_in_lower_half) { // A
-                position = 1;
-            }
-            else { // B
-                position = -1;
-            }
-        }
+        is_in_lower_half = (t_start - n_nod / telescope->freq_nod) - (1 / telescope->freq_nod / 2);
+        
+        sgn(is_in_lower_half, position);
+        position *= nod_flag;
         
         scanPoint(&center, &pointing, chop_flag, position * telescope->dAz_chop);
        

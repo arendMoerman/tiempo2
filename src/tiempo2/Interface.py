@@ -132,8 +132,8 @@ class Interface(object):
         if self.instrumentDict.get("R"):
             self.instrumentDict["freqs_filt"] = self.instrumentDict.get("freq_0") * (1 + 1 / self.instrumentDict.get("R"))**np.arange(self.instrumentDict.get("n_freqs"))
             self.instrumentDict["filterbank"] = TFilter.generateFilterbankFromR(self.instrumentDict, self.sourceDict)
-            pt.plot(self.instrumentDict["filterbank"].T)
-            pt.show()
+            #pt.plot(self.instrumentDict["filterbank"].T)
+            #pt.show()
         else:
             pass
             # Here we need to call function that reads a filterbank matrix from Louis files.
@@ -159,7 +159,7 @@ class Interface(object):
                 "type"      : self.sourceDict.get("type"),
                 "Az"        : Az,
                 "El"        : El,
-                "I_nu"      : I_nu,
+                "I_nu"      : I_nu*1e1,
                 "freqs_src" : freqs*1e9
                 }
         
@@ -170,9 +170,9 @@ class Interface(object):
       
         #PWV_atm = np.ones((nx, ny)) * 0.1
 
-        fig, ax = pt.subplots(1,1)
-        ax.imshow(PWV_atm, aspect='auto')
-        pt.show()
+        #fig, ax = pt.subplots(1,1)
+        #ax.imshow(PWV_atm, aspect='auto')
+        #pt.show()
 
         # At t=0, x=y=0 is in middle
         x_atm = (np.arange(0, nx) - ny/2)*self.atmosphereDict.get("dx")
@@ -221,8 +221,19 @@ class Interface(object):
         end = time.time()        
         
         self.clog.info("\033[1;32m*** FINISHED TiEMPO2 SIMULATION ***")
-        self.clog.info(f"\033[1;32m*** Elapsed time: {end-start:.2f} seconds ***")
         
+        if self.observationDict.get("get_t_diag") and (device == "GPU"):
+            self.clog.info("\033[1;32m*** TIME DIAGNOSTICS ***")
+            self.clog.info(f"\033[1;32m*** TOTAL    : {end-start:.2f} seconds ***")
+            self.clog.info(f"\033[1;32m*** H2D      : {res.get('t_diag')[0]:.2f} seconds ***")
+            self.clog.info(f"\033[1;32m*** KERNEL   : {res.get('t_diag')[1]:.2f} seconds ***")
+            self.clog.info(f"\033[1;32m*** D2H      : {res.get('t_diag')[2]:.2f} seconds ***")
+        
+        elif self.observationDict.get("get_t_diag"):
+            self.clog.info("\033[1;32m*** TIME DIAGNOSTICS ***")
+            self.clog.info(f"\033[1;32m*** TOTAL    : {end-start:.2f} seconds ***")
+            self.clog.info(f"\033[1;32m*** THREAD   : {res.get('t_diag'):.2f} seconds ***")
+
         return res, self.observationDict["time_range"], self.instrumentDict["freqs_filt"]
     
     def calcSignalPSD(self, output, axis=0):

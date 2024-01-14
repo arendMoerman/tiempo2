@@ -88,7 +88,8 @@ class Output(ctypes.Structure):
     _fields_ = [("signal", ctypes.POINTER(ctypes.c_double)),
                 ("Az", ctypes.POINTER(ctypes.c_double)),
                 ("El", ctypes.POINTER(ctypes.c_double)),
-                ("flag", ctypes.POINTER(ctypes.c_int))]
+                ("flag", ctypes.POINTER(ctypes.c_int)),
+                ("t_thread", ctypes.c_double)]
 
 # FLOAT
 class CuInstrument(ctypes.Structure):
@@ -173,4 +174,5 @@ class CuOutput(ctypes.Structure):
     _fields_ = [("signal", ctypes.POINTER(ctypes.c_float)),
                 ("Az", ctypes.POINTER(ctypes.c_float)),
                 ("El", ctypes.POINTER(ctypes.c_float)),
-                ("flag", ctypes.POINTER(ctypes.c_int))]
+                ("flag", ctypes.POINTER(ctypes.c_int)),
+                ("t_diag", ctypes.POINTER(ctypes.c_float))]

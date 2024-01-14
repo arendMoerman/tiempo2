@@ -79,6 +79,17 @@ __host__ float getPlanck(float T, float nu)
 }
 
 /**
+  Calculate sign of number.
+
+  Used in determining chop-nod state.
+
+  @param val Value of number.
+ */
+__device__ __inline__ void sgn(float val, int &out) {
+    out = (float(0) < val) - (val < float(0));
+}
+
+/**
   Initialize CUDA.
  
   Instantiate program and populate constant memory.
@@ -205,7 +216,10 @@ __global__ void runSimulation(float *I_atm, float *I_gnd, float *I_tel,
         float dfreq = freqs_src[1] - freqs_src[0];
     
         curandState localState = state[idx];
-        bool chop_flag, nod_flag, is_in_lower_half;
+        bool chop_flag;
+
+        float is_in_lower_half;
+        int nod_flag;
 
         AzEl center;
 
@@ -222,28 +236,11 @@ __global__ void runSimulation(float *I_atm, float *I_gnd, float *I_tel,
         n_nod = floor(t_start * cfreq_nod);
         
         chop_flag = (n_chop % 2 != 0); // If even (false), ON. Odd (true), OFF.
-        nod_flag = (n_nod % 2 != 0); // If even (false), AB. Odd (true), BA.
+        nod_flag = 1 - 2 * (n_nod % 2 != 0); // If even (false), AB. Odd (true), BA.
         
-        is_in_lower_half = (t_start - n_nod / cfreq_nod) < (1 / cfreq_nod / 2);
-        if(nod_flag) // BA
-        {
-            if(is_in_lower_half) { // B
-                position = -1;
-            }
-            else { // A
-                position = 1;
-            }
-        }
-
-        else // AB
-        {
-            if(is_in_lower_half) { // A
-                position = 1;
-            }
-            else { // B
-                position = -1;
-            }
-        }
+        is_in_lower_half = (t_start - n_nod / cfreq_nod) - (1 / cfreq_nod / 2);
+        sgn(is_in_lower_half, position);
+        position *= nod_flag;
         
         scanPoint(&center, &pointing, chop_flag, position * cdAz_chop);
         flagout[idx] = chop_flag * position; 
@@ -323,10 +320,15 @@ __global__ void runSimulation(float *I_atm, float *I_gnd, float *I_tel,
  */
 void runTiEMPO2_CUDA(CuInstrument *instrument, CuTelescope *telescope, CuAtmosphere *atmosphere, CuSource *source, 
         CuSimParams *simparams, CuOutput *output) {
-    
+
+    Timer timer;
+
     int nThreads = 256;
     int totalThreads = ceil(simparams->nTimes / nThreads) * nThreads;
 
+    timer.start();
+
+    
     std::array<dim3, 2> BT = initCUDA(instrument, telescope, simparams, source, atmosphere, nThreads);
     float freq;    // Frequency, used for initialising background sources.
 
@@ -418,13 +420,24 @@ void runTiEMPO2_CUDA(CuInstrument *instrument, CuTelescope *telescope, CuAtmosph
     // Set total heap reservation to 128 mb
     gpuErrchk( cudaDeviceSetLimit(cudaLimitMallocHeapSize, 128*1024*1024) );
     
+    timer.stop();
+    output->t_diag[0] = timer.get();
+    
     // CALL TO MAIN SIMULATION KERNEL
+    timer.start();
+
     runSimulation<<<BT[0], BT[1]>>>(dI_atm, dI_gnd, dI_tel,
             sigout, azout, elout, flagout,
             dfreqs_src, dAz_src, dEl_src, deta_ap, dx_atm, dy_atm, dPWV_screen, dfreqs_atm,
             dPWV_atm, deta_atm, dfilterbank, dI_nu, devStates);
 
     gpuErrchk( cudaDeviceSynchronize() );
+    
+    timer.stop();
+    output->t_diag[1] = timer.get();
+    
+    timer.start();
+
     gpuErrchk( cudaMemcpy(output->signal, sigout, (instrument->nfreqs_filt * simparams->nTimes) * sizeof(float), cudaMemcpyDeviceToHost) );
 
     gpuErrchk( cudaMemcpy(output->Az, azout, simparams->nTimes * sizeof(int), cudaMemcpyDeviceToHost) );
@@ -437,5 +450,8 @@ void runTiEMPO2_CUDA(CuInstrument *instrument, CuTelescope *telescope, CuAtmosph
     delete[] I_atm;
     delete[] I_gnd;
     delete[] I_tel;
+    
+    timer.stop();
+    output->t_diag[2] = timer.get();
 }
 

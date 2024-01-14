@@ -6,6 +6,7 @@ Most of these functions are concerned with allocating memory.
 """
 
 import numpy as np
+import tiempo2.Structs as TStructs
 import ctypes
 
 def allfillInstrument(InstDict, InstStruct, ct_t=ctypes.c_double):
@@ -119,7 +120,12 @@ def allocateOutput(OutputStruct, size_t, size_f, ct_t=ctypes.c_double):
     OutputStruct.Az = (ct_t * size_t)(*(fill_t.tolist()))
     OutputStruct.El = (ct_t * size_t)(*(fill_t.tolist()))
     OutputStruct.flag = (ctypes.c_int * size_t)(*(fill_t.astype(int).tolist()))
+    
+    if isinstance(OutputStruct, TStructs.Output):
+        OutputStruct.t_thread = ct_t(0.)
 
+    else:
+        OutputStruct.t_diag = (ct_t * 3)(0, 0, 0)
 
 def OutputStructToDict(OutputStruct, size_t, size_f, np_t):
     """!
@@ -133,12 +139,19 @@ def OutputStructToDict(OutputStruct, size_t, size_f, np_t):
 
     sig_shape = (size_t, size_f)
     t_shape = (size_t,)
+    
+    if isinstance(OutputStruct, TStructs.Output):
+        times = float(OutputStruct.t_thread)
+
+    else:
+        times = np.ctypeslib.as_array(OutputStruct.t_diag, shape=(3,)).astype(np_t)
 
     OutputDict = {
     "signal" : np.ctypeslib.as_array(OutputStruct.signal, shape=sig_shape).astype(np_t),
     "Az" : np.ctypeslib.as_array(OutputStruct.Az, shape=t_shape).astype(np_t),
     "El" : np.ctypeslib.as_array(OutputStruct.El, shape=t_shape).astype(np_t),
     "flag" : np.ctypeslib.as_array(OutputStruct.flag, shape=t_shape).astype(ctypes.c_int),
+    "t_diag" : times
     }
 
     return OutputDict

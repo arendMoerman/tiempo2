@@ -78,7 +78,8 @@ struct Output {
     double *signal;     /**< Timestream of output signal, time = slow axis, frequency = fast axis.*/
     double *Az;         /**< Timestream of Azimuth angle, in degrees.*/
     double *El;         /**< Timestream of Elevation angle, in degrees.*/
-    int *flag;          /**< Timestream of flags specifying chop/nod position. 0 for ON, 1 for OFF-RIGHT, 2 for OFF-LEFT.*/           
+    int *flag;          /**< Timestream of flags specifying chop/nod position. 0 for ON, 1 for OFF-RIGHT, 2 for OFF-LEFT.*/     
+    double t_thread;   /**< Time spent calculating in thread.*/
 };
 
 // Local structs - for use internally

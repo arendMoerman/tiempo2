@@ -14,8 +14,11 @@ target_include_directories(interputils PUBLIC src/include)
 add_library(scan SHARED src/include/Scan.cpp)
 target_include_directories(scan PUBLIC src/include)
 
+add_library(timer SHARED src/include/Timer.cpp)
+target_include_directories(timer PUBLIC src/include)
+
 add_library(tiempo2 SHARED src/cpp/InterfaceCPU.cpp)
-target_link_libraries(tiempo2 PRIVATE interputils scan)
+target_link_libraries(tiempo2 PRIVATE interputils scan timer)
 #target_include_directories(tiempo2 PRIVATE src/include)
 
 if(NOT WIN32)
@@ -33,6 +36,7 @@ if(CMAKE_CUDA_COMPILER)
 
     add_library(cutiempo2 SHARED ${CUDAfiles})
     target_include_directories(cutiempo2 PRIVATE src/cuda src/include)
+    target_link_libraries(cutiempo2 PRIVATE timer)
     set_target_properties(cutiempo2 PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
     set_property(TARGET cutiempo2 PROPERTY CUDA_ARCHITECTURES OFF)
 else()
