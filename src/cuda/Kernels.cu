@@ -35,6 +35,8 @@ __constant__ int cnPWV_atm;                 // Number of atmosphere PWV values
 __constant__ int cnAz;                      // Number of az points per freq slice
 __constant__ int cnEl;                      // Number of el points per freq slice
 
+__constant__ int cOFF_empty;                // Interpolate on source or no source in OFF position
+
 #define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
 
 /**
@@ -148,6 +150,8 @@ __device__ __inline__ void sgn(float val, int &out) {
      gpuErrchk( cudaMemcpyToSymbol(cnPWV_atm, &(atmosphere->nPWV_atm), sizeof(int)) );
      gpuErrchk( cudaMemcpyToSymbol(cnx, &(atmosphere->nx), sizeof(int)) );
      gpuErrchk( cudaMemcpyToSymbol(cny, &(atmosphere->ny), sizeof(int)) );
+     
+     gpuErrchk( cudaMemcpyToSymbol(cOFF_empty, &(simparams->OFF_empty), sizeof(int)) );
 
      std::array<dim3, 2> BT;
      BT[0] = nrb;
@@ -164,7 +168,11 @@ __device__ __inline__ void sgn(float val, int &out) {
   @param state Array of curand states. Should be initialised and sized to total number of threads in grid.
   @param seed Integer describing the seed of the generator.
  */
-__global__ void setup_kernel(curandState *state, unsigned long long int seed = 666) {
+__global__ void setup_kernel(curandState *state, unsigned long long int seed = 0) {
+    if (!seed) {
+        seed = clock64();
+    }
+    
     int idx = blockDim.x*blockIdx.x + threadIdx.x;
     curand_init(seed, idx, 0, &state[idx]);
 }
@@ -236,14 +244,14 @@ __global__ void runSimulation(float *I_atm, float *I_gnd, float *I_tel,
         n_nod = floor(t_start * cfreq_nod);
         
         chop_flag = (n_chop % 2 != 0); // If even (false), ON. Odd (true), OFF.
-        nod_flag = 1 - 2 * (n_nod % 2 != 0); // If even (false), AB. Odd (true), BA.
+        nod_flag = -1 + 2 * (n_nod % 2 != 0); // If even (false), AB. Odd (true), BA.
         
         is_in_lower_half = (t_start - n_nod / cfreq_nod) - (1 / cfreq_nod / 2);
         sgn(is_in_lower_half, position);
         position *= nod_flag;
         
         scanPoint(&center, &pointing, chop_flag, position * cdAz_chop);
-        flagout[idx] = chop_flag * position; 
+        flagout[idx] = chop_flag * position + (1 - chop_flag) * (1 - position); 
         
         // STORAGE: Add current pointing to output array
         azout[idx] = pointing.Az;
@@ -259,6 +267,7 @@ __global__ void runSimulation(float *I_atm, float *I_gnd, float *I_tel,
                 x_atm, y_atm, cnx, cny, PWV_screen, 0);
 
         float* PSD_nu = new float[cnf_src];
+        int chop_flag_sgn = abs(chop_flag);
         
         for(int j=0; j<cnf_src; j++)
         {   
@@ -267,10 +276,21 @@ __global__ void runSimulation(float *I_atm, float *I_gnd, float *I_tel,
                     freqs_atm, PWV_atm, cnf_atm, cnPWV_atm, eta_atm, 0);
 
             start_slice = cnAz * cnEl * j;
-            
             I_nu = interpValue(pointing.Az, pointing.El, 
                 azsrc, elsrc, cnAz, cnEl, source, start_slice);
             
+            //if (cOFF_empty && chop_flag_sgn) {
+
+            //    I_nu = 0.;
+            //}
+
+            //else {
+            //    I_nu = interpValue(pointing.Az, pointing.El, 
+            //        azsrc, elsrc, cnAz, cnEl, source, start_slice);
+            //}
+            //if (idx == 0){
+            //    printf("%d %d %.12e\n", cOFF_empty, chop_flag_sgn, I_nu);
+            //}
             PSD_nu[j] = (eta_ap[j] * eta_atm_interp * const_effs[0] * I_nu
                 + const_effs[0] * (1 - eta_atm_interp) * I_atm[j] 
                 + const_effs[1] * I_gnd[j] 

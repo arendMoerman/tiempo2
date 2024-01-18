@@ -164,6 +164,7 @@ class CuSimParams(ctypes.Structure):
                 ("nTimes", ctypes.c_int),
                 ("nThreads", ctypes.c_int),
                 ("t0", ctypes.c_float),
+                ("OFF_empty", ctypes.c_int),
                 ("use_noise", ctypes.c_int)]
 
 class CuOutput(ctypes.Structure):

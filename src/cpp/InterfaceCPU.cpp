@@ -167,7 +167,7 @@ TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmo
         n_nod = floor(t_start * telescope->freq_nod);
         
         chop_flag = (n_chop % 2 != 0); // If even (false), ON. Odd (true), OFF.
-        nod_flag = 1 - 2 * (n_nod % 2 != 0); // If even (false), AB. Odd (true), BA.
+        nod_flag = -1 + 2 * (n_nod % 2 != 0); // If even (false), AB. Odd (true), BA.
         
         is_in_lower_half = (t_start - n_nod / telescope->freq_nod) - (1 / telescope->freq_nod / 2);
         
@@ -175,8 +175,7 @@ TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmo
         position *= nod_flag;
         
         scanPoint(&center, &pointing, chop_flag, position * telescope->dAz_chop);
-       
-        output->flag[i] = chop_flag * position;
+        output->flag[i] = chop_flag * position + (1 - chop_flag) * (1 - position);
         
         // STORAGE: Add current pointing to output array
         output->Az[i] = pointing.Az;

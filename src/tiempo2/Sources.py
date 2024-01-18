@@ -14,6 +14,7 @@ import scipy.special as scp
 import scipy.ndimage as sci
 from multiprocessing import Pool
 from functools import partial
+import matplotlib.pyplot as pt
 
 def generateSZMaps(SZsourceDict, convolve_beam=False, telescopeDict=None, ret_unit="MJy", save=False, sourceName=None, path=None):
     """!
@@ -83,6 +84,58 @@ def loadSZMaps(SZsourceDict):
 
     return SZ, CMB, Az, El, freqs
 
+def generateGalSpecMaps(GalSpecSourceDict, telescopeDict, convolve_beam=True, save=False, sourceName=None, path=None):
+    """!
+    Generate GalSpec maps on-sky over a range of frequencies.
+
+    @param GalSpecSourceDict A GalSpec source dictionary.
+    @param convolve_beam Convolve generated with diffraction-limited beams at specified frequencies. If True, need to specifiy a telescopeDict in order to get Dtel.
+    @param telescopeDict A telescope dictionary. Need not be given if convolve_beam is False.
+
+    @returns SZ Datacube containing SZ intensity sky maps across the frequency range.
+    @returns CMB Cosmic Microwave Background. Can be added to SZ map.
+    @returns Az Array of Azimuthal co-ordinates.
+    @returns El Array of Elevation co-ordinates.
+    """
+    
+    import galspec
+
+    lims_Az = GalSpecSourceDict.get("Az")                 # degree
+    lims_El = GalSpecSourceDict.get("El")                 # degree
+
+    nAz = GalSpecSourceDict.get("nAz")
+    nEl = GalSpecSourceDict.get("nEl")
+
+    Az, El = np.mgrid[lims_Az[0]:lims_Az[1]:nAz * 1j, lims_El[0]:lims_El[1]:nEl * 1j]
+    theta = np.sqrt(Az**2 + El**2)
+
+    gal_freq, gal_flux = galspec.spectrum(GalSpecSourceDict.get("lum"),
+                                          GalSpecSourceDict.get("z"),
+                                          GalSpecSourceDict.get("f_lo"),
+                                          GalSpecSourceDict.get("f_hi"),
+                                          GalSpecSourceDict.get("nfreqs"),
+                                          GalSpecSourceDict.get("lwidth"))
+    gal_cube = np.zeros((nAz, nEl, gal_freq.size))
+    
+    Az0 = np.argwhere(Az[:,0] == 0)
+    El0 = np.argwhere(El[0,:] == 0)
+
+    gal_cube[Az0, El0, :] = gal_flux
+
+    gal_cube *= (telescopeDict.get("Dtel")/2)**2 * np.pi / (3e8)**2 * (gal_freq*1e9)**2 * 1e-26
+
+    pt.plot(gal_cube[Az0, El0, :].ravel())
+    pt.show()
+
+    if convolve_beam:
+        gal_cube = _convolveMaps(gal_cube, Az, El, gal_freq*1e9, telescopeDict.get("Dtel"))# + CMB
+
+    #if save:
+    #    _saveSource(sourceName, path, SZ, CMB, Az[:,0], El[0,:], freq_Hz)
+    pt.imshow(gal_cube[:,:,100])
+    pt.show()
+    return gal_cube, Az[:,0], El[0,:], gal_freq
+
 def _saveSource(sourceName, path, SZ, CMB, Az, El, freqs):
     totalPath = os.path.join(path, sourceName)
     
@@ -131,3 +184,6 @@ def _AiryDisk(k, R, Az, El):
     airy /= np.sum(airy)
     return airy 
 
+if __name__ == "__main__":
+
+    generateGalSpecMaps(GSDict)

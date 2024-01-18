@@ -101,6 +101,7 @@ def allfillSimParams(SPDict, SPStruct, ct_t=ctypes.c_double):
     SPStruct.nTimes = ctypes.c_int(SPDict["nTimes"])
     SPStruct.nThreads = ctypes.c_int(SPDict["nThreads"])
     SPStruct.t0 = ct_t(SPDict["t0"])
+    SPStruct.OFF_empty = ctypes.c_int(SPDict["OFF_empty"])
     SPStruct.use_noise = ctypes.c_int(SPDict["use_noise"])
 
 def allocateOutput(OutputStruct, size_t, size_f, ct_t=ctypes.c_double):

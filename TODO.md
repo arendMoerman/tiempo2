@@ -1,15 +1,9 @@
 # High prioriy
 
-- Implement scanning in C++ parallel
-- Formalise new structure:
-    - Instrument
-    - Telescope
-    - Atmosphere
-    - Source
-
 # Mid priority
 
 # Low priority
+make GalSpec work -> maybe think abput how sources are implemented.
 
 # Louis filters
 ## Discuss more in-depth with Louis and Akira maybe (if Louis interested)

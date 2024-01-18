@@ -1,6 +1,7 @@
 import math
 import os
 import time
+import copy
 
 import numpy as np
 import matplotlib.pyplot as pt
@@ -12,6 +13,7 @@ import tiempo2.Sources as TSource
 import tiempo2.InputChecker as TCheck
 import tiempo2.Atmosphere as TAtm
 import tiempo2.BindCPU as TBCPU
+import tiempo2.RemoveATM as TRemove
 
 import psutil
 import logging
@@ -123,6 +125,35 @@ class Interface(object):
         # Calculate number of time evaluations
         self.observationDict["nTimes"] = math.ceil(self.observationDict["t_obs"] * self.instrumentDict["freq_sample"])
         self.observationDict["time_range"] = np.arange(self.observationDict["nTimes"]) / self.instrumentDict["freq_sample"]
+        
+        #### INITIALISING ASTRONOMICAL SOURCE ####
+        # Load or generate source
+        if self.sourceDict.get("type") == "SZ":
+            SZ, CMB, Az, El = TSource.generateSZMaps(self.sourceDict, telescopeDict=self.telescopeDict)
+            I_nu = SZ.T + CMB.T
+            freqs = self.sourceDict.get("freqs_src")
+        
+        elif self.sourceDict.get("type") == "GalSpec":
+            I_nu, Az, El, freqs = TSource.generateGalSpecMaps(self.sourceDict, telescopeDict=self.telescopeDict)
+            self.sourceDict["freqs_src"] = freqs 
+        elif self.sourceDict.get("type") == "atmosphere":
+            I_nu = np.array([0])
+            Az = np.array([0])
+            El = np.array([0])
+            freqs = self.sourceDict.get("freqs_src")
+
+        else:
+            print(self.sourceDict.get("type"))
+            SZ, CMB, Az, El, freqs = TSource.loadSZMaps(self.sourceDict)
+            I_nu = SZ.T + CMB.T
+        
+        _sourceDict = {
+                "type"      : self.sourceDict.get("type"),
+                "Az"        : Az,
+                "El"        : El,
+                "I_nu"      : I_nu*1e0,
+                "freqs_src" : freqs*1e9
+                }
 
         #### INITIALISING INSTRUMENT PARAMETERS ####
         # Generate filterbank
@@ -138,30 +169,6 @@ class Interface(object):
             pass
             # Here we need to call function that reads a filterbank matrix from Louis files.
 
-        #### INITIALISING ASTRONOMICAL SOURCE ####
-        # Load or generate source
-        if self.sourceDict.get("type") == "SZ":
-            SZ, CMB, Az, El = TSource.generateSZMaps(self.sourceDict, telescopeDict=self.telescopeDict)
-            I_nu = SZ.T + CMB.T
-            freqs = self.sourceDict.get("freqs_src")
-        
-        elif self.sourceDict.get("type") == "atmosphere":
-            I_nu = np.array([0])
-            Az = np.array([0])
-            El = np.array([0])
-            freqs = self.sourceDict.get("freqs_src")
-
-        else:
-            SZ, CMB, Az, El, freqs = TSource.loadSZMaps(self.sourceDict)
-            I_nu = SZ.T + CMB.T
-        
-        _sourceDict = {
-                "type"      : self.sourceDict.get("type"),
-                "Az"        : Az,
-                "El"        : El,
-                "I_nu"      : I_nu*1e1,
-                "freqs_src" : freqs*1e9
-                }
         
         
         #### INITIALISING ATMOSPHERE PARAMETERS ####
@@ -203,19 +210,22 @@ class Interface(object):
                 }
 
         #### INITIALISING TELESCOPE PARAMETERS ####
-        if isinstance(self.telescopeDict.get("eta_ap"), float):
-            self.telescopeDict["eta_ap"] *= np.ones(freqs.size)
 
-        self.telescopeDict["dAz_chop"] /= 3600
+        _telDict = copy.deepcopy(self.telescopeDict)
+        
+        if isinstance(_telDict.get("eta_ap"), float):
+            _telDict["eta_ap"] *= np.ones(freqs.size)
+
+        _telDict["dAz_chop"] /= 3600
 
         self.clog.info("Starting observation.")
 
         if device == "CPU":
-            res = TBCPU.runTiEMPO2(self.instrumentDict, self.telescopeDict, 
+            res = TBCPU.runTiEMPO2(self.instrumentDict, _telDict, 
                         _atmDict, _sourceDict, self.observationDict)
         
         elif device == "GPU":
-            res = TBCPU.runTiEMPO2_CUDA(self.instrumentDict, self.telescopeDict, 
+            res = TBCPU.runTiEMPO2_CUDA(self.instrumentDict, _telDict, 
                         _atmDict, _sourceDict, self.observationDict)
         
         end = time.time()        
@@ -259,23 +269,42 @@ class Interface(object):
         
         return signal_psd, freq_signal
 
-    def avgDirectSubtract(self, output):
+    def rebinSignal(self, output, freqs_old, nbins_add, final_bin=True):
         """!
-        Calculate a spectrum by averaging over the time-domain signal.
+        Rebin a simulation result into a coarser bin size.
         
-        Atmosphere removal is done by direct subtraction.
-
-        @param output Output object obtained from a simulation.
-
-        @returns spectrum Averaged and direct-subtracted spectrum.
+        @param final_bin If number of old bins divided by nbins_add is not an integer, wether to rebin final new bin with less bins, or add extra bins to second-to-last bin.
         """
 
+        shape_old  = output.get("signal").shape
+        nbins_old = shape_old[1]
+        
+        if (not isinstance(nbins_add, int)) or (nbins_add == 1):
+            self.clog.error(f"Rebin number must be an integer and larger than 1.")
+            exit(1)
 
-        N = output.get("signal")[output.get("flag") == 0]
-        A = output.get("signal")[output.get("flag") == 1]
-        B = output.get("signal")[output.get("flag") == -1]
-        subtract = (np.mean(A, axis=0) + np.mean(B, axis=0)) / 2
+        if final_bin:
+            nbins_new = math.ceil(nbins_old / nbins_add)
+        else:
+            nbins_new = math.floor(nbins_old / nbins_add)
 
-        spectrum = np.mean(N, axis=0) - subtract
+        signal_new = np.zeros((shape_old[0], nbins_new))
+        freqs_new = np.zeros(nbins_new)
 
-        return spectrum
+        for nbin in range(nbins_new):
+            start_bin = nbin * nbins_add
+            if nbin == nbins_new - 1:
+                signal_new[:,nbin] = np.mean(output.get("signal")[:,start_bin:], axis=1)
+                freqs_new[nbin] = np.mean(freqs_old[start_bin:])
+
+            else:
+                signal_new[:,nbin] = np.mean(output.get("signal")[:,start_bin:start_bin+nbins_add], axis=1)
+                freqs_new[nbin] = np.mean(freqs_old[start_bin:start_bin+nbins_add])
+
+        output_binned = copy.deepcopy(output)
+        output_binned["signal"] = signal_new
+
+        return output_binned, freqs_new
+    
+    def avgDirectSubtract(self, output):
+        return TRemove.avgDirectSubtract(output, self.instrumentDict, self.telescopeDict, self.observationDict)

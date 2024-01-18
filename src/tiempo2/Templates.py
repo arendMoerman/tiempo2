@@ -44,6 +44,24 @@ SZsource = {
         "freqs_src"     : "Range of frequencies over which to simulate source signal, in GHz.",
         }
 
+Galsource = {
+        "type"          : "Type of source (GalSpec).",
+        "Az"            : "Azimuthal lower and upper limits of source map in degrees.",
+        "El"            : "Elevation lower and upper limits of source map in degrees.",
+        "nAz"           : "Number of Azimuth points.",
+        "nEl"           : "Number of Elevation points.",
+        # GalSpec specific
+        "lum"           : "Luminosity in log(L_fir/L_sol).",
+        "z"             : "redshift of galaxy.",
+        "f_lo"          : "Lower frequency limit.",
+        "f_hi"          : "Upper frequency limit.",
+        "nfreqs"        : "Number of frequency bins, linearly spaced.",
+        "lwidth"        : "Linewidth of spectral lines in km/s.",
+        "COlines"       : "Kamenetzky or Rosenberg.",
+        "lines"         : "Bonato or Spinoglio.",
+        "mollines"      : "T/F, add molecular lines."
+        }
+
 load_source = {
         "path"          : "Path to saved source datacube.",
         "filename"      : "Name of saved source.",
