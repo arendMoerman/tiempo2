@@ -24,7 +24,9 @@ def checkSourceDict(sourceDict):
     
     elif sourceDict.get("type") == "load":
         checklist = loadlist
-
+    
+    elif sourceDict.get("type") == "GalSpec":
+        return errlist
     else:
         errlist.append("type")
         return errlist
@@ -86,7 +88,7 @@ def checkAtmosphereDict(atmosphereDict):
     return errlist
 
 def checkObservationDict(observationDict):
-    checklist = ["name_sim", "t_obs", "nThreads", "outDir", "get_t_diag"]
+    checklist = ["name_sim", "t_obs", "nThreads", "outDir", "OFF_empty", "get_t_diag"]
 
     errlist = []
 
@@ -95,6 +97,9 @@ def checkObservationDict(observationDict):
 
     if observationDict.get("use_noise") is None:
         observationDict["use_noise"] = 1
+    
+    if observationDict.get("OFF_empty") is None:
+        observationDict["OFF_empty"] = 1
     
     if observationDict.get("get_t_diag") is None:
         observationDict["get_t_diag"] = 1

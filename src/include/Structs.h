@@ -71,6 +71,7 @@ struct SimParams {
     int nTimes;         /**< Total number of time calculations.*/
     int nThreads;       /**< Number of threads to use for computation.*/
     double t0;          /**< Starting time of simulation. If not given will default to 0.*/
+    int OFF_empty;   /**< Wether to use no source or interpolate source during OFF chopping.*/
     int use_noise;      /**< Whether to add photon noise. For real life situations, this should be 1. Only set to 0 for debug purposes.*/
 };
 

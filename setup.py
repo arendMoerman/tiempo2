@@ -47,7 +47,7 @@ class build_ext(build_ext_orig):
 setup(
     name='TiEMPO2',
     license="MIT",
-    version='0.0.2',
+    version='0.1.0',
     author="Arend Moerman",
     install_requires = ["numpy", "matplotlib", "scipy", "tqdm", "astropy", "MockSZ", "psutil"],
     package_dir = {'': 'src'},

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16.3)
 
 project(TiEMPO2 
-    VERSION 0.0.2 
+    VERSION 0.1.0 
     DESCRIPTION "TiEMPO improved"
     LANGUAGES CXX C)
 

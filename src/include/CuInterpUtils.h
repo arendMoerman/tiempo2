@@ -22,25 +22,10 @@ __device__ int findIndexLow(float a, float *arr, int size_arr) {
     if (da == 0) {
         printf("ERROR: input array not monotonically increasing.\n");
     }
+    
+    int idx_start = floorf((a - arr[0]) / da);
 
-    //int idx_start = floor(a / da);
-    int idx_start = floor((a - arr[0]) / (arr[size_arr-1] - arr[0]) * size_arr);
-
-    // Reduce index if larger than size_arr - 1
-    while ((size_arr-1) <= idx_start) {
-        idx_start--;
-    }
-     
-jump:
-    bool is_lower = arr[idx_start] <= a;
-    bool is_higher = arr[idx_start + 1] > a;
-
-    //if(debug) {printf("%d\n", idx_start);}
-
-    if (is_lower && is_higher) {return idx_start;}
-
-    else if (is_lower && !is_higher) {idx_start++; goto jump;}
-    else if (is_higher && !is_lower) {idx_start--; goto jump;}
+    return idx_start;
 }
 
 /**
