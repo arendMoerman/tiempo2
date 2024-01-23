@@ -1,8 +1,8 @@
-"""
+"""!
 @file 
 File containing the threadmanager class for TiEMPO2.
 This class is responsible for launching heavy calculations on a separate daemon thread,
-preventing the program from becoming unresponsive.
+preventing the program from becoming unresponsive and allowing for Ctrl-c keyboard escapes.
 """
 
 import threading
@@ -10,7 +10,7 @@ import threading
 class Manager(object):
     """!
     This class generates a threadmanager object.
-    This manager can start daemon threads and signal when the thread is finished.
+    The manager can start daemon threads and signal when the thread is finished.
     This class is only used to spawn calls to the C++ backend inside a daemon thread so that Python keeps control over the process.
     This allows users to Ctrl-c a running calculation in C++ from Python.
     """

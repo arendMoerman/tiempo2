@@ -21,6 +21,7 @@ def allfillInstrument(InstDict, InstStruct, ct_t=ctypes.c_double):
     InstStruct.nfreqs_filt = ctypes.c_int(InstDict["n_freqs"])
     InstStruct.R = ctypes.c_int(InstDict["R"])
     InstStruct.eta_inst = ct_t(InstDict["eta_inst"])
+    InstStruct.eta_ant = ct_t(InstDict["eta_ant"])
     InstStruct.freq_sample = ct_t(InstDict["freq_sample"])
     InstStruct.filterbank = (ct_t * InstDict["filterbank"].size)(*(InstDict["filterbank"].ravel().tolist()))
     InstStruct.delta = ct_t(InstDict["delta"])

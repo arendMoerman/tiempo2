@@ -118,9 +118,10 @@ __device__ __inline__ void sgn(float val, int &out) {
      float KB = 1.380649e-23;
 
      // Pack constant array
-     float _con[CEFFSSIZE] = {instrument->eta_inst * telescope->eta_fwd * telescope->eta_mir * 0.5,
-         instrument->eta_inst * (1 - telescope->eta_fwd) * telescope->eta_mir * 0.5,
-         instrument->eta_inst * (1 - telescope->eta_mir) * 0.5, instrument->eta_pb};
+     float _con[CEFFSSIZE] = {instrument->eta_inst * instrument->eta_ant * telescope->eta_fwd * telescope->eta_mir * 0.5,
+         instrument->eta_inst * instrument->eta_ant * (1 - telescope->eta_fwd) * telescope->eta_mir * 0.5,
+         instrument->eta_inst * instrument->eta_ant * (1 - telescope->eta_mir) * 0.5, 
+         instrument->eta_pb};
 
      float dt = 1. / instrument->freq_sample;
      
@@ -276,25 +277,15 @@ __global__ void runSimulation(float *I_atm, float *I_gnd, float *I_tel,
                     freqs_atm, PWV_atm, cnf_atm, cnPWV_atm, eta_atm, 0);
 
             start_slice = cnAz * cnEl * j;
+            //printf("%.12e \n", azsrc[cnAz-1]);
             I_nu = interpValue(pointing.Az, pointing.El, 
                 azsrc, elsrc, cnAz, cnEl, source, start_slice);
-            
-            //if (cOFF_empty && chop_flag_sgn) {
 
-            //    I_nu = 0.;
-            //}
-
-            //else {
-            //    I_nu = interpValue(pointing.Az, pointing.El, 
-            //        azsrc, elsrc, cnAz, cnEl, source, start_slice);
-            //}
-            //if (idx == 0){
-            //    printf("%d %d %.12e\n", cOFF_empty, chop_flag_sgn, I_nu);
-            //}
             PSD_nu[j] = (eta_ap[j] * eta_atm_interp * const_effs[0] * I_nu
                 + const_effs[0] * (1 - eta_atm_interp) * I_atm[j] 
                 + const_effs[1] * I_gnd[j] 
-                + const_effs[2] * I_tel[j]) * cCL*cCL / (freq*freq);
+                + const_effs[2] * I_tel[j]) 
+                * cCL*cCL / (freq*freq);
         }
         
         // In this loop, calculate P_k, NEP_k and noise
@@ -307,7 +298,6 @@ __global__ void runSimulation(float *I_atm, float *I_gnd, float *I_tel,
                 freq = freqs_src[j];
                 eta_kj = filterbank[k*cnf_src + j];
                 
-                //printf("%.12e %d hallooooo\n", PSD_nu[j], j); 
                 NEP_accum += PSD_nu[j] * eta_kj * (cHP * freq + PSD_nu[j] * eta_kj + 2 * cdelta / const_effs[3]);
                 P_k += PSD_nu[j] * eta_kj;
             }
@@ -320,7 +310,6 @@ __global__ void runSimulation(float *I_atm, float *I_gnd, float *I_tel,
            
             // STORAGE: Add signal to signal array in output
             sigout[idx * cnf_filt + k] = P_k; 
-
         }
         delete[] PSD_nu;
     }

@@ -32,7 +32,17 @@ def loadTiEMPO2lib():
                             ctypes.POINTER(TStructs.Atmosphere), ctypes.POINTER(TStructs.Source),
                             ctypes.POINTER(TStructs.SimParams), ctypes.POINTER(TStructs.Output)]
     
+    lib.getSourceSignal.argtypes = [ctypes.POINTER(TStructs.Instrument), ctypes.POINTER(TStructs.Telescope),
+                            ctypes.POINTER(TStructs.Source), ctypes.POINTER(ctypes.c_double),
+                            ctypes.c_double, ctypes.c_double]
+    
+    lib.getNEP.argtypes = [ctypes.POINTER(TStructs.Instrument), ctypes.POINTER(TStructs.Telescope),
+                            ctypes.POINTER(TStructs.Atmosphere), ctypes.POINTER(TStructs.Source), 
+                            ctypes.POINTER(ctypes.c_double), ctypes.c_double]
+    
     lib.runTiEMPO2.restype = None
+    lib.getSourceSignal.restype = None
+    lib.getNEP.restype = None
 
     return lib
 
@@ -96,6 +106,78 @@ def runTiEMPO2(instrument, telescope, atmosphere, source, simparams):
 
     res = TBUtils.OutputStructToDict(_output, simparams["nTimes"], instrument["freqs_filt"].size, np_t=np.float64)
 
+    return res
+
+# BINDINGS FOR DEBUGGING / CHARACTERISATION
+def getSourceSignal(instrument, telescope, source, Az_point, El_point):
+    """!
+    Binding for running the TiEMPO2 simulation.
+
+    @param instrument Dictionary containing instrument parameters.
+    @param telescope Dictionary containing telescope parameters.
+    @param atmosphere Dictionary containing atmosphere parameters.
+    @param source Dictionary containing astronomical source parameters.
+    @param simparams Dictionary containing simulation parameters.
+    """
+
+    lib = loadTiEMPO2lib()
+    mgr = TManager.Manager()
+
+    _instrument = TStructs.Instrument()
+    _telescope = TStructs.Telescope()
+    _source = TStructs.Source()
+
+    coutput = (ctypes.c_double * instrument["freqs_filt"].size)(*(np.zeros(instrument["freqs_filt"].size).tolist()))
+
+    cAz_point = ctypes.c_double(Az_point)
+    cEl_point = ctypes.c_double(El_point)
+
+    TBUtils.allfillInstrument(instrument, _instrument)
+    TBUtils.allfillTelescope(telescope, _telescope)
+    TBUtils.allfillSource(source, _source)
+
+    args = [_instrument, _telescope, _source, coutput, cAz_point, cEl_point]
+
+    mgr.new_thread(target=lib.getSourceSignal, args=args)
+
+    res = np.ctypeslib.as_array(coutput, shape=instrument["freqs_filt"]).astype(np.float64)
+    
+    return res
+
+def getNEP(instrument, telescope, atmosphere, source, PWV_value):
+    """!
+    Binding for running the TiEMPO2 simulation.
+
+    @param instrument Dictionary containing instrument parameters.
+    @param telescope Dictionary containing telescope parameters.
+    @param atmosphere Dictionary containing atmosphere parameters.
+    @param source Dictionary containing astronomical source parameters.
+    @param simparams Dictionary containing simulation parameters.
+    """
+
+    lib = loadTiEMPO2lib()
+    mgr = TManager.Manager()
+
+    _instrument = TStructs.Instrument()
+    _telescope = TStructs.Telescope()
+    _atmosphere = TStructs.Atmosphere()
+    _source = TStructs.Source()
+
+    coutput = (ctypes.c_double * instrument["freqs_filt"].size)(*(np.zeros(instrument["freqs_filt"].size).tolist()))
+
+    cPWV = ctypes.c_double(PWV_value)
+
+    TBUtils.allfillInstrument(instrument, _instrument)
+    TBUtils.allfillTelescope(telescope, _telescope)
+    TBUtils.allfillAtmosphere(atmosphere, _atmosphere)
+    TBUtils.allfillSource(source, _source)
+
+    args = [_instrument, _telescope, _atmosphere, _source, coutput, cPWV]
+
+    mgr.new_thread(target=lib.getNEP, args=args)
+
+    res = np.ctypeslib.as_array(coutput, shape=instrument["freqs_filt"]).astype(np.float64)
+    
     return res
 
 def runTiEMPO2_CUDA(instrument, telescope, atmosphere, source, simparams):

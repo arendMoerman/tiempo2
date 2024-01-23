@@ -1,8 +1,7 @@
 import math
 import os
 import time
-import copy
-
+import copy 
 import numpy as np
 import matplotlib.pyplot as pt
 import scipy.fft as fft
@@ -23,6 +22,7 @@ logging.getLogger(__name__)
 
 MEMFRAC = 0.5
 MEMBUFF = MEMFRAC * psutil.virtual_memory().total
+T_OBS_BUFF = 0.8
 
 class FieldError(Exception):
     """!
@@ -37,11 +37,21 @@ class InitialError(Exception):
     pass
 
 class Interface(object):
+    # These are for storing blueprint dicts
+    __sourceDict = None
+    __atmosphereDict = None
+    __telescopeDict = None
+    __instrumentDict = None
+    __observationDict = None
+
+    # These ones are actually used
     sourceDict = None
     atmosphereDict = None
     telescopeDict = None
     instrumentDict = None
     observationDict = None
+    
+    initialised = False
 
     count = 0
     
@@ -52,7 +62,7 @@ class Interface(object):
         errlist = TCheck.checkSourceDict(sourceDict)
 
         if not errlist:
-            self.sourceDict = sourceDict
+            self.__sourceDict = sourceDict
             self.count += 1
 
         else:
@@ -63,7 +73,7 @@ class Interface(object):
         errlist = TCheck.checkTelescopeDict(telescopeDict)
 
         if not errlist:
-            self.telescopeDict = telescopeDict
+            self.__telescopeDict = telescopeDict
             self.count += 1
 
         else:
@@ -74,7 +84,7 @@ class Interface(object):
         errlist = TCheck.checkInstrumentDict(instrumentDict)
 
         if not errlist:
-            self.instrumentDict = instrumentDict
+            self.__instrumentDict = instrumentDict
             self.count += 1
 
         else:
@@ -86,7 +96,7 @@ class Interface(object):
         errlist = TCheck.checkAtmosphereDict(atmosphereDict)
 
         if not errlist:
-            self.atmosphereDict = atmosphereDict
+            self.__atmosphereDict = atmosphereDict
             self.count += 1
 
         else:
@@ -97,30 +107,24 @@ class Interface(object):
         errlist = TCheck.checkObservationDict(observationDict)
 
         if not errlist:
-            self.observationDict = observationDict
+            self.__observationDict = observationDict
             self.count += 1
 
         else:
             errstr = f"Errors encountered in observation dictionary in fields :{errlist}."
             raise FieldError(errstr)
 
-    def runSimulation(self, device="CPU"):
-        """!
-        Start and run a simulation.
-
-        This is the main routine of TiEMPO2 and should be called after filling all dictionaries.
-        Generate or load a source datacube, atmosphere PWV screen, transmission curves.
-
-        Will return exception if not all dictionaries have been set.
-        """
-        self.clog.info("\033[1;32m*** STARTING TiEMPO2 SIMULATION ***")
-        
-        start = time.time()
-
+    def initialise(self):
         if self.count < 5:
             raise InitialError
             exit(1)
-       
+        
+        self.observationDict = copy.deepcopy(self.__observationDict)
+        self.sourceDict = copy.deepcopy(self.__sourceDict)
+        self.instrumentDict = copy.deepcopy(self.__instrumentDict)
+        self.atmosphereDict = copy.deepcopy(self.__atmosphereDict)
+        self.telescopeDict = copy.deepcopy(self.__telescopeDict)
+        
         #### INITIALISING OBSERVATION PARAMETERS ####
         # Calculate number of time evaluations
         self.observationDict["nTimes"] = math.ceil(self.observationDict["t_obs"] * self.instrumentDict["freq_sample"])
@@ -129,8 +133,8 @@ class Interface(object):
         #### INITIALISING ASTRONOMICAL SOURCE ####
         # Load or generate source
         if self.sourceDict.get("type") == "SZ":
-            SZ, CMB, Az, El = TSource.generateSZMaps(self.sourceDict, telescopeDict=self.telescopeDict)
-            I_nu = SZ.T + CMB.T
+            SZ, Az, El = TSource.generateSZMaps(self.sourceDict, telescopeDict=self.telescopeDict)
+            I_nu = SZ.T
             freqs = self.sourceDict.get("freqs_src")
         
         elif self.sourceDict.get("type") == "GalSpec":
@@ -143,44 +147,32 @@ class Interface(object):
             freqs = self.sourceDict.get("freqs_src")
 
         else:
-            print(self.sourceDict.get("type"))
-            SZ, CMB, Az, El, freqs = TSource.loadSZMaps(self.sourceDict)
-            I_nu = SZ.T + CMB.T
+            SZ, Az, El, freqs = TSource.loadSZMaps(self.sourceDict)
+            I_nu = SZ
         
-        _sourceDict = {
-                "type"      : self.sourceDict.get("type"),
-                "Az"        : Az,
-                "El"        : El,
-                "I_nu"      : I_nu*1e0,
-                "freqs_src" : freqs*1e9
-                }
+        self.sourceDict["Az"] = Az / 3600
+        self.sourceDict["El"] = El / 3600
+        self.sourceDict["I_nu"] = I_nu
+        self.sourceDict["freqs_src"] = freqs * 1e9
 
         #### INITIALISING INSTRUMENT PARAMETERS ####
         # Generate filterbank
+        
         if isinstance(self.instrumentDict.get("eta_filt"), float):
             self.instrumentDict["eta_filt"] *= np.ones(self.instrumentDict.get("n_freqs"))
 
         if self.instrumentDict.get("R"):
-            self.instrumentDict["freqs_filt"] = self.instrumentDict.get("freq_0") * (1 + 1 / self.instrumentDict.get("R"))**np.arange(self.instrumentDict.get("n_freqs"))
+            self.instrumentDict["freqs_filt"] = self.instrumentDict.get("freq_0") * (1 + 1 / self.instrumentDict.get("R"))**np.arange(self.instrumentDict.get("n_freqs")) * 1e9
             self.instrumentDict["filterbank"] = TFilter.generateFilterbankFromR(self.instrumentDict, self.sourceDict)
-            #pt.plot(self.instrumentDict["filterbank"].T)
-            #pt.show()
         else:
             pass
             # Here we need to call function that reads a filterbank matrix from Louis files.
-
-        
         
         #### INITIALISING ATMOSPHERE PARAMETERS ####
+        
         PWV_atm, nx, ny = TAtm.generateAtmospherePWV(self.atmosphereDict, self.telescopeDict, self.clog)  
         eta_atm, freqs_atm, pwv_curve = TAtm.readAtmTransmissionText()        
       
-        #PWV_atm = np.ones((nx, ny)) * 0.1
-
-        #fig, ax = pt.subplots(1,1)
-        #ax.imshow(PWV_atm, aspect='auto')
-        #pt.show()
-
         # At t=0, x=y=0 is in middle
         x_atm = (np.arange(0, nx) - ny/2)*self.atmosphereDict.get("dx")
         y_atm = (np.arange(0, ny) - ny/2)*self.atmosphereDict.get("dy")
@@ -189,44 +181,59 @@ class Interface(object):
         length_req = self.atmosphereDict.get("v_wind") * self.observationDict.get("t_obs")
 
         if length_req > np.max(x_atm):
-            t_obs_new = np.floor(np.max(x_atm) / self.atmosphereDict.get("v_wind"))
+            t_obs_new = np.floor(T_OBS_BUFF * np.max(x_atm) / self.atmosphereDict.get("v_wind"))
             self.clog.warning(f"Atmospheric screen too small for windspeed of {self.atmosphereDict.get('v_wind')} m/s and observation time of {self.observationDict.get('t_obs')} s. Reducing observation time to {t_obs_new} s.")
 
             self.observationDict["t_obs"] = t_obs_new
 
-        _atmDict = {
-                "Tatm"      : self.atmosphereDict.get("Tatm"),
-                "v_wind"    : self.atmosphereDict.get("v_wind"),
-                "h_column"  : self.atmosphereDict.get("h_column"),
-                "x_atm"     : x_atm,
-                "y_atm"     : y_atm,
-                "nx"        : nx,
-                "ny"        : ny,
-                "PWV"       : PWV_atm,
-                "freqs_atm" : freqs_atm * 1e9,
-                "nfreqs_atm": freqs_atm.size,
-                "PWV_atm"   : pwv_curve,
-                "eta_atm"   : eta_atm
-                }
+        self.atmosphereDict["x_atm"] = x_atm
+        self.atmosphereDict["y_atm"] = y_atm
+        self.atmosphereDict["nx"] = nx
+        self.atmosphereDict["ny"] = ny
+        self.atmosphereDict["PWV"] = PWV_atm
+        self.atmosphereDict["freqs_atm"] = freqs_atm * 1e9
+        self.atmosphereDict["nfreqs_atm"] = freqs_atm.size
+        self.atmosphereDict["PWV_atm"] = pwv_curve
+        self.atmosphereDict["eta_atm"] = eta_atm
 
         #### INITIALISING TELESCOPE PARAMETERS ####
+        if isinstance(self.telescopeDict.get("eta_ap"), float):
+            self.telescopeDict["eta_ap"] *= np.ones(freqs.size)
 
-        _telDict = copy.deepcopy(self.telescopeDict)
+        self.telescopeDict["dAz_chop"] /= 3600
+        self.initialised = True
+
+    def getSourceSignal(self, Az_point, El_point):
+        res = TBCPU.getSourceSignal(self.instrumentDict, self.telescopeDict, self.sourceDict, Az_point/3600, El_point/3600)
+        return res, self.instrumentDict["freqs_filt"]
+
+    def getNEP(self, PWV_value):
+        res = TBCPU.getNEP(self.instrumentDict, self.telescopeDict, self.atmosphereDict, self.sourceDict, PWV_value)
+        return res, self.instrumentDict["freqs_filt"]
+
+    def runSimulation(self, device="CPU"):
+        """!
+        Start and run a simulation.
+
+        This is the main routine of TiEMPO2 and should be called after filling all dictionaries.
+        Generate or load a source datacube, atmosphere PWV screen, transmission curves.
+
+        Will return exception if not all dictionaries have been set.
+        """
+
+        self.clog.info("\033[1;32m*** STARTING TiEMPO2 SIMULATION ***")
         
-        if isinstance(_telDict.get("eta_ap"), float):
-            _telDict["eta_ap"] *= np.ones(freqs.size)
-
-        _telDict["dAz_chop"] /= 3600
-
+        start = time.time()
+       
         self.clog.info("Starting observation.")
 
         if device == "CPU":
-            res = TBCPU.runTiEMPO2(self.instrumentDict, _telDict, 
-                        _atmDict, _sourceDict, self.observationDict)
+            res = TBCPU.runTiEMPO2(self.instrumentDict, self.telescopeDict, 
+                        self.atmosphereDict, self.sourceDict, self.observationDict)
         
         elif device == "GPU":
-            res = TBCPU.runTiEMPO2_CUDA(self.instrumentDict, _telDict, 
-                        _atmDict, _sourceDict, self.observationDict)
+            res = TBCPU.runTiEMPO2_CUDA(self.instrumentDict, self.telescopeDict, 
+                        self.atmosphereDict, self.sourceDict, self.observationDict)
         
         end = time.time()        
         
@@ -307,4 +314,5 @@ class Interface(object):
         return output_binned, freqs_new
     
     def avgDirectSubtract(self, output):
-        return TRemove.avgDirectSubtract(output, self.instrumentDict, self.telescopeDict, self.observationDict)
+        self.clog.info("Applying averaging and ABBA subtraction")
+        return TRemove.avgDirectSubtract(output)

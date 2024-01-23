@@ -35,9 +35,9 @@ TIEMPO2_DLL void runTiEMPO2(Instrument *instrument, Telescope *telescope, Atmosp
 
     // Initialise constant efficiency struct
     Effs effs;
-    effs.eta_tot_chain = instrument->eta_inst * telescope->eta_fwd * telescope->eta_mir * 0.5;
-    effs.eta_tot_gnd = instrument->eta_inst * (1 - telescope->eta_fwd) * telescope->eta_mir * 0.5;
-    effs.eta_tot_mir = instrument->eta_inst * (1 - telescope->eta_mir) * 0.5;
+    effs.eta_tot_chain = instrument->eta_inst * instrument->eta_ant * telescope->eta_fwd * telescope->eta_mir * 0.5;
+    effs.eta_tot_gnd = instrument->eta_inst  * instrument->eta_ant * (1 - telescope->eta_fwd) * telescope->eta_mir * 0.5;
+    effs.eta_tot_mir = instrument->eta_inst  * instrument->eta_ant * (1 - telescope->eta_mir) * 0.5;
 
     // Make threadpool
     std::vector<std::thread> threadPool;
@@ -52,8 +52,7 @@ TIEMPO2_DLL void runTiEMPO2(Instrument *instrument, Telescope *telescope, Atmosp
     // Calculate I_atm, I_gnd, I_tel before entering time loop.
     // These stay constant during observation anyways.
     for(int j=0; j<source->nfreqs_src; j++)
-    {
-        freq = source->freqs_src[j];
+    { freq = source->freqs_src[j];
         
         I_atm[j] = getPlanck(atmosphere->Tatm, freq); 
         I_gnd[j] = getPlanck(telescope->Tgnd, freq); 
@@ -206,11 +205,11 @@ TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmo
                 source->nEl, source->I_nu, start_slice, debug);
             
             // Currently only uses optimal throughput
-            // Store P_nu in array for later use
             PSD_nu[j] = (telescope->eta_ap[j] * eta_atm_interp * effs->eta_tot_chain * I_nu
                 + effs->eta_tot_chain * (1 - eta_atm_interp) * I_atm[j] 
                 + effs->eta_tot_gnd * I_gnd[j] 
-                + effs->eta_tot_mir * I_tel[j]) * CL*CL / (freq*freq);
+                + effs->eta_tot_mir * I_tel[j]) 
+                * CL*CL / (freq*freq);
         }
         
         // In this loop, calculate P_k, NEP_k and noise
@@ -239,3 +238,91 @@ TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmo
         }
     }
 }
+
+TIEMPO2_DLL void getSourceSignal(Instrument *instrument, Telescope *telescope, Source *source, double *output, double Az, double El) {
+    double freq; // Bin frequency
+    double I_nu; // Specific intensity of source.
+    double eta_kj; // Filter efficiency for bin j, at channel k
+
+    double dfreq = source->freqs_src[1] - source->freqs_src[0];
+
+    double PSD_nu;
+
+    AzEl pointing;
+    pointing.Az = Az;
+    pointing.El = El;
+    
+    double eta_tot_chain = instrument->eta_inst * telescope->eta_fwd * telescope->eta_mir * 0.5;
+    int num_AzEl = source->nAz * source->nEl;
+       
+    // In this loop, calculate power in each bin
+    for(int j=0; j<source->nfreqs_src; j++)
+    {   
+        freq = source->freqs_src[j];
+        
+        I_nu = interpValue(pointing.Az, pointing.El, 
+            source->Az, source->El, source->nAz, 
+            source->nEl, source->I_nu, num_AzEl * j);
+        
+        PSD_nu = telescope->eta_ap[j] * eta_tot_chain * I_nu * CL*CL / (freq*freq);
+        for(int k=0; k<instrument->nfreqs_filt; k++) {
+            eta_kj = instrument->filterbank[k*source->nfreqs_src + j];
+            output[k] += PSD_nu * eta_kj * dfreq; 
+        }
+    }
+}
+
+TIEMPO2_DLL void getNEP(Instrument *instrument, Telescope *telescope, Atmosphere *atmosphere, Source *source, double *output, double PWV) {
+    // Double array types
+    double I_atm;
+    double I_gnd;
+    double I_tel;
+
+    // Initialise constant efficiency struct
+    Effs effs;
+    effs.eta_tot_chain = instrument->eta_inst * instrument->eta_ant * telescope->eta_fwd * telescope->eta_mir * 0.5;
+    effs.eta_tot_gnd = instrument->eta_inst  * instrument->eta_ant * (1 - telescope->eta_fwd) * telescope->eta_mir * 0.5;
+    effs.eta_tot_mir = instrument->eta_inst  * instrument->eta_ant * (1 - telescope->eta_mir) * 0.5;
+    
+    double eta_atm_interp; // Interpolated eta_atm, over frequency and PWV
+    double freq; // Bin frequency
+    double eta_kj; // Filter efficiency for bin j, at channel k
+
+    double dfreq = source->freqs_src[1] - source->freqs_src[0];
+
+    double PSD_back;
+    int num_AzEl = source->nAz * source->nEl;
+    int start_slice;
+    // In this loop, calculate power in each bin
+    for(int j=0; j<source->nfreqs_src; j++)
+    {   
+        freq = source->freqs_src[j];
+        
+        I_atm = getPlanck(atmosphere->Tatm, freq); 
+        I_gnd = getPlanck(telescope->Tgnd, freq); 
+        I_tel = getPlanck(telescope->Ttel, freq);
+        
+        eta_atm_interp = interpValue(freq, PWV, 
+                atmosphere->freqs_atm, atmosphere->PWV_atm, atmosphere->nfreqs_atm, 
+                atmosphere->nPWV_atm, atmosphere->eta_atm);
+
+        start_slice = num_AzEl * j;
+        
+        // Currently only uses optimal throughput
+        // Store P_nu in array for later use
+        PSD_back = (effs.eta_tot_chain * (1 - eta_atm_interp) * I_atm 
+            + effs.eta_tot_gnd * I_gnd 
+            + effs.eta_tot_mir * I_tel) * CL*CL / (freq*freq);
+        
+        for(int k=0; k<instrument->nfreqs_filt; k++) {   
+            eta_kj = instrument->filterbank[k*source->nfreqs_src + j];
+            
+            output[k] += 2 * dfreq * PSD_back * eta_kj * (HP * freq + PSD_back * eta_kj + 2 * instrument->delta / instrument->eta_pb);
+        }
+    }
+    
+    for(int k=0; k<instrument->nfreqs_filt; k++) {
+        output[k] = sqrt(output[k]);
+    }
+}
+
