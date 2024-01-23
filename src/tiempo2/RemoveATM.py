@@ -2,11 +2,11 @@ import numpy as np
 import math
 import matplotlib.pyplot as pt
 
-def avgDirectSubtract(output, instrumentDict, telescopeDict, observationDict):
+def avgDirectSubtract(output):
     """!
     Calculate a spectrum by averaging over the time-domain signal.
     
-    Atmosphere removal is done by direct subtraction.
+    Atmosphere removal is done by direct subtraction, using the ABBA scheme.
 
     @param output Output object obtained from a simulation.
 

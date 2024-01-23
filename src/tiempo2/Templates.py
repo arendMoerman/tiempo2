@@ -1,3 +1,8 @@
+"""!
+@file
+File containing templates for input dictionaries.
+"""
+
 instrument = {
         "freqs_filt"    : "Range of frequencies of filterbank in GHz.",
         "R"             : "Resolving power f / df.",

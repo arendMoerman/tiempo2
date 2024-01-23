@@ -32,43 +32,40 @@ def generateSZMaps(SZsourceDict, convolve_beam=False, telescopeDict=None, ret_un
     """
     
     import MockSZ.Models as MModel
-    import MockSZ.Conversions as MConv
-    import MockSZ.Backgrounds as MBack
 
 
-    Te      = MConv.eV_Temp(SZsourceDict.get("Te") * 1e3)   # KeV -> eV -> K
-    ne0     = SZsourceDict.get("ne0") * 1e6                 # n / cm^-3 -> n / m^-3
-    rc      = MConv.pc_m(SZsourceDict.get("rc") * 1e3)      # Kpc -> pc -> m
+    Te      = SZsourceDict.get("Te")
+    ne0     = SZsourceDict.get("ne0")               # n / cm^-3 -> n / m^-3
+    thetac  = SZsourceDict.get("thetac")      # arcsec
     beta    = SZsourceDict.get("beta")
-    Da      = MConv.pc_m(SZsourceDict.get("Da") * 1e6)      # Mpc -> pc -> m
-    v_pec   = SZsourceDict.get("v_pec") * 1e3               # km / s -> m / s
+    Da      = SZsourceDict.get("Da")      # Mpc -> pc -> m
+    v_pec   = SZsourceDict.get("v_pec")               # km / s -> m / s
 
-    lims_Az = SZsourceDict.get("Az")                 # degree
-    lims_El = SZsourceDict.get("El")                 # degree
+    lims_Az = SZsourceDict.get("Az")                 # arcsec
+    lims_El = SZsourceDict.get("El")                 # arcsec
 
     nAz = SZsourceDict.get("nAz")
     nEl = SZsourceDict.get("nEl")
 
     freq_Hz = SZsourceDict.get("freqs_src") * 1e9               # GHz -> Hz 
 
-    isob = MModel.IsoBetaModel(Te, ne0, rc, beta, Da, v_pec)
-
     Az, El = np.mgrid[lims_Az[0]:lims_Az[1]:nAz * 1j, lims_El[0]:lims_El[1]:nEl * 1j]
     theta = np.sqrt(Az**2 + El**2)
 
-    tSZ = isob.tSZMap(theta, freq_Hz) # W / m**2 / sr / Hz
-    kSZ = isob.kSZMap(theta, freq_Hz) # W / m**2 / sr / Hz
-    CMB = MBack.getSpecificIntensityCMB(freq_Hz) # W / m**2 / sr / Hz
-
-    SZ = tSZ + kSZ
-    CMB = np.ones(SZ.shape) * CMB
+    simObjIso = MModel.IsoBetaModel()
+    isob = simObjIso.getIsoBeta(Az[:,0], El[0,:], beta, ne0, thetac, Da, grid=True)
+    SZ = simObjIso.getIsoBetaCube(isob, freq_Hz, Te, v_pec, no_CMB=False)
+    #pt.imshow(isob)
+    #pt.show()
+    #pt.plot(SZ[25,25,:])
+    #pt.show()
     if convolve_beam:
         SZ = _convolveMaps(SZ, Az, El, freq_Hz, telescopeDict.get("Dtel"))# + CMB
 
     if save:
-        _saveSource(sourceName, path, SZ, CMB, Az[:,0], El[0,:], freq_Hz)
+        _saveSource(sourceName, path, SZ, Az[:,0], El[0,:], freq_Hz)
 
-    return SZ, CMB, Az[:,0], El[0,:]
+    return SZ, Az[:,0], El[0,:]
 
 def loadSZMaps(SZsourceDict):
     sourceName = SZsourceDict.get("filename")
@@ -77,12 +74,11 @@ def loadSZMaps(SZsourceDict):
     totalPath = os.path.join(path, sourceName)
     
     SZ = np.load(os.path.join(totalPath, "SZ.npy"))
-    CMB = np.load(os.path.join(totalPath, "CMB.npy"))
     Az = np.load(os.path.join(totalPath, "Az.npy"))
     El = np.load(os.path.join(totalPath, "El.npy"))
     freqs = np.load(os.path.join(totalPath, "freqs.npy"))
 
-    return SZ, CMB, Az, El, freqs
+    return SZ, Az, El, freqs
 
 def generateGalSpecMaps(GalSpecSourceDict, telescopeDict, convolve_beam=True, save=False, sourceName=None, path=None):
     """!
@@ -132,11 +128,9 @@ def generateGalSpecMaps(GalSpecSourceDict, telescopeDict, convolve_beam=True, sa
 
     #if save:
     #    _saveSource(sourceName, path, SZ, CMB, Az[:,0], El[0,:], freq_Hz)
-    pt.imshow(gal_cube[:,:,100])
-    pt.show()
     return gal_cube, Az[:,0], El[0,:], gal_freq
 
-def _saveSource(sourceName, path, SZ, CMB, Az, El, freqs):
+def _saveSource(sourceName, path, CMB, Az, El, freqs):
     totalPath = os.path.join(path, sourceName)
     
     if os.path.exists(totalPath):
@@ -144,7 +138,6 @@ def _saveSource(sourceName, path, SZ, CMB, Az, El, freqs):
     os.makedirs(totalPath)
     
     np.save(os.path.join(totalPath, "SZ"), SZ)
-    np.save(os.path.join(totalPath, "CMB"), CMB)
     np.save(os.path.join(totalPath, "Az"), Az)
     np.save(os.path.join(totalPath, "El"), El)
     np.save(os.path.join(totalPath, "freqs"), freqs)

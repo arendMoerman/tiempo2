@@ -39,7 +39,6 @@ __device__ __inline__ void scanPoint(AzEl* center, AzEl* out, bool chop, float s
     if (chop) {
         offset = sep;
     }    
-    
     out->Az = center->Az + offset;
     out->El = center->El;
 }

@@ -18,7 +18,8 @@ struct Instrument {
     double *freqs_filt; /**< Array with frequencies in Hertz.*/
     int nfreqs_filt;    /**< Number of elements in freqs.*/
     int R;              /**< Resolving power of instrument: R = f / df.*/
-    double eta_inst;    /**< Instrument efficiency. Defined to contain all efficiencies of the instrument and coupling to telescope.*/
+    double eta_inst;    /**< Instrument efficiency.*/
+    double eta_ant;    /**< Antenna radiation efficiency.*/
     double freq_sample; /**< Readout frequency of instrument in Hertz.*/
     double *filterbank; /**< Array with filterbank matrix, flattened.*/
     double delta;       /**< Superconducting bandgap energy in Joules.*/

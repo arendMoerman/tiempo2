@@ -8,7 +8,7 @@ import numpy as np
 
 def checkSourceDict(sourceDict):
     SZlist = ["type", "Az", "El", "nAz", "nEl", "Te", "ne0", "beta",
-              "v_pec", "rc", "Da", "freqs_src"]
+              "v_pec", "thetac", "Da", "freqs_src"]
 
     atmlist = ["type", "freqs_src"]
     

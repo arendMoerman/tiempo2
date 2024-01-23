@@ -18,7 +18,8 @@ struct CuInstrument {
     float *freqs_filt; /**< Array with frequencies in Hertz.*/
     int nfreqs_filt;    /**< Number of elements in freqs.*/
     int R;              /**< Resolving power of instrument: R = f / df.*/
-    float eta_inst;    /**< Instrument efficiency. Defined to contain all efficiencies of the instrument and coupling to telescope.*/
+    float eta_inst;    /**< Instrument efficiency.*/
+    float eta_ant;     /**< Antenna efficiency.*/
     float freq_sample; /**< Readout frequency of instrument in Hertz.*/
     float *filterbank; /**< Array with filterbank matrix, flattened.*/
     float delta;       /**< Superconducting bandgap energy in Joules.*/
