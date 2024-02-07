@@ -15,7 +15,7 @@ class Instrument(ctypes.Structure):
                 ("nfreqs_filt", ctypes.c_int),
                 ("R", ctypes.c_int),
                 ("eta_inst", ctypes.c_double),
-                ("eta_ant", ctypes.c_double),
+                ("eta_misc", ctypes.c_double),
                 ("freq_sample", ctypes.c_double),
                 ("filterbank", ctypes.POINTER(ctypes.c_double)),
                 ("delta", ctypes.c_double),
@@ -33,9 +33,21 @@ class Telescope(ctypes.Structure):
                 ("dAz_chop", ctypes.c_double),
                 ("freq_chop", ctypes.c_double),
                 ("freq_nod", ctypes.c_double),
-                ("eta_ap", ctypes.POINTER(ctypes.c_double)),
+                ("eta_ap_ON", ctypes.POINTER(ctypes.c_double)),
+                ("eta_ap_OFF", ctypes.POINTER(ctypes.c_double)),
                 ("eta_mir", ctypes.c_double),
-                ("eta_fwd", ctypes.c_double)]
+                ("eta_fwd", ctypes.c_double),
+                ("scantype", ctypes.c_int),
+                ("Ax", ctypes.c_double),
+                ("Axmin", ctypes.c_double),
+                ("Ay", ctypes.c_double),
+                ("Aymin", ctypes.c_double),
+                ("wx", ctypes.c_double),
+                ("wxmin", ctypes.c_double),
+                ("wy", ctypes.c_double),
+                ("wymin", ctypes.c_double),
+                ("phix", ctypes.c_double),
+                ("phiy", ctypes.c_double)]
 
 class Atmosphere(ctypes.Structure):
     """!
@@ -102,7 +114,7 @@ class CuInstrument(ctypes.Structure):
                 ("nfreqs_filt", ctypes.c_int),
                 ("R", ctypes.c_int),
                 ("eta_inst", ctypes.c_float),
-                ("eta_ant", ctypes.c_float),
+                ("eta_misc", ctypes.c_float),
                 ("freq_sample", ctypes.c_float),
                 ("filterbank", ctypes.POINTER(ctypes.c_float)),
                 ("delta", ctypes.c_float),
@@ -120,9 +132,22 @@ class CuTelescope(ctypes.Structure):
                 ("dAz_chop", ctypes.c_float),
                 ("freq_chop", ctypes.c_float),
                 ("freq_nod", ctypes.c_float),
-                ("eta_ap", ctypes.POINTER(ctypes.c_float)),
+                ("eta_ap_ON", ctypes.POINTER(ctypes.c_float)),
+                ("eta_ap_OFF", ctypes.POINTER(ctypes.c_float)),
                 ("eta_mir", ctypes.c_float),
-                ("eta_fwd", ctypes.c_float)]
+                ("eta_fwd", ctypes.c_float),
+                ("scantype", ctypes.c_int),
+                ("Ax", ctypes.c_float),
+                ("Axmin", ctypes.c_float),
+                ("Ay", ctypes.c_float),
+                ("Aymin", ctypes.c_float),
+                ("wx", ctypes.c_float),
+                ("wxmin", ctypes.c_float),
+                ("wy", ctypes.c_float),
+                ("wymin", ctypes.c_float),
+                ("phix", ctypes.c_float),
+                ("phiy", ctypes.c_float)]
+
 
 class CuAtmosphere(ctypes.Structure):
     """!

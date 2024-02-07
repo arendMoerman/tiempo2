@@ -33,15 +33,24 @@ def loadTiEMPO2lib():
                             ctypes.POINTER(TStructs.SimParams), ctypes.POINTER(TStructs.Output)]
     
     lib.getSourceSignal.argtypes = [ctypes.POINTER(TStructs.Instrument), ctypes.POINTER(TStructs.Telescope),
-                            ctypes.POINTER(TStructs.Source), ctypes.POINTER(ctypes.c_double),
-                            ctypes.c_double, ctypes.c_double]
+                            ctypes.POINTER(TStructs.Source), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double),
+                            ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double),
+                            ctypes.c_int, ctypes.c_int, 
+                            ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_bool]
+    
+    lib.getEtaAtm.argtypes = [ctypes.POINTER(TStructs.Source), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double),
+                            ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double),
+                            ctypes.c_int, ctypes.c_int, ctypes.c_double]
     
     lib.getNEP.argtypes = [ctypes.POINTER(TStructs.Instrument), ctypes.POINTER(TStructs.Telescope),
-                            ctypes.POINTER(TStructs.Atmosphere), ctypes.POINTER(TStructs.Source), 
-                            ctypes.POINTER(ctypes.c_double), ctypes.c_double]
+                            ctypes.POINTER(TStructs.Source), ctypes.POINTER(ctypes.c_double), 
+                            ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double),
+                            ctypes.c_int, ctypes.c_int, 
+                            ctypes.POINTER(ctypes.c_double), ctypes.c_double, ctypes.c_double]
     
     lib.runTiEMPO2.restype = None
     lib.getSourceSignal.restype = None
+    lib.getEtaAtm.restype = None
     lib.getNEP.restype = None
 
     return lib
@@ -109,7 +118,7 @@ def runTiEMPO2(instrument, telescope, atmosphere, source, simparams):
     return res
 
 # BINDINGS FOR DEBUGGING / CHARACTERISATION
-def getSourceSignal(instrument, telescope, source, Az_point, El_point):
+def getSourceSignal(instrument, telescope, source, atmosphere, Az_point, El_point, PWV, ON):
     """!
     Binding for running the TiEMPO2 simulation.
 
@@ -128,19 +137,63 @@ def getSourceSignal(instrument, telescope, source, Az_point, El_point):
     _source = TStructs.Source()
 
     coutput = (ctypes.c_double * instrument["freqs_filt"].size)(*(np.zeros(instrument["freqs_filt"].size).tolist()))
+    ceta_atm = (ctypes.c_double * atmosphere["eta_atm"].size)(*(atmosphere["eta_atm"].ravel().tolist()))
+    cPWV_atm = (ctypes.c_double * atmosphere["PWV_atm"].size)(*(atmosphere["PWV_atm"].tolist()))
+    cfreqs_atm = (ctypes.c_double * atmosphere["freqs_atm"].size)(*(atmosphere["freqs_atm"].tolist()))
+
+    cnfreqs_atm = ctypes.c_int(atmosphere["nfreqs_atm"])
+    cnPWV_atm = ctypes.c_int(atmosphere["PWV_atm"].size)
 
     cAz_point = ctypes.c_double(Az_point)
     cEl_point = ctypes.c_double(El_point)
+    cPWV = ctypes.c_double(PWV)
+    cON = ctypes.c_bool(ON)
 
     TBUtils.allfillInstrument(instrument, _instrument)
     TBUtils.allfillTelescope(telescope, _telescope)
     TBUtils.allfillSource(source, _source)
 
-    args = [_instrument, _telescope, _source, coutput, cAz_point, cEl_point]
+    args = [_instrument, _telescope, _source, coutput, ceta_atm, cfreqs_atm, cPWV_atm, cnfreqs_atm, cnPWV_atm, cAz_point, cEl_point, cPWV, cON]
 
     mgr.new_thread(target=lib.getSourceSignal, args=args)
 
     res = np.ctypeslib.as_array(coutput, shape=instrument["freqs_filt"]).astype(np.float64)
+    
+    return res
+
+def getEtaAtm(source, atmosphere, PWV):
+    """!
+    Binding for running the TiEMPO2 simulation.
+
+    @param instrument Dictionary containing instrument parameters.
+    @param telescope Dictionary containing telescope parameters.
+    @param atmosphere Dictionary containing atmosphere parameters.
+    @param source Dictionary containing astronomical source parameters.
+    @param simparams Dictionary containing simulation parameters.
+    """
+
+    lib = loadTiEMPO2lib()
+    mgr = TManager.Manager()
+
+    _source = TStructs.Source()
+
+    coutput = (ctypes.c_double * source["freqs_src"].size)(*(np.zeros(source["freqs_src"].size).tolist()))
+    ceta_atm = (ctypes.c_double * atmosphere["eta_atm"].size)(*(atmosphere["eta_atm"].ravel().tolist()))
+    cPWV_atm = (ctypes.c_double * atmosphere["PWV_atm"].size)(*(atmosphere["PWV_atm"].tolist()))
+    cfreqs_atm = (ctypes.c_double * atmosphere["freqs_atm"].size)(*(atmosphere["freqs_atm"].tolist()))
+
+    cnfreqs_atm = ctypes.c_int(atmosphere["nfreqs_atm"])
+    cnPWV_atm = ctypes.c_int(atmosphere["PWV_atm"].size)
+
+    cPWV = ctypes.c_double(PWV)
+
+    TBUtils.allfillSource(source, _source)
+
+    args = [_source, coutput, ceta_atm, cfreqs_atm, cPWV_atm, cnfreqs_atm, cnPWV_atm, cPWV]
+
+    mgr.new_thread(target=lib.getEtaAtm, args=args)
+
+    res = np.ctypeslib.as_array(coutput, shape=source["freqs_src"]).astype(np.float64)
     
     return res
 
@@ -160,19 +213,25 @@ def getNEP(instrument, telescope, atmosphere, source, PWV_value):
 
     _instrument = TStructs.Instrument()
     _telescope = TStructs.Telescope()
-    _atmosphere = TStructs.Atmosphere()
     _source = TStructs.Source()
+    
+    ceta_atm = (ctypes.c_double * atmosphere["eta_atm"].size)(*(atmosphere["eta_atm"].ravel().tolist()))
+    cPWV_atm = (ctypes.c_double * atmosphere["PWV_atm"].size)(*(atmosphere["PWV_atm"].tolist()))
+    cfreqs_atm = (ctypes.c_double * atmosphere["freqs_atm"].size)(*(atmosphere["freqs_atm"].tolist()))
+
+    cnfreqs_atm = ctypes.c_int(atmosphere["nfreqs_atm"])
+    cnPWV_atm = ctypes.c_int(atmosphere["PWV_atm"].size)
 
     coutput = (ctypes.c_double * instrument["freqs_filt"].size)(*(np.zeros(instrument["freqs_filt"].size).tolist()))
 
     cPWV = ctypes.c_double(PWV_value)
+    cTatm = ctypes.c_double(atmosphere["Tatm"])
 
     TBUtils.allfillInstrument(instrument, _instrument)
     TBUtils.allfillTelescope(telescope, _telescope)
-    TBUtils.allfillAtmosphere(atmosphere, _atmosphere)
     TBUtils.allfillSource(source, _source)
 
-    args = [_instrument, _telescope, _atmosphere, _source, coutput, cPWV]
+    args = [_instrument, _telescope, _source, ceta_atm, cfreqs_atm, cPWV_atm, cnfreqs_atm, cnPWV_atm, coutput, cPWV, cTatm]
 
     mgr.new_thread(target=lib.getNEP, args=args)
 

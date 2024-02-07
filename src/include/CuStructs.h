@@ -19,7 +19,7 @@ struct CuInstrument {
     int nfreqs_filt;    /**< Number of elements in freqs.*/
     int R;              /**< Resolving power of instrument: R = f / df.*/
     float eta_inst;    /**< Instrument efficiency.*/
-    float eta_ant;     /**< Antenna efficiency.*/
+    float eta_misc;    /**< Miscellaneous constant efficiencies.*/
     float freq_sample; /**< Readout frequency of instrument in Hertz.*/
     float *filterbank; /**< Array with filterbank matrix, flattened.*/
     float delta;       /**< Superconducting bandgap energy in Joules.*/
@@ -34,9 +34,21 @@ struct CuTelescope {
     float dAz_chop;    /**< Azimuthal separation between chopping paths.*/
     float freq_chop;   /**< Chopping frequency in Hertz. If < 0, no chopping.*/
     float freq_nod;    /**< Nodding frequency in Hertz.*/
-    float *eta_ap;     /**< Array of aperture efficiencies, as function of frequency (set by Instrument). Size is nfreqs of instrument.*/
+    float *eta_ap_ON;  /**< Array of aperture efficiencies in ON position, as function of frequency (set by Instrument). Size is nfreqs of instrument.*/
+    float *eta_ap_OFF; /**< Array of aperture efficiencies in OFF position, as function of frequency (set by Instrument). Size is nfreqs of instrument.*/
     float eta_mir;     /**< Mirror reflection efficiency.*/
     float eta_fwd;     /**< Telescope forward efficiency.*/
+    int scantype;
+    float Ax;
+    float Axmin;
+    float Ay;
+    float Aymin;
+    float wx;
+    float wxmin;
+    float wy;
+    float wymin;
+    float phix;
+    float phiy;
 };
 
 struct CuAtmosphere {
