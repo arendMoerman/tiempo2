@@ -3,38 +3,76 @@
 File containing templates for input dictionaries.
 """
 
+##
+# Template for an instrument dictionary, to be passed to the interface object.
+# 
+# The current template is very m,uch geared towards MKID spectrometers, but it can of course be tuned to other instrument types as well.
 instrument = {
-        "freqs_filt"    : "Range of frequencies of filterbank in GHz.",
+        "freq_0"        : "Lowest frequency in filterbank in GHz.",
+        "n_freqs"       : "Number of frequencies in filterbank",
         "R"             : "Resolving power f / df.",
-        "eta_inst"      : "Efficiency of entire chip.",
+        "eta_inst"      : "Efficiency of entire chip, from antenna up to filterbank.",
         "freq_sample"   : "Readout frequency in Hertz.",
+        "eta_filt"      : "Filter efficiency.",
+        "box_eq"        : "If True, eta_filt is height of equivalent box filter. If False, eta_filt is peak height. Default is True.",
+        "delta"         : "Bandgap energy of MKID, in micro electronvolt. Defaults to 188 ueV (Aluminium).",
+        "eta_pb"        : "Pair-breaking efficiency in MKID. Defaults to 0.4.",
+        "eta_misc"      : "Miscellaneous constant efficiency terms."
         }
 
+##
+# Template for a telescope dictionary.
+#
+# Note that the sky chopping pattern defaults to no chopping. 
+# If you want chopping, do not forget to set the 'chop_mode' parameter.
+# If you do not want chopping, do not set this parameter.
+# There are two aperture efficiencies, one for ON pos, and one for OFF.
+# If only one is set, the other one will be set to the same value.
+# Note that, when scantype = 'point', all fields beyond this field are set to zero.
 telescope = {
         "Dtel"          : "Diameter of telescope in meters.",
         "Ttel"          : "Temperature of telescope in Kelvin.",
         "Tgnd"          : "Temperature of ground around telescope in Kelvin.",
-        "eta_ap"        : "Aperture efficiency of telescope, as function of instrument frequencies. If a single number is given, assume same aperture efficiency across entire frequency range.",
-        "eta_mir"       : "Mirror efficiency.",
+        "eta_ap_ON"     : "Aperture efficiency of telescope in chop ON, as function of instrument frequencies. If a single number is given, assume same aperture efficiency across entire frequency range.",
+        "eta_ap_OFF"    : "Aperture efficiency of telescope in chop OFF, as function of instrument frequencies. If a single number is given, assume same aperture efficiency across entire frequency range.",
+        "eta_mir"       : "Mirror efficiency of telescope.",
         "eta_fwd"       : "Front-to-back efficiency.",
+        "s_rms"         : "Surface rms roughness, in micrometer for Ruze efficiency. Leaving empty means no surface efficiency in calculation."
         "chop_mode"     : "How to chop. Can choose 'none', 'direct', 'abba'."
         "freq_chop"     : "Chopping frequency in Hertz. If None, no chopping.",
-        "dAz_chop"      : "Angular separation between chopping paths.",
+        "dAz_chop"      : "Angular separation between chopping paths in arcseconds.",
+        "scantype"      : "Type of scanning pattern. Can choose between 'point' or 'daisy'. Default is point.",
+        "Ax"            : "Amplitude of petal of Daisy scan, along Azimuth axis, in arcsec.",
+        "Ay"            : "Amplitude of petal of Daisy scan, along Elevation axis, in arcsec.",
+        "Axmin"         : "Amplitude of Daisy scan, along Azimuth axis, in arcsec.",
+        "Aymin"         : "Amplitude of Daisy scan, along Elevation axis, in arcsec.",
+        "wx"            : "Angular velocity of petal of Daisy scan, along Azimuth axis, in arcsec / sec.",
+        "wy"            : "Angular velocity of petal of Daisy scan, along Elevation axis, in arcsec / sec.",
+        "wxmin"         : "Angular velocity of Daisy scan, along Azimuth axis, in arcsec / sec.",
+        "wymin"         : "Angular velocity of Daisy scan, along Elevation axis, in arcsec / sec.",
+        "phix"          : "Phase of Daisy scan along Azimuth axis, in arcsec.",
+        "phiy"          : "Phase of Daisy scan along Elevation axis, in arcsec.",
         }
 
+##
+# Template for atmosphere input dictionary.
 atmosphere = {
         "Tatm"          : "Temperature of atmosphere in Kelvin.",
         "filename"      : "Name of file containing ARIS screen.",
         "path"          : "Path to ARIS file",
-        "dx"            : "Gridsize of ARIS screen along x-axis in meter.",
-        "dy"            : "Gridsize of ARIS screen along y-axis in meter.",
-        "h_column"      : "Reference height of atmospheric column.",
+        "dx"            : "Gridsize of ARIS screen along x-axis in meters.",
+        "dy"            : "Gridsize of ARIS screen along y-axis in meters.",
+        "h_column"      : "Reference height of atmospheric column in meters.",
         "v_wind"        : "Windspeed in meters per second.",
         "PWV0"          : "Mean PWV value in millimeters.",
         }
-
-SZsource = {
-        "type"          : "Type of source (SZ).",
+##
+# Template for astronomical sources.
+#
+# The first part is common to all sources.
+# After that, for each source the particular parts are mentioned.
+Source = {
+        "type"          : "Type of source ('SZ' or 'GalSpec').",
         "Az"            : "Azimuthal lower and upper limits of source map in degrees.",
         "El"            : "Elevation lower and upper limits of source map in degrees.",
         "nAz"           : "Number of Azimuth points.",
@@ -44,17 +82,9 @@ SZsource = {
         "ne0"           : "Central electron density in # per square centimeter.",
         "beta"          : "Isothermal-beta structure coefficient.",
         "v_pec"         : "Peculiar cluster velocity, relative to CMB, in kilometers per second.",
-        "rc"            : "Cluster core radius in kiloparsec.",
+        "thetac"        : "Cluster core radius in arcsec.",
         "Da"            : "Angular diameter distance in megaparsec.",
         "freqs_src"     : "Range of frequencies over which to simulate source signal, in GHz.",
-        }
-
-Galsource = {
-        "type"          : "Type of source (GalSpec).",
-        "Az"            : "Azimuthal lower and upper limits of source map in degrees.",
-        "El"            : "Elevation lower and upper limits of source map in degrees.",
-        "nAz"           : "Number of Azimuth points.",
-        "nEl"           : "Number of Elevation points.",
         # GalSpec specific
         "lum"           : "Luminosity in log(L_fir/L_sol).",
         "z"             : "redshift of galaxy.",
@@ -72,9 +102,13 @@ load_source = {
         "filename"      : "Name of saved source.",
         }
 
+##
+# Template for simulation parameters.
+# Note that, when running on CUDA, nThreads is ignored.
 simparams = {
         "name_sim"      : "Name of simulation.",
         "t_obs"         : "Total observation time in seconds.",
         "nThreads"      : "Number of CPU threads to use.",
         "outDir"        : "Output directory of simulation. Automatically uses name_sim as name of file.",
+        "get_t_diag"    : "Get time diagnostics."
         }

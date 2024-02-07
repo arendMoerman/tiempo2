@@ -2,11 +2,12 @@ import numpy as np
 import math
 import matplotlib.pyplot as pt
 
-def avgDirectSubtract(output):
+def avgDirectSubtract_spectrum(output):
     """!
     Calculate a spectrum by averaging over the time-domain signal.
     
-    Atmosphere removal is done by direct subtraction, using the ABBA scheme.
+    Atmosphere removal is done by direct subtraction, using the ON-OFF or ABBA scheme.
+    Both schemes will work using this single method.
 
     @param output Output object obtained from a simulation.
 
@@ -111,3 +112,106 @@ def avgDirectSubtract(output):
     tot_avg = diff_container / n_nod_tot_ch
 
     return tot_avg
+
+def avgDirectSubtract_chop(output):
+    """!
+    Calculate a new reduced timestream, averaged over chopping ON-OFF pairs.
+    
+    Atmosphere removal is done by direct subtraction, using the ON-OFF or ABBA scheme.
+    Both schemes will work using this single method.
+    Additionally, the reduced Azimuth and Elevation are returned. These are averaged over the chopping pairs
+
+    @param output Output object obtained from a simulation.
+
+    @returns red_signal Reduced signal.
+    @returns red_Az Reduced Azimuth array.
+    @returns red_El Reduced Elevation array.
+    """
+   
+    # Determine total length of each timestream to not go out of index
+    n_samps = output.get("signal").shape[0]
+
+    # We define two counters: 
+    #   - pos_old
+    #   - pos_now
+    # The first keeps track of the chop position of the previous timestamp.
+    # The last of the current timestamp. 
+    # This is done to determine in which local average the spectrum goes.
+    pos_old = 0
+    pos_now = 0
+
+    # Container for storing the local average.
+    # Local, as in, for storing the average in a single chop position.
+    loc_avg = np.zeros(output.get("signal").shape[1])
+    
+    # Two containers, each for the stored average in a chopping path during an A or B.
+    # When pos_now changes w.r.t. pos_old, the local average container is averaged over the total timepoints.
+    # The result is either stored in ON_container (0 and 2) or OFF_container (1 and -1).
+    ON_container = np.zeros(output.get("signal").shape[1])
+    OFF_container = np.zeros(output.get("signal").shape[1])
+
+    n_ON = 0
+    n_OFF = 0
+    # Counter for how many points to average over when averaging inside a single chop position.
+    n_in_chop = 0
+
+    # Make lists for storing timestream, azimuth and elevations
+    red_signal = []
+    red_Az = []
+    red_El = []
+
+    temp_Az = 0
+    temp_El = 0
+
+    for i in range(n_samps):
+        # Start by updating current position
+        pos_now = output.get("flag")[i]
+        
+        # Just keep storing in loc_avg
+        if pos_now == pos_old:
+            loc_avg += output.get("signal")[i,:]
+
+            if ((pos_now == 0) or (pos_now == 2)):
+                temp_Az += output.get("Az")[i]
+                temp_El += output.get("El")[i]
+
+            n_in_chop += 1
+
+        # Encountered new chop position.
+        else:
+            
+            # Calculate average over loc_avg in previous chop and store in appropriate container.
+            # Also update approriate counter
+            if ((pos_old == 0) or (pos_old == 2)):
+                ON_container += loc_avg / n_in_chop
+                n_ON += 1
+            
+            elif ((pos_old == 1) or (pos_old == -1)): 
+                OFF_container += loc_avg / n_in_chop
+                n_OFF += 1
+            
+
+            # Check if, by updating the numbers, a pair of ON-OFF averages has been obtained
+            if n_ON == n_OFF:
+                red_signal.append(ON_container - OFF_container)
+                red_Az.append(temp_Az / n_in_chop)
+                red_El.append(temp_El / n_in_chop)
+                ON_container.fill(0)
+                OFF_container.fill(0)
+
+            # Reset loc_avg to new signal and set n_in_chop to one
+            loc_avg = output.get("signal")[i,:]
+            
+            if ((pos_now == 0) or (pos_now == 2)):
+                temp_Az = output.get("Az")[i]
+                temp_El = output.get("El")[i]
+            
+            n_in_chop = 1
+        
+            pos_old = pos_now
+
+    red_signal = np.array(red_signal)
+    red_Az = np.array(red_Az)
+    red_El = np.array(red_El)
+
+    return red_signal, red_Az, red_El

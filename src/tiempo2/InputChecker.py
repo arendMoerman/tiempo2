@@ -38,8 +38,10 @@ def checkSourceDict(sourceDict):
     return errlist
 
 def checkTelescopeDict(telescopeDict):
-    checklist = ["Dtel", "Ttel", "Tgnd", "chop_mode", "eta_ap", "eta_mir",
+    checklist = ["Dtel", "Ttel", "Tgnd", "chop_mode", "eta_ap_ON", "eta_mir",
                      "eta_fwd", "freq_chop", "dAz_chop"]
+
+    checklist_daisy = ["Ax", "Axmin", "Ay", "Aymin", "wx", "wxmin", "wy", "wymin"]
 
     errlist = []
 
@@ -47,17 +49,41 @@ def checkTelescopeDict(telescopeDict):
         if telescopeDict.get(key) is None:
             errlist.append(key)
 
-    if telescopeDict.get("chop_mode") == "none":
+    if telescopeDict.get("chop_mode") is None:
         telescopeDict["chop_mode"] = 0
     elif telescopeDict.get("chop_mode") == "direct":
         telescopeDict["chop_mode"] = 1
     elif telescopeDict.get("chop_mode") == "abba":
         telescopeDict["chop_mode"] = 2
 
+    if telescopeDict.get("s_rms") is not None:
+        telescopeDict["s_rms"] *= 1e-6 # Convert um to m
+
+    if telescopeDict.get("scantype") is None:
+        telescopeDict["scantype"] = "point"
+
+    elif telescopeDict.get("scantype") == "daisy":
+        if telescopeDict.get("phix") is None:
+            telescopeDict["phix"] = 0
+        if telescopeDict.get("phiy") is None:
+            telescopeDict["phiy"] = 0
+        
+        for key in checklist_daisy:
+            if telescopeDict.get(key) is None:
+                errlist.append(key)
+
+        telescopeDict["scantype"] = 1
+
+    elif telescopeDict.get("scantype") == "point":
+        for key in checklist_daisy:
+            telescopeDict[key] = 0
+        telescopeDict["scantype"] = 0
+
+
     return errlist
 
 def checkInstrumentDict(instrumentDict):
-    checklist = ["freq_0", "R", "n_freqs", "eta_inst", "freq_sample", "eta_filt", "delta", "eta_pb"]
+    checklist = ["freq_0", "R", "n_freqs", "eta_inst", "freq_sample", "eta_filt", "delta", "eta_pb", "box_eq"]
 
     errlist = []
 
@@ -69,6 +95,9 @@ def checkInstrumentDict(instrumentDict):
 
     if instrumentDict.get("eta_pb") is None:
         instrumentDict["eta_pb"] = 0.4
+
+    if instrumentDict.get("box_eq") is None:
+        instrumentDict["box_eq"] = True
 
     for key in checklist:
         if instrumentDict.get(key) is None:

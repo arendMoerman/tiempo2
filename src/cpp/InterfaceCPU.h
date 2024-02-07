@@ -36,8 +36,12 @@ extern "C"
         Effs* effs, int start, int stop, double dt, int num_AzEl, 
         double* I_atm, double* I_gnd, double* I_tel, int threadIdx);
        
-    TIEMPO2_DLL void getSourceSignal(Instrument *instrument, Telescope *telescope, Source *source, double *output, double Az, double El);
+    TIEMPO2_DLL void getSourceSignal(Instrument *instrument, Telescope *telescope, Source *source, 
+            double *output, double *eta_atm, double *freqs_atm, double *PWV_atm, int nfreqs_atm, int nPWV_atm,
+            double Az, double El, double PWV, bool ON);
+    
+    TIEMPO2_DLL void getEtaAtm(Source *source, double *output, double *eta_atm, double *freqs_atm, double *PWV_atm, int nfreqs_atm, int nPWV_atm, double PWV);
 
-    TIEMPO2_DLL void getNEP(Instrument *instrument, Telescope *telescope, Atmosphere *atmosphere, Source *source, double *output, double PWV);
+    TIEMPO2_DLL void getNEP(Instrument *instrument, Telescope *telescope, Source *source, double *eta_atm, double *freqs_atm, double *PWV_atm, int nfreqs_atm, int nPWV_atm, double *output, double PWV, double Tatm);
 }
 #endif

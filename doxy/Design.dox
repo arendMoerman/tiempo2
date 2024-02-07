@@ -2,12 +2,6 @@
 \page design Design Of `TiEMPO2`
 
 \section design_intro Introduction
-`TiEMPO2` is designed to be an improvement over its predecessor `TiEMPO` \cite Huijten2022.
-These improvements are:
-- Offloading the hot observation loop to a parallel C++ implementation.
-- Addition of a Sunyaev-Zeldovich source signal by directly using `MockSZ`.
-- Enhanced structure, tests and code documentation, facilitating smooth future development.
-- More elaborate scanning strategies, allowing for the simulation of extended celestial sources.
 
 \section design_philosophy Design Philosophy
 `TiEMPO2` is designed by keeping in mind a certain hierarchical structure when it comes to setting up a simulation.

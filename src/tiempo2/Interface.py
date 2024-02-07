@@ -6,6 +6,8 @@ import numpy as np
 import matplotlib.pyplot as pt
 import scipy.fft as fft
 import scipy.signal as signal
+from scipy.interpolate import griddata
+from scipy.stats import binned_statistic_2d
 
 import tiempo2.Filterbank as TFilter
 import tiempo2.Sources as TSource
@@ -37,6 +39,10 @@ class InitialError(Exception):
     pass
 
 class Interface(object):
+    """!
+    Interface for TiEMPO2 simulations
+    """
+
     # These are for storing blueprint dicts
     __sourceDict = None
     __atmosphereDict = None
@@ -57,6 +63,8 @@ class Interface(object):
     
     clog_mgr = CustomLogger(os.path.basename(__file__))
     clog = clog_mgr.getCustomLogger()
+    
+    c = 2.99792458e8
     
     def setSourceDict(self, sourceDict):
         errlist = TCheck.checkSourceDict(sourceDict)
@@ -114,7 +122,13 @@ class Interface(object):
             errstr = f"Errors encountered in observation dictionary in fields :{errlist}."
             raise FieldError(errstr)
 
-    def initialise(self):
+    
+    def initialise(self, sim=True):
+        """!
+        Initialise a TiEMPO2 environment for a simulation or analysis.
+
+        @param sim Whether a full simulation will be done. If you only want to look at the signal through the atmosphere, it is not necessary to load an entire ARIS screen. Setting sim=False will save some memory and time. Default is True.
+        """
         if self.count < 5:
             raise InitialError
             exit(1)
@@ -152,7 +166,7 @@ class Interface(object):
         
         self.sourceDict["Az"] = Az / 3600
         self.sourceDict["El"] = El / 3600
-        self.sourceDict["I_nu"] = I_nu
+        self.sourceDict["I_nu"] = I_nu * 1e0
         self.sourceDict["freqs_src"] = freqs * 1e9
 
         #### INITIALISING INSTRUMENT PARAMETERS ####
@@ -169,56 +183,99 @@ class Interface(object):
             # Here we need to call function that reads a filterbank matrix from Louis files.
         
         #### INITIALISING ATMOSPHERE PARAMETERS ####
-        
-        PWV_atm, nx, ny = TAtm.generateAtmospherePWV(self.atmosphereDict, self.telescopeDict, self.clog)  
-        eta_atm, freqs_atm, pwv_curve = TAtm.readAtmTransmissionText()        
+        if sim:        
+            PWV_atm, nx, ny = TAtm.generateAtmospherePWV(self.atmosphereDict, self.telescopeDict, self.clog)  
       
-        # At t=0, x=y=0 is in middle
-        x_atm = (np.arange(0, nx) - ny/2)*self.atmosphereDict.get("dx")
-        y_atm = (np.arange(0, ny) - ny/2)*self.atmosphereDict.get("dy")
+            # At t=0, x=y=0 is in middle
+            x_atm = (np.arange(0, nx) - ny/2)*self.atmosphereDict.get("dx")
+            y_atm = (np.arange(0, ny) - ny/2)*self.atmosphereDict.get("dy")
         
-        # Check if atmosphere screen is long enough for given time and windspeed
-        length_req = self.atmosphereDict.get("v_wind") * self.observationDict.get("t_obs")
+            # Check if atmosphere screen is long enough for given time and windspeed
+            length_req = self.atmosphereDict.get("v_wind") * self.observationDict.get("t_obs")
 
-        if length_req > np.max(x_atm):
-            t_obs_new = np.floor(T_OBS_BUFF * np.max(x_atm) / self.atmosphereDict.get("v_wind"))
-            self.clog.warning(f"Atmospheric screen too small for windspeed of {self.atmosphereDict.get('v_wind')} m/s and observation time of {self.observationDict.get('t_obs')} s. Reducing observation time to {t_obs_new} s.")
+            if length_req > np.max(x_atm):
+                t_obs_new = np.floor(T_OBS_BUFF * np.max(x_atm) / self.atmosphereDict.get("v_wind"))
+                self.clog.warning(f"Atmospheric screen too small for windspeed of {self.atmosphereDict.get('v_wind')} m/s and observation time of {self.observationDict.get('t_obs')} s. Reducing observation time to {t_obs_new} s.")
 
-            self.observationDict["t_obs"] = t_obs_new
+                self.observationDict["t_obs"] = t_obs_new
 
-        self.atmosphereDict["x_atm"] = x_atm
-        self.atmosphereDict["y_atm"] = y_atm
-        self.atmosphereDict["nx"] = nx
-        self.atmosphereDict["ny"] = ny
-        self.atmosphereDict["PWV"] = PWV_atm
+            self.atmosphereDict["x_atm"] = x_atm
+            self.atmosphereDict["y_atm"] = y_atm
+            self.atmosphereDict["nx"] = nx
+            self.atmosphereDict["ny"] = ny
+            self.atmosphereDict["PWV"] = PWV_atm
+        
+        eta_atm, freqs_atm, pwv_curve = TAtm.readAtmTransmissionText()        
         self.atmosphereDict["freqs_atm"] = freqs_atm * 1e9
         self.atmosphereDict["nfreqs_atm"] = freqs_atm.size
         self.atmosphereDict["PWV_atm"] = pwv_curve
         self.atmosphereDict["eta_atm"] = eta_atm
 
         #### INITIALISING TELESCOPE PARAMETERS ####
-        if isinstance(self.telescopeDict.get("eta_ap"), float):
-            self.telescopeDict["eta_ap"] *= np.ones(freqs.size)
+        if isinstance(self.telescopeDict.get("eta_ap_ON"), float):
+            self.telescopeDict["eta_ap_ON"] *= np.ones(freqs.size)
+        
+        if isinstance(self.telescopeDict.get("eta_ap_OFF"), float):
+            self.telescopeDict["eta_ap_OFF"] *= np.ones(freqs.size)
 
+        if self.telescopeDict["s_rms"] is not None:
+            self.telescopeDict["eta_ap_ON"] *= np.exp(-(4 * np.pi * self.telescopeDict["s_rms"] * self.sourceDict["freqs_src"] / self.c)**2)
+            self.telescopeDict["eta_ap_OFF"] *= np.exp(-(4 * np.pi * self.telescopeDict["s_rms"] * self.sourceDict["freqs_src"] / self.c)**2)
         self.telescopeDict["dAz_chop"] /= 3600
+        self.telescopeDict["Ax"] /= 3600
+        self.telescopeDict["Axmin"] /= 3600
+        self.telescopeDict["Ay"] /= 3600
+        self.telescopeDict["Aymin"] /= 3600
+        
+        #### END INITIALISATION ####
         self.initialised = True
 
-    def getSourceSignal(self, Az_point, El_point):
-        res = TBCPU.getSourceSignal(self.instrumentDict, self.telescopeDict, self.sourceDict, Az_point/3600, El_point/3600)
+    def getSourceSignal(self, Az_point, El_point, PWV_value=-1, ON=True):
+        """!
+        Get astronomical signal without atmospheric noise, but with all efficiencies, atmospheric transmission and filterbank.
+
+        @param Az_point Azimuth point on-sky in arcsec where source should be evaluated.
+        @param El_point Elevation point on-sky in arcsec where source should be evaluated.
+        @param PWV_value PWV value for atmospheric transmission. Defaults to -1 (no atmosphere).
+        @param ON Whether to evaluate source in ON path (default), or OFF. Makes a difference when different eta_ap have been defined for each path.
+
+        @returns Transmitted signal (SI) and its frequency range (Hz).
+        """
+
+        res = TBCPU.getSourceSignal(self.instrumentDict, self.telescopeDict, self.sourceDict, self.atmosphereDict, Az_point/3600, El_point/3600, PWV_value, ON)
         return res, self.instrumentDict["freqs_filt"]
+    
+    def getEtaAtm(self, PWV_value):
+        """!
+        Get atmosphere transmission at source frequencies given a PWV.
+
+        @param PWV_value PWV value for atmospheric transmission. Defaults to -1 (no atmosphere).
+
+        @returns Atmospheric transmission and its frequency range (Hz).
+        """
+
+        res = TBCPU.getEtaAtm(self.sourceDict, self.atmosphereDict, PWV_value)
+        return res, self.sourceDict["freqs_src"]
 
     def getNEP(self, PWV_value):
+        """!
+        Calculate Noise Equivalent Power (NEP) from the atmosphere.
+
+        @param PWV_value PWV value at which to calculate atmospheric NEP.
+
+        @returns NEP (SI) and its frequency range (Hz).
+        """
+
         res = TBCPU.getNEP(self.instrumentDict, self.telescopeDict, self.atmosphereDict, self.sourceDict, PWV_value)
         return res, self.instrumentDict["freqs_filt"]
 
     def runSimulation(self, device="CPU"):
         """!
-        Start and run a simulation.
+        Run a TiEMPO2 simulation.
 
-        This is the main routine of TiEMPO2 and should be called after filling all dictionaries.
-        Generate or load a source datacube, atmosphere PWV screen, transmission curves.
-
-        Will return exception if not all dictionaries have been set.
+        This is the main routine of TiEMPO2 and should be called after filling all dictionaries and running the self.initialise() method.
+        
+        @param device Whether to run on CPU (device='CPU') or GPU (device='GPU'). Default is 'CPU'.
         """
 
         self.clog.info("\033[1;32m*** STARTING TiEMPO2 SIMULATION ***")
@@ -313,6 +370,80 @@ class Interface(object):
 
         return output_binned, freqs_new
     
-    def avgDirectSubtract(self, output):
-        self.clog.info("Applying averaging and ABBA subtraction")
-        return TRemove.avgDirectSubtract(output)
+    def avgDirectSubtract(self, output, resolution=0):
+        """!
+        Apply full time-averaging and direct atmospheric subtraction.
+
+        @param output Output object generated from a simulation.
+        @param resolution How far to average and subtract. The following options are available:
+            0: Reduce signal to a single spectrum, fully averaged and subtracted according to the chopping/nodding scheme.
+            1: Reduce signal by averaging over ON-OFF chop positions.
+
+        @returns red_signal Reduced signal.
+        @returns red_Az Reduced Azimuth array. Only returned if resolution == 1.
+        @returns red_El Reduced Elevation array. Only returned if resolution == 1.
+        """
+        
+        if resolution == 0:
+            self.clog.info("Applying time-averaging and direct subtraction.")
+            red_signal = TRemove.avgDirectSubtract_spectrum(output)
+            
+            return red_signal
+
+        elif resolution == 1:
+            self.clog.info("Averaging and subtracting over ON-OFF pairs.")
+            red_signal, red_Az, red_El = TRemove.avgDirectSubtract_chop(output)
+            
+            return red_signal, red_Az, red_El
+
+    def getExposureTime(self, red_Az, red_El, nAz_grid, nEl_grid):
+        points = np.array([red_Az, red_El])
+
+        min_Az = np.min(red_Az)
+        max_Az = np.max(red_Az)
+        min_El = np.min(red_El)
+        max_El = np.max(red_El)
+
+        grid_Az, grid_El = np.mgrid[min_Az:max_Az:nAz_grid*1j, min_El:max_El:nEl_grid*1j]
+        statObj = binned_statistic_2d(red_Az, red_El, np.ones(red_Az.size), bins=[nAz_grid, nEl_grid], statistic='count') 
+        exposure_time = statObj.statistic / self.instrumentDict.get("freq_sample")
+    
+        return exposure_time, grid_Az, grid_El
+
+    def regridRedSignal(self, red_signal, red_Az, red_El, nAz_grid, nEl_grid, stack=False, idx=None):
+        points = np.array([red_Az, red_El])
+
+        min_Az = np.min(red_Az)
+        max_Az = np.max(red_Az)
+        min_El = np.min(red_El)
+        max_El = np.max(red_El)
+
+        grid_Az, grid_El = np.mgrid[min_Az:max_Az:nAz_grid*1j, min_El:max_El:nEl_grid*1j]
+
+        if idx is None:
+            if stack:
+                grid_signal = binned_statistic_2d(red_Az, red_El, np.mean(red_signal, axis=1), bins=[nAz_grid, nEl_grid]).statistic 
+
+            else:
+                grid_signal = np.zeros((nAz_grid, nEl_grid, red_signal.shape[1]))
+                for i in range(red_signal.shape[1]):
+                    grid_signal[:,:,i] = binned_statistic_2d(red_Az, red_El, red_signal[:,i], bins=[nAz_grid, nEl_grid]).statistic 
+
+        else:
+            grid_signal = binned_statistic_2d(red_Az, red_El, red_signal[:,idx], bins=[nAz_grid, nEl_grid]).statistic 
+        
+        return grid_signal, grid_Az, grid_El
+
+
+
+
+
+
+
+
+
+
+
+
+
+

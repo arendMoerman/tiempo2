@@ -54,7 +54,7 @@ def generateSZMaps(SZsourceDict, convolve_beam=False, telescopeDict=None, ret_un
 
     simObjIso = MModel.IsoBetaModel()
     isob = simObjIso.getIsoBeta(Az[:,0], El[0,:], beta, ne0, thetac, Da, grid=True)
-    SZ = simObjIso.getIsoBetaCube(isob, freq_Hz, Te, v_pec, no_CMB=False)
+    SZ = simObjIso.getIsoBetaCube(isob, freq_Hz, Te, v_pec, no_CMB=True)
     #pt.imshow(isob)
     #pt.show()
     #pt.plot(SZ[25,25,:])

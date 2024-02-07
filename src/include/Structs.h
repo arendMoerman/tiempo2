@@ -19,7 +19,7 @@ struct Instrument {
     int nfreqs_filt;    /**< Number of elements in freqs.*/
     int R;              /**< Resolving power of instrument: R = f / df.*/
     double eta_inst;    /**< Instrument efficiency.*/
-    double eta_ant;    /**< Antenna radiation efficiency.*/
+    double eta_misc;    /**< Miscellaneous constant efficiencies.*/
     double freq_sample; /**< Readout frequency of instrument in Hertz.*/
     double *filterbank; /**< Array with filterbank matrix, flattened.*/
     double delta;       /**< Superconducting bandgap energy in Joules.*/
@@ -34,9 +34,21 @@ struct Telescope {
     double dAz_chop;    /**< Azimuthal separation between chopping paths.*/
     double freq_chop;   /**< Chopping frequency in Hertz. If < 0, no chopping.*/
     double freq_nod;    /**< Nodding frequency in Hertz.*/
-    double *eta_ap;     /**< Array of aperture efficiencies, as function of frequency (set by Instrument). Size is nfreqs of instrument.*/
+    double *eta_ap_ON;  /**< Array of aperture efficiencies in ON position, as function of frequency (set by Instrument). Size is nfreqs of instrument.*/
+    double *eta_ap_OFF; /**< Array of aperture efficiencies in OFF position, as function of frequency (set by Instrument). Size is nfreqs of instrument.*/
     double eta_mir;     /**< Mirror reflection efficiency.*/
     double eta_fwd;     /**< Telescope forward efficiency.*/
+    int scantype;
+    double Ax;
+    double Axmin;
+    double Ay;
+    double Aymin;
+    double wx;
+    double wxmin;
+    double wy;
+    double wymin;
+    double phix;
+    double phiy;
 };
 
 struct Atmosphere {

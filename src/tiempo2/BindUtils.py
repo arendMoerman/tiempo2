@@ -21,7 +21,7 @@ def allfillInstrument(InstDict, InstStruct, ct_t=ctypes.c_double):
     InstStruct.nfreqs_filt = ctypes.c_int(InstDict["n_freqs"])
     InstStruct.R = ctypes.c_int(InstDict["R"])
     InstStruct.eta_inst = ct_t(InstDict["eta_inst"])
-    InstStruct.eta_ant = ct_t(InstDict["eta_ant"])
+    InstStruct.eta_misc = ct_t(InstDict["eta_misc"])
     InstStruct.freq_sample = ct_t(InstDict["freq_sample"])
     InstStruct.filterbank = (ct_t * InstDict["filterbank"].size)(*(InstDict["filterbank"].ravel().tolist()))
     InstStruct.delta = ct_t(InstDict["delta"])
@@ -42,9 +42,23 @@ def allfillTelescope(TelDict, TelStruct, ct_t=ctypes.c_double):
     TelStruct.dAz_chop = ct_t(TelDict["dAz_chop"])
     TelStruct.freq_chop = ct_t(TelDict["freq_chop"])
     TelStruct.freq_nod = ct_t(TelDict["freq_nod"])
-    TelStruct.eta_ap = (ct_t * TelDict["eta_ap"].size)(*(TelDict["eta_ap"].ravel().tolist()))
+    TelStruct.eta_ap_ON = (ct_t * TelDict["eta_ap_ON"].size)(*(TelDict["eta_ap_ON"].ravel().tolist()))
+    TelStruct.eta_ap_OFF = (ct_t * TelDict["eta_ap_OFF"].size)(*(TelDict["eta_ap_OFF"].ravel().tolist()))
     TelStruct.eta_mir = ct_t(TelDict["eta_mir"])
     TelStruct.eta_fwd = ct_t(TelDict["eta_fwd"])
+
+    TelStruct.scantype = ctypes.c_int(TelDict["scantype"])
+    TelStruct.Ax = ct_t(TelDict["Ax"])
+    TelStruct.Axmin = ct_t(TelDict["Axmin"])
+    TelStruct.Ay = ct_t(TelDict["Ay"])
+    TelStruct.Aymin = ct_t(TelDict["Aymin"])
+    TelStruct.wx = ct_t(TelDict["wx"])
+    TelStruct.wxmin = ct_t(TelDict["wxmin"])
+    TelStruct.wy = ct_t(TelDict["wy"])
+    TelStruct.wymin = ct_t(TelDict["wymin"])
+    TelStruct.phix = ct_t(TelDict["phix"])
+    TelStruct.phiy = ct_t(TelDict["phiy"])
+
 
 def allfillAtmosphere(AtmDict, AtmStruct, ct_t=ctypes.c_double):
     """!
