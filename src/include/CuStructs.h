@@ -55,37 +55,48 @@ struct CuAtmosphere {
     float Tatm;        /**< Temperature of atmosphere in Kelvin.*/
     float v_wind;      /**< Max windspeed in meters per second.*/
     float h_column;    /**< Reference column height of atmosphere, in meters.*/
-    float *x_atm;      /**< Array of floats, representing x-coordinates of atmospheric screen.*/
-    float *y_atm;      /**< Array of floats, representing y-coordinates of atmospheric screen.*/
-    int nx;             /**< Number of elements in x.*/
-    int ny;             /**< Number of elements in y.*/
+    
+    float x0;          /**< Starting x-coordinate of atmospheric screen.*/
+    float dx;          /**< Stepsize of x-coordinate in atmospheric screen.*/
+    int nx;            /**< Number of x-coordinates in atmospheric screen.*/
+    
+    float y0;          /**< Starting y-coordinate of atmospheric screen.*/
+    float dy;          /**< Stepsize of y-coordinate in atmospheric screen.*/
+    int ny;            /**< Number of y-coordinates in atmospheric screen.*/
+    
+    float f0;          /**< Starting frequency of ATM-model.*/
+    float df;          /**< Stepsize of frequencies of ATM-model.*/
+    int nf;            /**< Number of frequencies in ATM-model.*/
+    
+    float PWV0;        /**< Starting PWV value of ATM-model.*/
+    float dPWV;        /**< Stepsize of PWV values in ATM-model.*/
+    int nPWV;          /**< Number of PWV values in ATM-model.*/
+    
     float *PWV;        /**< Flat array containing smoothed PWV values at x and y.*/
-    float *freqs_atm;  /**< Frequency range over which eta_atm is defined in Hertz.*/
-    int nfreqs_atm;     /**< Number of elements in freqs_atm.*/
-    float *PWV_atm;    /** < Array containing PWV values in millimeter, over which eta_atm is defined.*/
-    int nPWV_atm;       /** < Number of elements in PWV_atm.*/
     float *eta_atm;    /**< Flat array containing all atmospheric transmissions curves over frequency and PWV. Size is nfreqs_atm * nPWV_atm.*/
 };
 
 struct CuSource {
-    int present;        /**< Whether or not a source is actually present.*/
-    float *Az;         /**< Array containing azimuth angles of source on-sky, relative to source center.*/
-    int nAz;            /**< Number of elements in Az.*/
-    float *El;         /**< Array containing elevation angles on-sky, relative to source center.*/
-    int nEl;            /**< Number of elements in El.*/
-    float *I_nu;       /**< Flat array of specific intensities, indexed as [i * ni + k * ni * nj + j].
-                          Here, i is axis 0 (Az), j axis 1 (El) and k axis 2 (frequency). Note that size of I_nu = nAz * nEl * nfreqs.*/
-    float *freqs_src;  /**< Frequencies over which the source is defined, in Hertz.*/
-    int nfreqs_src;     /**< Number of frequencies in freq_src.*/
+    float Az0;         /**< Starting value of source azimuth range.*/
+    float dAz;         /**< Stepsize of values in source azimuth range.*/
+    int nAz;           /**< Number of values in source azimuth range.*/
+    
+    float El0;         /**< Starting value of source elevation range.*/
+    float dEl;         /**< Stepsize of values in source elevation range.*/
+    int nEl;           /**< Number of values in source elevation range.*/
+    
+    float f0;         /**< Starting value of source frequency range.*/
+    float df;         /**< Stepsize of values in source frequency range.*/
+    int nf;           /**< Number of values in source frequency range.*/
+    
+    float *I_nu;       /**< Flat array of specific intensities.*/
+    int nI_nu;         /**< Number of source intensities.*/
 };
 
 struct CuSimParams {
     float t_obs;       /**< Observation time in seconds.*/
     int nTimes;         /**< Total number of time calculations.*/
     int nThreads;       /**< Number of threads to use for computation.*/
-    float t0;          /**< Starting time of simulation. If not given will default to 0.*/
-    int OFF_empty;   /**< Wether to use no source or interpolate source during OFF chopping.*/
-    int use_noise;      /**< Whether to add photon noise. For real life situations, this should be 1. Only set to 0 for debug purposes.*/
 };
 
 struct CuOutput {

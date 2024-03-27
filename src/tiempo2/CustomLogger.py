@@ -1,7 +1,6 @@
 """!
 @file
-This file contains class definitions of the custom logger objects used in PyPO.
-A distinction is made for logging in the terminal and in the GUI.
+This file contains class definitions of the custom logger objects used in TiEMPO2.
 """
 
 import sys
@@ -74,31 +73,6 @@ class CustomFormatter(logging.Formatter):
         log_fmt = self.FORMATS.get(record.levelno)
         formatter = logging.Formatter(log_fmt, datefmt="%Y-%m-%d %H:%M:%S")
         return formatter.format(record)
-    
-class CustomGUIFormatter(logging.Formatter):
-    """!
-    Class for formatting of the logging to the GUI console.
-    Essentially the same as normal logger, but without distinct colors for each logging level.
-    """
-
-    format = "%(asctime)s - %(levelname)s - %(message)s "#(%(filename)s:%(lineno)d)" 
-    
-    #addLoggingLevel('WORK', logging.INFO)
-
-    FORMATS = {
-        logging.DEBUG: format,
-        logging.INFO: format,
-        logging.WORK: format,
-        logging.RESULT: format,
-        logging.WARNING: format,
-        logging.ERROR: format,
-        logging.CRITICAL: format
-    }
-
-    def format(self, record):
-        log_fmt = self.FORMATS.get(record.levelno)
-        formatter = logging.Formatter(log_fmt, datefmt="%Y-%m-%d %H:%M:%S")
-        return formatter.format(record)
 
 class CustomLogger(object):
     """!
@@ -127,44 +101,4 @@ class CustomLogger(object):
         ch.setFormatter(CustomFormatter())
         logger.addHandler(ch)
 
-        return logger
-
-class GUILogger(logging.Handler):
-    """!
-    Utility class for creating GUI loggers.
-    Has emit method which writes the logging output to the console.
-    """
-
-    def __init__(self):
-        logging.Handler.__init__(self)
-
-    def emit(self, record):
-        self.edit.append(self.format(record))
-        self.edit.ensureCursorVisible()
-
-class CustomGUILogger(object):
-    """!
-    Class for instantiating a GUI logger.
-    """
-
-    def __init__(self, owner=None):
-        self.owner = "Logger" if owner is None else owner
-
-    def __del__(self):
-        del self
-
-    def getCustomGUILogger(self, TextEditWidget):
-        ch = GUILogger()
-        
-        ch.edit = TextEditWidget
-        ch.setFormatter(CustomGUIFormatter())
-        
-        logger = logging.getLogger(self.owner)
-        
-        if logger.hasHandlers():
-            logger.handlers = []
-        
-        logger.setLevel(logging.DEBUG)
-
-        logger.addHandler(ch)
         return logger

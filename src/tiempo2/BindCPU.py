@@ -59,7 +59,7 @@ def loadTiEMPO2lib_CUDA():
     """!
     Load the TiEMPO2 shared library. Will detect the operating system and link the library accordingly.
 
-    @returns lib The ctypes library containing the C/C++ functions.
+    @returns The ctypes library containing the C/C++ functions.
     """
 
     path_cur = pathlib.Path(__file__).parent.resolve()
@@ -81,13 +81,15 @@ def loadTiEMPO2lib_CUDA():
 
 def runTiEMPO2(instrument, telescope, atmosphere, source, simparams):
     """!
-    Binding for running the TiEMPO2 simulation.
+    Binding for running the TiEMPO2 simulation on CPU.
 
     @param instrument Dictionary containing instrument parameters.
     @param telescope Dictionary containing telescope parameters.
     @param atmosphere Dictionary containing atmosphere parameters.
     @param source Dictionary containing astronomical source parameters.
     @param simparams Dictionary containing simulation parameters.
+
+    @returns 2D array containing timestreams of power in detector, for each channel frequency
     """
 
     lib = loadTiEMPO2lib()
@@ -117,16 +119,20 @@ def runTiEMPO2(instrument, telescope, atmosphere, source, simparams):
 
     return res
 
-# BINDINGS FOR DEBUGGING / CHARACTERISATION
 def getSourceSignal(instrument, telescope, source, atmosphere, Az_point, El_point, PWV, ON):
     """!
-    Binding for running the TiEMPO2 simulation.
+    Binding for calculating the source signal, through the optical path, but without noise.
 
     @param instrument Dictionary containing instrument parameters.
     @param telescope Dictionary containing telescope parameters.
     @param atmosphere Dictionary containing atmosphere parameters.
     @param source Dictionary containing astronomical source parameters.
-    @param simparams Dictionary containing simulation parameters.
+    @param Az_point Azimuth point on-sky at which to calculate source intensity.
+    @param El_point Elevation point on-sky at which to calculate source intensity.
+    @param PWV PWV value of atmosphere, in mm. If empty, no atmosphere used.
+    @param ON Use ON-path. If False, uses OFF path.
+
+    @returns 1D array containing power for each detector.
     """
 
     lib = loadTiEMPO2lib()
@@ -139,7 +145,7 @@ def getSourceSignal(instrument, telescope, source, atmosphere, Az_point, El_poin
     coutput = (ctypes.c_double * instrument["freqs_filt"].size)(*(np.zeros(instrument["freqs_filt"].size).tolist()))
     ceta_atm = (ctypes.c_double * atmosphere["eta_atm"].size)(*(atmosphere["eta_atm"].ravel().tolist()))
     cPWV_atm = (ctypes.c_double * atmosphere["PWV_atm"].size)(*(atmosphere["PWV_atm"].tolist()))
-    cfreqs_atm = (ctypes.c_double * atmosphere["freqs_atm"].size)(*(atmosphere["freqs_atm"].tolist()))
+    cfreqs_atm = (ctypes.c_double * atmosphere["f_atm"].size)(*(atmosphere["f_atm"].tolist()))
 
     cnfreqs_atm = ctypes.c_int(atmosphere["nfreqs_atm"])
     cnPWV_atm = ctypes.c_int(atmosphere["PWV_atm"].size)
@@ -165,22 +171,23 @@ def getEtaAtm(source, atmosphere, PWV):
     """!
     Binding for running the TiEMPO2 simulation.
 
-    @param instrument Dictionary containing instrument parameters.
-    @param telescope Dictionary containing telescope parameters.
-    @param atmosphere Dictionary containing atmosphere parameters.
     @param source Dictionary containing astronomical source parameters.
-    @param simparams Dictionary containing simulation parameters.
+    @param atmosphere Dictionary containing atmosphere parameters.
+    @param PWV PWV value of atmosphere, in mm.
+    
+    @returns 1D array containing atmospheric transmission for each detector.
     """
+
 
     lib = loadTiEMPO2lib()
     mgr = TManager.Manager()
 
     _source = TStructs.Source()
 
-    coutput = (ctypes.c_double * source["freqs_src"].size)(*(np.zeros(source["freqs_src"].size).tolist()))
+    coutput = (ctypes.c_double * source["f_src"].size)(*(np.zeros(source["f_src"].size).tolist()))
     ceta_atm = (ctypes.c_double * atmosphere["eta_atm"].size)(*(atmosphere["eta_atm"].ravel().tolist()))
     cPWV_atm = (ctypes.c_double * atmosphere["PWV_atm"].size)(*(atmosphere["PWV_atm"].tolist()))
-    cfreqs_atm = (ctypes.c_double * atmosphere["freqs_atm"].size)(*(atmosphere["freqs_atm"].tolist()))
+    cfreqs_atm = (ctypes.c_double * atmosphere["f_atm"].size)(*(atmosphere["f_atm"].tolist()))
 
     cnfreqs_atm = ctypes.c_int(atmosphere["nfreqs_atm"])
     cnPWV_atm = ctypes.c_int(atmosphere["PWV_atm"].size)
@@ -197,7 +204,7 @@ def getEtaAtm(source, atmosphere, PWV):
     
     return res
 
-def getNEP(instrument, telescope, atmosphere, source, PWV_value):
+def getNEP(instrument, telescope, atmosphere, source, PWV):
     """!
     Binding for running the TiEMPO2 simulation.
 
@@ -205,7 +212,9 @@ def getNEP(instrument, telescope, atmosphere, source, PWV_value):
     @param telescope Dictionary containing telescope parameters.
     @param atmosphere Dictionary containing atmosphere parameters.
     @param source Dictionary containing astronomical source parameters.
-    @param simparams Dictionary containing simulation parameters.
+    @param PWV PWV value of atmosphere, in mm.
+    
+    @returns 1D array containing NEP for each detector.
     """
 
     lib = loadTiEMPO2lib()
@@ -217,7 +226,7 @@ def getNEP(instrument, telescope, atmosphere, source, PWV_value):
     
     ceta_atm = (ctypes.c_double * atmosphere["eta_atm"].size)(*(atmosphere["eta_atm"].ravel().tolist()))
     cPWV_atm = (ctypes.c_double * atmosphere["PWV_atm"].size)(*(atmosphere["PWV_atm"].tolist()))
-    cfreqs_atm = (ctypes.c_double * atmosphere["freqs_atm"].size)(*(atmosphere["freqs_atm"].tolist()))
+    cfreqs_atm = (ctypes.c_double * atmosphere["f_atm"].size)(*(atmosphere["f_atm"].tolist()))
 
     cnfreqs_atm = ctypes.c_int(atmosphere["nfreqs_atm"])
     cnPWV_atm = ctypes.c_int(atmosphere["PWV_atm"].size)
@@ -248,7 +257,11 @@ def runTiEMPO2_CUDA(instrument, telescope, atmosphere, source, simparams):
     @param atmosphere Dictionary containing atmosphere parameters.
     @param source Dictionary containing astronomical source parameters.
     @param simparams Dictionary containing simulation parameters.
+
+    @returns 2D array containing timestreams of power in detector, for each channel frequency
     """
+    import time
+
 
     lib = loadTiEMPO2lib_CUDA()
     mgr = TManager.Manager()
@@ -265,11 +278,16 @@ def runTiEMPO2_CUDA(instrument, telescope, atmosphere, source, simparams):
 
     TBUtils.allfillInstrument(instrument, _instrument, ct_t)
     TBUtils.allfillTelescope(telescope, _telescope, ct_t)
-    TBUtils.allfillAtmosphere(atmosphere, _atmosphere, ct_t)
+    TBUtils.allfillAtmosphere(atmosphere, _atmosphere, ct_t, coalesce=True)
     TBUtils.allfillSource(source, _source, ct_t)
     TBUtils.allfillSimParams(simparams, _simparams, ct_t)
 
+    start = time.time()
     TBUtils.allocateOutput(_output, simparams["nTimes"], instrument["freqs_filt"].size, ct_t)
+    end = time.time()
+
+    timed = end-start
+    print(f"Time : {timed}")
 
     args = [_instrument, _telescope, _atmosphere, _source, _simparams, _output]
 

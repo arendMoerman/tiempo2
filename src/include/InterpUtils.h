@@ -9,31 +9,22 @@
 #define __INTERPUTILS_H
 
 /**
-  Find index of lower bound of interval containing some specified number.
- 
-  @param a Value to find interval for.
-  @param arr Array of doubles, specifying interval starts and ends. Note: should be complete interval, not a chunk.
-  @param size_vals Size of array containing values.
-  @param debug Run method in debug mode.
- 
-  @returns idx Index of value in `arr', corresponding to lower bound of interval containing `a'.
- */
-int findIndexLow(double a, double *arr, int size_vals, bool debug);
-
-/**
   Linearly interpolate bivariate function.
  
-  @param x0 Point in x to interpolate on.
-  @param y0 Point in y to interpolate on.
-  @param x Array of points representing x-coordinates.
-  @param y Array of points representing y-coordinates.
+  @param x Point in x to interpolate on.
+  @param y Point in y to interpolate on.
+  @param x0 Start of x-coordinates.
+  @param y0 Start of y-coordinates.
+  @param size_x Size of array containing x-coordinates.
   @param size_y Size of array containing y-coordinates.
+  @param dx Stepsize of x.
+  @param dy Stepsize of y.
   @param vals Function values on grid spanning x and y.
   @param size_vals Size of array containing values.
   @param debug Run method in debug mode. Default is false and is passed to findIndexLow.
   
   @returns val_interp Interpolated value of function on x0 and y0.
  */
-double interpValue(double x0, double y0, double *x, double *y, int size_x, int size_y, double *vals, int offset = 0, bool debug=false);
+double interpValue(double x, double y, double x0, double y0, int size_x, int size_y, double dx, double dy, double *vals, int offset = 0, bool debug=false);
 
 #endif

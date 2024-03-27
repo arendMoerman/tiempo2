@@ -17,7 +17,7 @@ def generateFilterbankFromR(instrumentDict, sourceDict):
 
     R = instrumentDict.get("R")
     freqs_filt = instrumentDict.get("freqs_filt")
-    freqs_src = sourceDict.get("freqs_src")
+    freqs_src = sourceDict.get("f_src")
     
     A = 1
 
@@ -28,6 +28,6 @@ def generateFilterbankFromR(instrumentDict, sourceDict):
 
     for j, f_j in enumerate(freqs_filt):
         gamma = f_j / (2 * R)
-        filterbank[j,:] = A * instrumentDict.get("eta_filt")[j] * gamma**2 / ((freqs_src - f_j)**2 + gamma**2)
+        filterbank[j,:] = instrumentDict.get("eta_filt")[j] * (A * gamma**2 / ((freqs_src - f_j)**2 + gamma**2))**instrumentDict.get("order")
 
     return filterbank

@@ -1,7 +1,9 @@
 """!
 @file
 This file handles all atmospheric screen generation. 
+
 In particular, the EPL maps from ARIS are converted to Gaussian-smoothed PWV maps.
+This script also contains functions that read atmospheric transmission curves, as function of frequency and PWV.
 """
 
 import glob
@@ -14,15 +16,17 @@ from scipy.ndimage import gaussian_filter
 from scipy.interpolate import RectBivariateSpline
 from dataclasses import dataclass, field
 
-
-#def generateAtmospherePWV(prefix_filename, path_data, pwv0, pwvgrid, max_windspeed, obs_duration, dish_radius,
- #           max_num_strips=1, x_length_strip=0, OFFdist=233.6, Rscan=60., EL0=60., h_column=1000., load_spline=False):
 def generateAtmospherePWV(atmosphereDict, telescopeDict, clog):
     """!   
     Generation of PWV maps from ARIS data
 
     @param atmosphereDict Dictionary containing atmosphere parameters.
     @param telescopeDict Dictionary containing telescope parameters
+    @param clog Custom logger.
+
+    @returns A 2D array containing Gaussian-smoothed PWV maps of the atmosphere.
+    @returns Number of x-coordinates.
+    @returns Number of y-coordinates.
     """
     
     filename = atmosphereDict.get("filename")
@@ -84,6 +88,10 @@ def generateAtmospherePWV(atmosphereDict, telescopeDict, clog):
 def readAtmTransmissionText():
     """!
     Parser for reading atmospheric transmission curves from text file.
+    
+    @returns A 2D array containing atmospheric transmission.
+    @returns Array containing frequencies at which atmospheric transmission is defined.
+    @returns Array containing PWV values at which atmospheric transmission is defined.
     """
 
     dat_loc = os.path.join(os.path.dirname(__file__), "resources", "trans_data.dat")
@@ -111,11 +119,15 @@ def readAtmTransmissionText():
 
         freqs = np.array(freqs, dtype=np.float64)
         eta_atm = np.array(eta_atm, dtype=np.float64)
-    return eta_atm, freqs, pwv_curve
+    return eta_atm.T, freqs, pwv_curve
 
 def readAtmTransmissionCSV():
     """!
     Parser for reading atmospheric transmission curves from csv file.
+    
+    @returns A 2D array containing atmospheric transmission.
+    @returns Array containing frequencies at which atmospheric transmission is defined.
+    @returns Array containing PWV values at which atmospheric transmission is defined.
     """
     csv_loc = os.path.join(os.path.dirname(__file__), "resources", "atm.csv")
 

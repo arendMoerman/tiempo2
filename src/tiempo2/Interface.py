@@ -143,14 +143,29 @@ class Interface(object):
         # Calculate number of time evaluations
         self.observationDict["nTimes"] = math.ceil(self.observationDict["t_obs"] * self.instrumentDict["freq_sample"])
         self.observationDict["time_range"] = np.arange(self.observationDict["nTimes"]) / self.instrumentDict["freq_sample"]
-        
+       
+        trace_src = None 
+
+        # UPDATE FOLLOWING FOR ARBITRARY Az-El CENTERS!!!!!!!!!
+        if self.telescopeDict["scantype"] == 0:
+            print(self.telescopeDict)
+            trace_src = np.zeros((2,3))
+            trace_src[0,:] = np.array([-1, 0, 1]) * self.telescopeDict["dAz_chop"]
+            trace_src[1,:] = np.array([0, 0, 0])
+
         #### INITIALISING ASTRONOMICAL SOURCE ####
         # Load or generate source
         if self.sourceDict.get("type") == "SZ":
-            SZ, Az, El = TSource.generateSZMaps(self.sourceDict, telescopeDict=self.telescopeDict)
-            I_nu = SZ.T
+            SZ, Az, El = TSource.generateSZMaps(self.sourceDict, self.clog, telescopeDict=self.telescopeDict, trace_src=trace_src)
+            I_nu = SZ
             freqs = self.sourceDict.get("freqs_src")
-        
+       
+            #pure_sig =(SZ[15,15,:] - SZ[22,15,:])# *(3e8/(freqs*1e9)**2*(freqs[1]-freqs[0])*1e9)
+
+            #pt.plot(freqs, pure_sig * 1e18)
+            #pt.plot(freqs, SZ[37,25,:] * 1e18)
+            #pt.show()
+
         elif self.sourceDict.get("type") == "GalSpec":
             I_nu, Az, El, freqs = TSource.generateGalSpecMaps(self.sourceDict, telescopeDict=self.telescopeDict)
             self.sourceDict["freqs_src"] = freqs 
@@ -166,8 +181,8 @@ class Interface(object):
         
         self.sourceDict["Az"] = Az / 3600
         self.sourceDict["El"] = El / 3600
-        self.sourceDict["I_nu"] = I_nu * 1e0
-        self.sourceDict["freqs_src"] = freqs * 1e9
+        self.sourceDict["I_nu"] = I_nu
+        self.sourceDict["f_src"] = freqs * 1e9
 
         #### INITIALISING INSTRUMENT PARAMETERS ####
         # Generate filterbank
@@ -206,10 +221,14 @@ class Interface(object):
             self.atmosphereDict["PWV"] = PWV_atm
         
         eta_atm, freqs_atm, pwv_curve = TAtm.readAtmTransmissionText()        
-        self.atmosphereDict["freqs_atm"] = freqs_atm * 1e9
+        self.atmosphereDict["f_atm"] = freqs_atm * 1e9
         self.atmosphereDict["nfreqs_atm"] = freqs_atm.size
         self.atmosphereDict["PWV_atm"] = pwv_curve
         self.atmosphereDict["eta_atm"] = eta_atm
+        
+        print(SZ.shape)
+        print(PWV_atm.shape)
+        print(eta_atm.shape)
 
         #### INITIALISING TELESCOPE PARAMETERS ####
         if isinstance(self.telescopeDict.get("eta_ap_ON"), float):
@@ -219,8 +238,9 @@ class Interface(object):
             self.telescopeDict["eta_ap_OFF"] *= np.ones(freqs.size)
 
         if self.telescopeDict["s_rms"] is not None:
-            self.telescopeDict["eta_ap_ON"] *= np.exp(-(4 * np.pi * self.telescopeDict["s_rms"] * self.sourceDict["freqs_src"] / self.c)**2)
-            self.telescopeDict["eta_ap_OFF"] *= np.exp(-(4 * np.pi * self.telescopeDict["s_rms"] * self.sourceDict["freqs_src"] / self.c)**2)
+            self.telescopeDict["eta_ap_ON"] *= np.exp(-(4 * np.pi * self.telescopeDict["s_rms"] * self.sourceDict["f_src"] / self.c)**2)
+            self.telescopeDict["eta_ap_OFF"] *= np.exp(-(4 * np.pi * self.telescopeDict["s_rms"] * self.sourceDict["f_src"] / self.c)**2)
+        
         self.telescopeDict["dAz_chop"] /= 3600
         self.telescopeDict["Ax"] /= 3600
         self.telescopeDict["Axmin"] /= 3600

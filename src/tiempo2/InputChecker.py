@@ -1,6 +1,8 @@
 """!
 @file
 Checker functions for input dictionaries.
+
+Apart from checking, the functions also set default parameters that are not given by the user in the input dictionary.
 """
 
 import numpy as np
@@ -61,6 +63,11 @@ def checkTelescopeDict(telescopeDict):
 
     if telescopeDict.get("scantype") is None:
         telescopeDict["scantype"] = "point"
+        for item in checklist_daisy:
+            telescopeDict[item] = 0
+            telescopeDict["phix"] = 0
+            telescopeDict["phiy"] = 0
+        telescopeDict["scantype"] = 0
 
     elif telescopeDict.get("scantype") == "daisy":
         if telescopeDict.get("phix") is None:
@@ -83,7 +90,7 @@ def checkTelescopeDict(telescopeDict):
     return errlist
 
 def checkInstrumentDict(instrumentDict):
-    checklist = ["freq_0", "R", "n_freqs", "eta_inst", "freq_sample", "eta_filt", "delta", "eta_pb", "box_eq"]
+    checklist = ["freq_0", "R", "n_freqs", "eta_inst", "freq_sample", "eta_filt", "delta", "eta_pb", "box_eq", "order"]
 
     errlist = []
 
@@ -98,6 +105,9 @@ def checkInstrumentDict(instrumentDict):
 
     if instrumentDict.get("box_eq") is None:
         instrumentDict["box_eq"] = True
+
+    if instrumentDict.get("order") is None:
+        instrumentDict["order"] = 1
 
     for key in checklist:
         if instrumentDict.get(key) is None:
@@ -117,7 +127,7 @@ def checkAtmosphereDict(atmosphereDict):
     return errlist
 
 def checkObservationDict(observationDict):
-    checklist = ["name_sim", "t_obs", "nThreads", "outDir", "OFF_empty", "get_t_diag"]
+    checklist = ["name_sim", "t_obs", "nThreads", "outDir", "get_t_diag"]
 
     errlist = []
 
@@ -126,9 +136,6 @@ def checkObservationDict(observationDict):
 
     if observationDict.get("use_noise") is None:
         observationDict["use_noise"] = 1
-    
-    if observationDict.get("OFF_empty") is None:
-        observationDict["OFF_empty"] = 1
     
     if observationDict.get("get_t_diag") is None:
         observationDict["get_t_diag"] = 1

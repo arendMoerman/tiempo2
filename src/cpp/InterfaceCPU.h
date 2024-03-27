@@ -34,7 +34,7 @@ extern "C"
 
     TIEMPO2_DLL void parallelJobs(Instrument *instrument, Telescope *telescope, Atmosphere *atmosphere, Source *source, SimParams* simparams, Output* output, 
         Effs* effs, int start, int stop, double dt, int num_AzEl, 
-        double* I_atm, double* I_gnd, double* I_tel, int threadIdx);
+        double* I_atm, double* I_gnd, double* I_tel, double *I_CMB, int threadIdx);
        
     TIEMPO2_DLL void getSourceSignal(Instrument *instrument, Telescope *telescope, Source *source, 
             double *output, double *eta_atm, double *freqs_atm, double *PWV_atm, int nfreqs_atm, int nPWV_atm,

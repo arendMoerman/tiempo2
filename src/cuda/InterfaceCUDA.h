@@ -3,12 +3,13 @@
 
     Provides single precision interface for NVIDIA GPUs running CUDA. 
 */
-
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <cmath>
 #include <array>
 #include <vector>
+#include <string>
 
 #include "cuda.h"
 #include "curand_kernel.h"

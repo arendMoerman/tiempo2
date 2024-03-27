@@ -15,6 +15,7 @@ instrument = {
         "freq_sample"   : "Readout frequency in Hertz.",
         "eta_filt"      : "Filter efficiency.",
         "box_eq"        : "If True, eta_filt is height of equivalent box filter. If False, eta_filt is peak height. Default is True.",
+        "order"         : "Order of Lorentzian filterbank. Raises Lorentzian to given power, but keeps height same as normal Lorentzian. Defaults to 1."
         "delta"         : "Bandgap energy of MKID, in micro electronvolt. Defaults to 188 ueV (Aluminium).",
         "eta_pb"        : "Pair-breaking efficiency in MKID. Defaults to 0.4.",
         "eta_misc"      : "Miscellaneous constant efficiency terms."

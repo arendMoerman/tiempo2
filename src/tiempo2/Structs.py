@@ -57,15 +57,19 @@ class Atmosphere(ctypes.Structure):
     _fields_ = [("Tatm", ctypes.c_double),
                 ("v_wind", ctypes.c_double),
                 ("h_column", ctypes.c_double),
-                ("x_atm", ctypes.POINTER(ctypes.c_double)),
-                ("y_atm", ctypes.POINTER(ctypes.c_double)),
+                ("x0", ctypes.c_double),
+                ("dx", ctypes.c_double),
                 ("nx", ctypes.c_int),
+                ("y0", ctypes.c_double),
+                ("dy", ctypes.c_double),
                 ("ny", ctypes.c_int),
+                ("f0", ctypes.c_double),
+                ("df", ctypes.c_double),
+                ("nf", ctypes.c_int),
+                ("PWV0", ctypes.c_double),
+                ("dPWV", ctypes.c_double),
+                ("nPWV", ctypes.c_int),
                 ("PWV", ctypes.POINTER(ctypes.c_double)),
-                ("freqs_atm", ctypes.POINTER(ctypes.c_double)),
-                ("nfreqs_atm", ctypes.c_int),
-                ("PWV_atm", ctypes.POINTER(ctypes.c_double)),
-                ("nPWV_atm", ctypes.c_int),
                 ("eta_atm", ctypes.POINTER(ctypes.c_double))]
 
 class Source(ctypes.Structure):
@@ -73,14 +77,17 @@ class Source(ctypes.Structure):
     Struct representing simulated astronomical source.
     """
 
-    _fields_ = [("present", ctypes.c_int),
-                ("Az", ctypes.POINTER(ctypes.c_double)),
+    _fields_ = [("Az0", ctypes.c_double),
+                ("dAz", ctypes.c_double),
                 ("nAz", ctypes.c_int),
-                ("El", ctypes.POINTER(ctypes.c_double)),
+                ("El0", ctypes.c_double),
+                ("dEl", ctypes.c_double),
                 ("nEl", ctypes.c_int),
+                ("f0", ctypes.c_double),
+                ("df", ctypes.c_double),
+                ("nf", ctypes.c_int),
                 ("I_nu", ctypes.POINTER(ctypes.c_double)),
-                ("freqs_src", ctypes.POINTER(ctypes.c_double)),
-                ("nfreqs_src", ctypes.c_int)]
+                ("nI_nu", ctypes.c_int)]
 
 class SimParams(ctypes.Structure):
     """!
@@ -89,9 +96,7 @@ class SimParams(ctypes.Structure):
 
     _fields_ = [("t_obs", ctypes.c_double),
                 ("nTimes", ctypes.c_int),
-                ("nThreads", ctypes.c_int),
-                ("t0", ctypes.c_double),
-                ("use_noise", ctypes.c_int)]
+                ("nThreads", ctypes.c_int)]
 
 class Output(ctypes.Structure):
     """!
@@ -157,15 +162,19 @@ class CuAtmosphere(ctypes.Structure):
     _fields_ = [("Tatm", ctypes.c_float),
                 ("v_wind", ctypes.c_float),
                 ("h_column", ctypes.c_float),
-                ("x_atm", ctypes.POINTER(ctypes.c_float)),
-                ("y_atm", ctypes.POINTER(ctypes.c_float)),
+                ("x0", ctypes.c_float),
+                ("dx", ctypes.c_float),
                 ("nx", ctypes.c_int),
+                ("y0", ctypes.c_float),
+                ("dy", ctypes.c_float),
                 ("ny", ctypes.c_int),
+                ("f0", ctypes.c_float),
+                ("df", ctypes.c_float),
+                ("nf", ctypes.c_int),
+                ("PWV0", ctypes.c_float),
+                ("dPWV", ctypes.c_float),
+                ("nPWV", ctypes.c_int),
                 ("PWV", ctypes.POINTER(ctypes.c_float)),
-                ("freqs_atm", ctypes.POINTER(ctypes.c_float)),
-                ("nfreqs_atm", ctypes.c_int),
-                ("PWV_atm", ctypes.POINTER(ctypes.c_float)),
-                ("nPWV_atm", ctypes.c_int),
                 ("eta_atm", ctypes.POINTER(ctypes.c_float))]
 
 class CuSource(ctypes.Structure):
@@ -173,14 +182,17 @@ class CuSource(ctypes.Structure):
     Struct representing simulated astronomical source.
     """
 
-    _fields_ = [("present", ctypes.c_int),
-                ("Az", ctypes.POINTER(ctypes.c_float)),
+    _fields_ = [("Az0", ctypes.c_float),
+                ("dAz", ctypes.c_float),
                 ("nAz", ctypes.c_int),
-                ("El", ctypes.POINTER(ctypes.c_float)),
+                ("El0", ctypes.c_float),
+                ("dEl", ctypes.c_float),
                 ("nEl", ctypes.c_int),
+                ("f0", ctypes.c_float),
+                ("df", ctypes.c_float),
+                ("nf", ctypes.c_int),
                 ("I_nu", ctypes.POINTER(ctypes.c_float)),
-                ("freqs_src", ctypes.POINTER(ctypes.c_float)),
-                ("nfreqs_src", ctypes.c_int)]
+                ("nI_nu", ctypes.c_int)]
 
 class CuSimParams(ctypes.Structure):
     """!
@@ -189,10 +201,7 @@ class CuSimParams(ctypes.Structure):
 
     _fields_ = [("t_obs", ctypes.c_float),
                 ("nTimes", ctypes.c_int),
-                ("nThreads", ctypes.c_int),
-                ("t0", ctypes.c_float),
-                ("OFF_empty", ctypes.c_int),
-                ("use_noise", ctypes.c_int)]
+                ("nThreads", ctypes.c_int)]
 
 class CuOutput(ctypes.Structure):
     """!
