@@ -32,8 +32,7 @@
 
 extern "C"
 {
-    TIEMPO2_DLL void runTiEMPO2_CUDA(CuInstrument *instrument, CuTelescope *telescope, CuAtmosphere *atmosphere, CuSource *source, 
-        CuSimParams *simparams, CuOutput *output);
+    TIEMPO2_DLL void runTiEMPO2_CUDA(CuInstrument *instrument, CuTelescope *telescope, CuAtmosphere *atmosphere, CuSource *source, CuOutput *output, int nTimes);
 }
 
 #endif

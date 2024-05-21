@@ -4,6 +4,7 @@
 
 #include "cuda.h"
 #include "math.h"
+#include "CuStructs.h"
 
 #ifndef __CUINTERPUTILS_H
 #define __CUINTERPUTILS_H
@@ -24,24 +25,20 @@
   
   @returns val_interp Interpolated value of function on x0 and y0.
  */
-__device__ float interpValue(float x, float y, 
-            float x0, float y0, int size_x, int size_y, float dx, float dy,
-            float *vals, int offset) {
+__device__ void interpValue(float x, float y, 
+            CuArrSpec *arrx, CuArrSpec *arry,
+            float *vals, int offset, float &out) {
     
-    int idx_x = floorf((x - x0) / dx);
-    int idx_y = floorf((y - y0) / dy);
+    int idx_x = floorf((x - arrx->start) / arrx->step);
+    int idx_y = floorf((y - arry->start) / arry->step);
+    
+    float t = (x - (arrx->start + arrx->step*idx_x)) / arrx->step;
+    float u = (y - (arry->start + arry->step*idx_y)) / arry->step;
 
-    float f00 = vals[idx_x * size_y + idx_y + offset];
-    float f10 = vals[(idx_x + 1) * size_y + idx_y + offset];
-    float f01 = vals[idx_x * size_y + idx_y + 1 + offset];
-    float f11 = vals[(idx_x + 1) * size_y + idx_y + 1 + offset];
-    
-    float t = (x - (x0 + dx*idx_x)) / dx;
-    float u = (y - (y0 + dy*idx_y)) / dy;
-    
-    float fxy = (1-t)*(1-u)*f00 + t*(1-u)*f10 + t*u*f11 + (1-t)*u*f01;
-
-    return fxy;
+    out =  (1-t)*(1-u) * vals[idx_x * arry->num + idx_y + offset];
+    out += t*(1-u) * vals[(idx_x + 1) * arry->num + idx_y + offset];
+    out += (1-t)*u * vals[idx_x * arry->num + idx_y + 1 + offset];
+    out += t*u * vals[(idx_x + 1) * arry->num + idx_y + 1 + offset];
 }
 
 #endif

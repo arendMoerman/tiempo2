@@ -10,17 +10,25 @@ struct Instrument;
 struct Telescope;
 struct Atmosphere;
 struct Source;
-struct SimParams;
 struct Output;
+struct CalOutput;
+struct ArrSpec;
+
+struct ArrSpec {
+    double start;
+    double step;
+    int num;
+};
 
 // Ctypes structs - for communicating with python
 struct Instrument {
-    double *freqs_filt; /**< Array with frequencies in Hertz.*/
-    int nfreqs_filt;    /**< Number of elements in freqs.*/
-    int R;              /**< Resolving power of instrument: R = f / df.*/
+    int nf_ch;          /**< Number of elements in freqs.*/
+    
+    struct ArrSpec f_spec;
+    
     double eta_inst;    /**< Instrument efficiency.*/
     double eta_misc;    /**< Miscellaneous constant efficiencies.*/
-    double freq_sample; /**< Readout frequency of instrument in Hertz.*/
+    double f_sample; /**< Readout frequency of instrument in Hertz.*/
     double *filterbank; /**< Array with filterbank matrix, flattened.*/
     double delta;       /**< Superconducting bandgap energy in Joules.*/
     double eta_pb;      /**< Pair breaking efficiency of superconductor.*/
@@ -56,47 +64,21 @@ struct Atmosphere {
     double v_wind;      /**< Max windspeed in meters per second.*/
     double h_column;    /**< Reference column height of atmosphere, in meters.*/
     
-    double x0;          /**< Starting x-coordinate of atmospheric screen.*/
-    double dx;          /**< Stepsize of x-coordinate in atmospheric screen.*/
-    int nx;            /**< Number of x-coordinates in atmospheric screen.*/
-    
-    double y0;          /**< Starting y-coordinate of atmospheric screen.*/
-    double dy;          /**< Stepsize of y-coordinate in atmospheric screen.*/
-    int ny;            /**< Number of y-coordinates in atmospheric screen.*/
-    
-    double f0;          /**< Starting frequency of ATM-model.*/
-    double df;          /**< Stepsize of frequencies of ATM-model.*/
-    int nf;            /**< Number of frequencies in ATM-model.*/
-    
-    double PWV0;        /**< Starting PWV value of ATM-model.*/
-    double dPWV;        /**< Stepsize of PWV values in ATM-model.*/
-    int nPWV;          /**< Number of PWV values in ATM-model.*/
+    struct ArrSpec x_spec;
+    struct ArrSpec y_spec;
+    struct ArrSpec f_spec;
+    struct ArrSpec PWV_spec;
     
     double *PWV;        /**< Flat array containing smoothed PWV values at x and y.*/
     double *eta_atm;    /**< Flat array containing all atmospheric transmissions curves over frequency and PWV. Size is nfreqs_atm * nPWV_atm.*/
 };
 
 struct Source {
-    double Az0;         /**< Starting value of source azimuth range.*/
-    double dAz;         /**< Stepsize of values in source azimuth range.*/
-    int nAz;           /**< Number of values in source azimuth range.*/
-    
-    double El0;         /**< Starting value of source elevation range.*/
-    double dEl;         /**< Stepsize of values in source elevation range.*/
-    int nEl;           /**< Number of values in source elevation range.*/
-    
-    double f0;         /**< Starting value of source frequency range.*/
-    double df;         /**< Stepsize of values in source frequency range.*/
-    int nf;           /**< Number of values in source frequency range.*/
+    struct ArrSpec Az_spec;
+    struct ArrSpec El_spec;
     
     double *I_nu;       /**< Flat array of specific intensities.*/
     int nI_nu;         /**< Number of source intensities.*/
-};
-
-struct SimParams {
-    double t_obs;       /**< Observation time in seconds.*/
-    int nTimes;         /**< Total number of time calculations.*/
-    int nThreads;       /**< Number of threads to use for computation.*/
 };
 
 struct Output {
@@ -105,6 +87,11 @@ struct Output {
     double *El;         /**< Timestream of Elevation angle, in degrees.*/
     int *flag;          /**< Timestream of flags specifying chop/nod position. 0 for ON, 1 for OFF-RIGHT, 2 for OFF-LEFT.*/     
     double t_thread;   /**< Time spent calculating in thread.*/
+};
+
+struct CalOutput {
+    double *power;       /**< Power in Watt as function of filter index (axis 0) and PWV (axis 1).*/
+    double *temperature; /**< LOS brightness temperature in Kelvin as function of filter index (axis 0) and PWV (axis 1).*/
 };
 
 // Local structs - for use internally

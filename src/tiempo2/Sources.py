@@ -8,6 +8,7 @@ Currently, can only use MockSZ.
 from dataclasses import dataclass, field
 import shutil
 import os
+import sys
 from tqdm import tqdm
 import numpy as np
 import scipy.special as scp
@@ -17,7 +18,7 @@ from multiprocessing import Pool
 from functools import partial
 import matplotlib.pyplot as pt
 
-def generateSZMaps(SZsourceDict, clog, convolve_beam=True, telescopeDict=None, save=False, sourceName=None, path=None, trace_src=None):
+def generateSZMaps(SZsourceDict, instrumentDict, clog, convolve_beam=True, telescopeDict=None, save=False, sourceName=None, path=None, trace_src=None):
     """!
     Generate SZ maps on-sky over a range of frequencies.
 
@@ -36,7 +37,7 @@ def generateSZMaps(SZsourceDict, clog, convolve_beam=True, telescopeDict=None, s
         import MockSZ.Constants as MConst
     except:
         clog.error("Could not import MockSZ. Check if it is installed.")
-        exit(1)
+        sys.exit()
 
 
     Te      = SZsourceDict.get("Te")
@@ -52,8 +53,10 @@ def generateSZMaps(SZsourceDict, clog, convolve_beam=True, telescopeDict=None, s
     nAz = SZsourceDict.get("nAz")
     nEl = SZsourceDict.get("nEl")
 
-    freq_Hz = SZsourceDict.get("freqs_src") * 1e9               # GHz -> Hz 
+    f_src = instrumentDict["f_src"]
 
+
+    
     Az, El = np.mgrid[lims_Az[0]:lims_Az[1]:nAz * 1j, lims_El[0]:lims_El[1]:nEl * 1j]
     theta = np.sqrt(Az**2 + El**2)
 
@@ -61,23 +64,22 @@ def generateSZMaps(SZsourceDict, clog, convolve_beam=True, telescopeDict=None, s
     
     if trace_src is not None:
         isob = simObjIso.getIsoBeta(trace_src[0,:], trace_src[1,:], beta, ne0, thetac, Da, grid=False)
+        SZ = simObjIso.getIsoBetaCube(isob, f_src)
     else:
         isob = simObjIso.getIsoBeta(Az[:,0], El[0,:], beta, ne0, thetac, Da, grid=True)
+        SZ = simObjIso.getIsoBetaCube(isob, f_src)
+        SZ = np.transpose(SZ, axes=(1,0,2))
     
-    SZ = simObjIso.getIsoBetaCube(isob, freq_Hz)
-
     #if convolve_beam:
     #    clog.info("Convolving beam patterns with SZ maps...")
     #    SZ = _convolveMaps(SZ, Az, El, freq_Hz, telescopeDict.get("Dtel"))
     
-    SZ *= (MConst.c / freq_Hz)**2 
+    SZ *= (MConst.c / f_src)**2 
     
     # Now, transpose Az and El s.t. az is semif-fast, el is slow
-    #SZ = np.transpose(SZ, axes=(1,0,2))
 
-    print(SZ.shape)
     if save:
-        _saveSource(sourceName, path, SZ, Az[:,0], El[0,:], freq_Hz)
+        _saveSource(sourceName, path, SZ, Az[:,0], El[0,:], f_src)
     return SZ, Az[:,0], El[0,:]
 
 def loadSZMaps(SZsourceDict):
@@ -93,7 +95,7 @@ def loadSZMaps(SZsourceDict):
 
     return SZ, Az, El, freqs
 
-def generateGalSpecMaps(GalSpecSourceDict, telescopeDict, convolve_beam=True, save=False, sourceName=None, path=None):
+def generateGalSpecMaps(GalSpecSourceDict, instrumentDict, telescopeDict, convolve_beam=True, save=False, sourceName=None, path=None):
     """!
     Generate GalSpec maps on-sky over a range of frequencies.
 
@@ -107,7 +109,11 @@ def generateGalSpecMaps(GalSpecSourceDict, telescopeDict, convolve_beam=True, sa
     @returns El Array of Elevation co-ordinates.
     """
     
-    import galspec
+    try:
+        import galspec
+    except:
+        clog.error("Could not import galspec. Check if it is installed.")
+        sys.exit()
 
     lims_Az = GalSpecSourceDict.get("Az")                 # degree
     lims_El = GalSpecSourceDict.get("El")                 # degree
@@ -120,9 +126,9 @@ def generateGalSpecMaps(GalSpecSourceDict, telescopeDict, convolve_beam=True, sa
 
     gal_freq, gal_flux = galspec.spectrum(GalSpecSourceDict.get("lum"),
                                           GalSpecSourceDict.get("z"),
-                                          GalSpecSourceDict.get("f_lo"),
-                                          GalSpecSourceDict.get("f_hi"),
-                                          GalSpecSourceDict.get("nfreqs"),
+                                          instrumentDict.get("f0_src")*1e-9,
+                                          instrumentDict.get("f1_src")*1e-9,
+                                          instrumentDict.get("nf_src")*1e-9,
                                           GalSpecSourceDict.get("lwidth"))
     gal_cube = np.zeros((nAz, nEl, gal_freq.size))
     

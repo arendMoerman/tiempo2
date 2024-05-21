@@ -17,11 +17,11 @@ __constant__ float const_effs[CEFFSSIZE];   // Contains constant efficiencies:ch
 __constant__ float cdt;                     // Timestep
 __constant__ float cfreq_chop;              // Chopping frequency
 __constant__ float cfreq_nod;               // Nodding frequency
-__constant__ float cfreq_sample;            // Sampling frequency of readout
+__constant__ float cf_sample;            // Sampling frequency of readout
 __constant__ float cdAz_chop;               // Chopping throw
 __constant__ float cdelta;                  // Bandgap energy of MKID
 __constant__ int cnt;                       // Number of time evals
-__constant__ int cnf_filt;                  // Number of filter freqs
+__constant__ int cnf_ch;                    // Number of filter freqs
 __constant__ int cchop_mode;                // What chopping scheme to use
 
 // ATMOSPHERE PARAMETERS
@@ -74,6 +74,10 @@ __constant__ float cphiy;
 texture<float, cudaTextureType1D, cudaReadModeElementType> tex_filterbank;
 texture<float, cudaTextureType1D, cudaReadModeElementType> tex_eta_ap_ON;
 texture<float, cudaTextureType1D, cudaReadModeElementType> tex_eta_ap_OFF;
+texture<float, cudaTextureType1D, cudaReadModeElementType> tex_I_atm;
+texture<float, cudaTextureType1D, cudaReadModeElementType> tex_I_gnd;
+texture<float, cudaTextureType1D, cudaReadModeElementType> tex_I_tel;
+texture<float, cudaTextureType1D, cudaReadModeElementType> tex_I_CMB;
 
 #define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
 
@@ -106,6 +110,32 @@ typedef struct
     float start, step;      /**< Start of array and stepsize.*/
     int number;             /**< Number of elements in array.*/
 } arr_data;
+
+/**
+  Write a CUDA device array to a file, for debugging.
+
+  @param array Pointer to device array of type T.
+  @param s_array Size of array.
+  @param name_txt Name of file to write array to. Name is appended with '.txt' by the function itself.
+ */
+template <typename T>
+__host__ void writeArray(T *array, int s_array, std::string name_txt) {
+    
+    T *h_array = new T[s_array];
+    gpuErrchk( cudaMemcpy(h_array, array, s_array * sizeof(T), cudaMemcpyDeviceToHost) );
+    
+    std::ofstream myfile (name_txt + ".txt");
+    if (myfile.is_open())
+    {
+        for(int count = 0; count < s_array; count ++){
+            myfile << h_array[count] << "\n" ;
+        }
+
+        myfile.close();
+    }
+    else std::cout << "Unable to open file";
+    delete[] h_array;
+}
 
 /**
   Calculate Planckian distribution.
@@ -270,7 +300,7 @@ __host__ void initCUDA(CuInstrument *instrument, CuTelescope *telescope, CuSimPa
         instrument->eta_inst * instrument->eta_misc * (1 - telescope->eta_mir) * 0.5, 
         instrument->eta_pb};
 
-    float dt = 1. / instrument->freq_sample;
+    float dt = 1. / instrument->f_sample;
     
     // PHYSICAL CONSTANTS
     gpuErrchk( cudaMemcpyToSymbol(cPI, &PI, sizeof(float)) );
@@ -283,11 +313,11 @@ __host__ void initCUDA(CuInstrument *instrument, CuTelescope *telescope, CuSimPa
     gpuErrchk( cudaMemcpyToSymbol(cdt, &dt, sizeof(float)) );
     gpuErrchk( cudaMemcpyToSymbol(cfreq_chop, &(telescope->freq_chop), sizeof(float)) );
     gpuErrchk( cudaMemcpyToSymbol(cfreq_nod, &(telescope->freq_nod), sizeof(float)) );
-    gpuErrchk( cudaMemcpyToSymbol(cfreq_sample, &(instrument->freq_sample), sizeof(float)) );
+    gpuErrchk( cudaMemcpyToSymbol(cf_sample, &(instrument->f_sample), sizeof(float)) );
     gpuErrchk( cudaMemcpyToSymbol(cdAz_chop, &(telescope->dAz_chop), sizeof(float)) );
     gpuErrchk( cudaMemcpyToSymbol(cdelta, &(instrument->delta), sizeof(float)) );
     gpuErrchk( cudaMemcpyToSymbol(cnt, &(simparams->nTimes), sizeof(int)) );
-    gpuErrchk( cudaMemcpyToSymbol(cnf_filt, &(instrument->nfreqs_filt), sizeof(int)) );
+    gpuErrchk( cudaMemcpyToSymbol(cnf_ch, &(instrument->nf_ch), sizeof(int)) );
     gpuErrchk( cudaMemcpyToSymbol(cchop_mode, &(telescope->chop_mode), sizeof(int)) );
     
     // ATMOSPHERE PARAMETERS
@@ -319,9 +349,9 @@ __host__ void initCUDA(CuInstrument *instrument, CuTelescope *telescope, CuSimPa
     gpuErrchk( cudaMemcpyToSymbol(cdEl_src, &(source->dEl), sizeof(float)) );
     gpuErrchk( cudaMemcpyToSymbol(cnEl_src, &(source->nEl), sizeof(int)) );
     
-    gpuErrchk( cudaMemcpyToSymbol(cf0_src, &(source->f0), sizeof(float)) );
-    gpuErrchk( cudaMemcpyToSymbol(cdf_src, &(source->df), sizeof(float)) );
-    gpuErrchk( cudaMemcpyToSymbol(cnf_src, &(source->nf), sizeof(int)) );
+    gpuErrchk( cudaMemcpyToSymbol(cf0_src, &(instrument->f0), sizeof(float)) );
+    gpuErrchk( cudaMemcpyToSymbol(cdf_src, &(instrument->df), sizeof(float)) );
+    gpuErrchk( cudaMemcpyToSymbol(cnf_src, &(instrument->nf), sizeof(int)) );
 
     // SCAN PARAMETERS
     gpuErrchk( cudaMemcpyToSymbol(cscantype, &(telescope->scantype), sizeof(int)) );
@@ -345,182 +375,314 @@ __host__ void initCUDA(CuInstrument *instrument, CuTelescope *telescope, CuSimPa
   @param seed Integer describing the seed of the generator.
  */
 __global__ void get_chop_pwv_rng(float *center, float *PWV_screen, float *PWV_out, 
-                                 int *flag_out, float *az_out, float *el_out,
-                                 int *idx_Az, int *idx_El,
+                                 int *flagout, float *azout, float *elout,
                                  curandState *state, unsigned long long int seed = 0) {
     if (!seed) {
         seed = clock64();
     }
 
-    for (int idx = blockIdx.x * blockDim.x + threadIdx.x; 
-        idx < cnt; 
-        idx += blockDim.x * gridDim.x) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x; 
 
-        AzEl pointing;
-        AzEl center_p;
+    if (idx < cnt) {
+        // FLOATS
+        float time;         // Timepoint for thread in simulation.
+        float _PWV_out;     // Container for storing interpolated PWV values.
+        float t, u;         // Parameters needed for interpolation.
+
+        // INTEGERS
+        int flag;           // Flag for storing chop position.
+        int ix, iy;         // Indices for interpolation along an x- and y axis.
+
+        // CUSTOM STRUCTS
+        AzEl pointing;      // Struct for storing the current pointing (w.r.t. center_p).
+        AzEl center_p;      // Struct for storing the central pointing.
+        xy_atm point_atm;   // Struct for storing projected pointing x-y coordinates on atmosphere screen.
         
         center_p.Az = center[0];
         center_p.El = center[1];
 
-        xy_atm point_atm;
-
-        int flag;
-
-        float Az_src_max = cAz0_src + cdAz_src * (cnAz_src - 1);
-        float El_src_max = cEl0_src + cdEl_src * (cnEl_src - 1);
-
-        float t_start = idx * cdt;
+        time = idx * cdt;
         
-        if(cchop_mode == 0) {getnochop_posflag(t_start, &center_p, &pointing, flag);}
-        else if(cchop_mode == 1) {getONOFF_posflag(t_start, &center_p, &pointing, flag);}
-        else if(cchop_mode == 2) {getABBA_posflag(t_start, &center_p, &pointing, flag);}
+        if(cchop_mode == 0) {getnochop_posflag(time, &center_p, &pointing, flag);}
+        else if(cchop_mode == 1) {getONOFF_posflag(time, &center_p, &pointing, flag);}
+        else if(cchop_mode == 2) {getABBA_posflag(time, &center_p, &pointing, flag);}
 
         convertAnglesToSpatialAtm(&pointing, &point_atm);
 
         // Add wind to this - currently only along x-axis and pretty manual
-        point_atm.xAz = point_atm.xAz + cv_wind * t_start;
+        point_atm.xAz = point_atm.xAz + cv_wind * time;
+        
+        ix = floorf((point_atm.xAz - cx0_atm) / cdx_atm);
+        iy = floorf((point_atm.yEl - cy0_atm) / cdy_atm);
+        
+        t = (point_atm.xAz - (cx0_atm + cdx_atm * ix)) / cdx_atm;
+        u = (point_atm.yEl - (cy0_atm + cdy_atm * iy)) / cdy_atm;
+        
+        _PWV_out = (1-t)*(1-u)*PWV_screen[ix * cny_atm + iy];
+        _PWV_out += t*(1-u)*PWV_screen[(ix + 1) * cny_atm + iy];
+        _PWV_out += (1-t)*u*PWV_screen[ix * cny_atm + iy + 1];
+        _PWV_out += t*u*PWV_screen[(ix + 1) * cny_atm + iy + 1];
     
         __syncthreads();
-        idx_Az[idx] = floorf((pointing.Az - cAz0_src) / cdAz_src);
-        idx_El[idx] = floorf((pointing.El - cEl0_src) / cdEl_src);
-
         curand_init(seed, idx, 0, &state[idx]);
-        az_out[idx] = pointing.Az;
-        el_out[idx] = pointing.El;
-        flag_out[idx] = flag;
+        azout[idx] = pointing.Az;
+        elout[idx] = pointing.El;
+        flagout[idx] = flag;
         
-        // Interpolate on PWV_Gauss
-        PWV_out[idx] = interpValue(point_atm.xAz, point_atm.yEl, 
-                cx0_atm, cy0_atm, cnx_atm, cny_atm, cdx_atm, cdy_atm, PWV_screen, 0);
+        PWV_out[idx] = _PWV_out;
+    }
+}
+
+__device__ void commonJob(int idx, int idy, float *sigout, float *nepout,
+        float *PWV_trace, float *eta_atm, float I_nu, int flag) {
+        
+    // FLOATS
+    float eta_atm_interp;   // Interpolated eta_atm, over frequency and PWV
+    float freq;             // Bin frequency
+    float PSD_nu;           // Local variable for storing PSD.
+    float eta_kj;           // Filter efficiency for bin j, at channel k.
+    float PWV_tr;           // Local variable for storing PWV value at time.
+    float eta_ap;           // Local variable for storing aperture efficiency
+    float sigfactor;        // Factor for calculating power. Perform outside of channel loop for speed.
+    float nepfactor1;       // Factor 1 for calculating NEP. Perform outside of channel loop for speed.
+    float nepfactor2;       // Factor 2 for calculating NEP. Perform outside of channel loop for speed.
+
+    // Reusable symbols for interpolation stuff - listed separately for readability
+    int ix, iy;
+    float t, u;
+
+    PWV_tr = PWV_trace[idx];
+
+    freq = cf0_src + cdf_src * idy;
+    //printf("%.12e\n", PWV_tr);
+        
+    ix = floorf((PWV_tr - cPWV0_atm) / cdPWV_atm);
+    iy = floorf((freq - cf0_atm) / cdf_atm);
+    
+    t = (PWV_tr - (cPWV0_atm + cdPWV_atm * ix)) / cdPWV_atm;
+    u = (freq - (cf0_atm + cdf_atm * iy)) / cdf_atm;
+    
+    eta_atm_interp = (1-t)*(1-u)*eta_atm[ix * cnf_atm + iy];
+    eta_atm_interp += t*(1-u)*eta_atm[(ix + 1) * cnf_atm + iy];
+    eta_atm_interp += (1-t)*u*eta_atm[ix * cnf_atm + iy + 1];
+    eta_atm_interp += t*u*eta_atm[(ix + 1) * cnf_atm + iy + 1];
+
+    //printf("%.12e\n", eta_atm_interp);
+    if(flag == 0 or flag == -1) {
+        eta_ap = tex1Dfetch(tex_eta_ap_ON, idy); 
+    }
+
+    else {
+        eta_ap = tex1Dfetch(tex_eta_ap_OFF, idy);
+    }
+
+    PSD_nu = eta_ap * eta_atm_interp * const_effs[0] * I_nu
+        + ( const_effs[0] * (1 - eta_atm_interp) * tex1Dfetch(tex_I_atm, idy)
+        + const_effs[1] * tex1Dfetch(tex_I_gnd, idy)
+        + const_effs[2] * tex1Dfetch(tex_I_tel, idy)) 
+        * cCL*cCL / (freq*freq);
+
+    sigfactor = PSD_nu * cdf_src;
+    nepfactor1 = sigfactor * (cHP * freq + 2 * cdelta / const_effs[3]);
+    nepfactor2 = sigfactor * PSD_nu;
+
+    #pragma unroll 
+    for(int k=0; k<cnf_ch; k++) {
+        eta_kj = tex1Dfetch( tex_filterbank, k*cnf_src + idy);
+        atomicAdd(&sigout[k*cnt + idx], __fmul_rn(eta_kj, sigfactor)); 
+        atomicAdd(&nepout[k*cnt + idx], __fmul_rn(eta_kj, __fmaf_rn(nepfactor2, eta_kj, nepfactor1))); 
+    }
+}
+
+/**
+  Calculate power and NEP in each channel.
+  This kernel is optimised for strict single-pointing (i.e., no sky-chopping) observations.
+
+  @param sigout Array for storing output power, for each channel, for each time, in SI units.
+  @param nepout Array for storing output NEP, for each channel, for each time, in SI units.
+  @param flagout Array for storing wether beam is in chop A or B, in nod AB or BA.
+  @param PWV_trace Array containing PWV value of atmosphere as seen by telescope over observation, in millimeters.
+  @param eta_atm Array with transmission parameters as function of PWV and frequency.
+  @param source Array containing source intensity at three pointings, as function of frequency, in SI units.
+ */
+__global__ void calcPowerNEP_1(float *sigout, float *nepout, int *flagout,
+        float *PWV_trace, float *eta_atm, float *source) {
+    
+    int idx = blockIdx.x * blockDim.x + threadIdx.x; 
+    int idy = blockIdx.y * blockDim.y + threadIdx.y; 
+
+    if (idx < cnt && idy < cnf_src) {
+        float I_nu;             // Specific intensity of source.
+
+        // INTEGERS
+        int flag = flagout[idx];
+
+        I_nu = source[idy];
+
+        commonJob(idx, idy, sigout, nepout, PWV_trace, eta_atm, I_nu, flag);
+    }
+}
+
+/**
+  Calculate power and NEP in each channel.
+  This kernel is optimised for observations involving two pointings, encountered in single-pointing ON-OFF chopping.
+        
+  @param sigout Array for storing output power, for each channel, for each time, in SI units.
+  @param nepout Array for storing output NEP, for each channel, for each time, in SI units.
+  @param flagout Array for storing wether beam is in chop A or B, in nod AB or BA.
+  @param PWV_trace Array containing PWV value of atmosphere as seen by telescope over observation, in millimeters.
+  @param eta_atm Array with transmission parameters as function of PWV and frequency.
+  @param source Array containing source intensity at three pointings, as function of frequency, in SI units.
+ */
+__global__ void calcPowerNEP_2(float *sigout, float *nepout, int *flagout,
+        float *PWV_trace, float *eta_atm, float *source) {
+    
+    int idx = blockIdx.x * blockDim.x + threadIdx.x; 
+    int idy = blockIdx.y * blockDim.y + threadIdx.y; 
+
+    if (idx < cnt && idy < cnf_src) {
+        float I_nu;             // Specific intensity of source.
+        int idx_point;          // Index for pointing of source (0 is OFF-B, 1 is ON-AB, 2 is OFF-A)
+
+        // INTEGERS
+        int flag = flagout[idx];
+        
+        // Determine idx in source from chopping flag
+        if(flag==0) {idx_point = 0;}
+        else {idx_point = 1;}
+    
+        I_nu = source[idx_point*cnf_src + idy];
+
+        commonJob(idx, idy, sigout, nepout, PWV_trace, eta_atm, I_nu, flag);
+    }
+}
+
+/**
+  Calculate power and NEP in each channel.
+  This kernel is optimised for observations involving three pointings, encountered in single-pointing ABBA chopping.
+        
+  @param sigout Array for storing output power, for each channel, for each time, in SI units.
+  @param nepout Array for storing output NEP, for each channel, for each time, in SI units.
+  @param flagout Array for storing wether beam is in chop A or B, in nod AB or BA.
+  @param PWV_trace Array containing PWV value of atmosphere as seen by telescope over observation, in millimeters.
+  @param eta_atm Array with transmission parameters as function of PWV and frequency.
+  @param source Array containing source intensity at three pointings, as function of frequency, in SI units.
+ */
+__global__ void calcPowerNEP_3(float *sigout, float *nepout, int *flagout,
+        float *PWV_trace, float *eta_atm, float *source) {
+    
+    int idx = blockIdx.x * blockDim.x + threadIdx.x; 
+    int idy = blockIdx.y * blockDim.y + threadIdx.y; 
+
+    if (idx < cnt && idy < cnf_src) {
+        float I_nu;             // Specific intensity of source.
+        int idx_point;          // Index for pointing of source (0 is OFF-B, 1 is ON-AB, 2 is OFF-A)
+
+        // INTEGERS
+        int flag = flagout[idx];
+        
+        // Determine idx in source from chopping flag
+        if(flag==0 or flag==2) {idx_point = 1;}
+        else if(flag==1) {idx_point = 2;}
+        else {idx_point = 0;}
+    
+        I_nu = source[idx_point*cnf_src + idy];
+
+        commonJob(idx, idy, sigout, nepout, PWV_trace, eta_atm, I_nu, flag);
     }
 }
 
 /**
   Main simulation kernel. This is where the magic happens.
 
-  @param I_atm Array containing blackbody intensity of atmosphere, in SI units.
-  @param I_gnd Array containing blackbody intensity of ground, in SI units.
-  @param I_tel Array containing blackbody intensity of telescope, in SI units.
-  @param I_CMB Array containing blackbody intensity of CMB, in SI units.
   @param sigout Array for storing output power, for each channel, for each time, in SI units.
+  @param nepout Array for storing output NEP, for each channel, for each time, in SI units.
+  @param azout Array containing Azimuth coordinates as function of time.
+  @param elout Array containing Elevation coordinates as function of time.
   @param flagout Array for storing wether beam is in chop A or B, in nod AB or BA.
-  @param eta_ap Array containing aperture efficiencies, for each bin frequency.
-  @param PWV_screen Array containing PWV value of atmosphere, over the range described by x_atm and y_atm, in millimeters.
-  @param eta_atm Array with transmission parameters as fuiunction of freqs_atm and PWV_atm.
-  @param filterbank Array containing filterbank of instrument.
+  @param PWV_trace Array containing PWV value of atmosphere as seen by telescope over observation, in millimeters.
+  @param eta_atm Array with transmission parameters as function of freqs_atm and PWV_atm.
   @param source Array containing source intensity, as function of azsrc, elsrc and freqs_src, in SI units.
-  @param state Array with states for drawing random Gaussian values for noise calculations.
  */
-__global__ void runSimulation(float *I_atm, float *I_gnd, float *I_tel, float *I_CMB,
-        float *sigout, float *azout, float *elout, int *flagout,
-        int *idx_Az, int *idx_El,
-        float *PWV_trace, float *eta_atm, float *source, curandState *state) {
+__global__ void calcPowerNEP(float *sigout, float *nepout, float *azout, float *elout, int *flagout,
+        float *PWV_trace, float *eta_atm, float *source) {
     
-    for (int idx = blockIdx.x * blockDim.x + threadIdx.x; 
-        idx < cnt; 
-        idx += blockDim.x * gridDim.x) {
-        
-        //__shared__ 
+    int idx = blockIdx.x * blockDim.x + threadIdx.x; 
+    int idy = blockIdx.y * blockDim.y + threadIdx.y; 
 
-        float t_start; // Time from start of observation.
-        float eta_atm_interp; // Interpolated eta_atm, over frequency and PWV
-        float freq; // Bin frequency
-        float I_nu; // Specific intensity of source.
-        float sigma_k; // Noise per channel.
-        float eta_kj; // Filter efficiency for bin j, at channel k
-
-        int _i_src = idx_Az[idx];
-        int _j_src = idx_El[idx];
-
-        float sqrt_samp = sqrtf(0.5 * cfreq_sample); // Constant term needed for noise calculation
+    if (idx < cnt && idy < cnf_src) {
+        float I_nu;             // Specific intensity of source.
+        // Reusable symbols for interpolation stuff
+        int x0y0, x1y0, x0y1, x1y1;
+        float t, u;
             
         AzEl pointing;
-        curandState localState = state[idx];
 
         pointing.Az = azout[idx];
         pointing.El = elout[idx];
-        float PWV_tr = PWV_trace[idx];
+
+        int iAz = floorf((pointing.Az - cAz0_src) / cdAz_src);
+        int iEl = floorf((pointing.El - cEl0_src) / cdEl_src);
+
         int flag = flagout[idx];
 
         float Az_src_max = cAz0_src + cdAz_src * (cnAz_src - 1);
         float El_src_max = cEl0_src + cdEl_src * (cnEl_src - 1);
-        
-        AzEl center;
-
-        center.Az = 0;
-        center.El = 0;
 
         bool offsource = ((pointing.Az < cAz0_src) or (pointing.Az > Az_src_max)) or 
                          ((pointing.El < cEl0_src) or (pointing.El > El_src_max));
 
-        float* PSD_nu = new float[cnf_src];
-        double eta_ap;
-
-        int start_slice = _i_src * cnf_src + _j_src * cnf_src * cAz0_src;
+        if(offsource) {I_nu = tex1Dfetch(tex_I_CMB, idy);}
         
-        float t_src = (pointing.Az - (cAz0_src + cdAz_src*_i_src)) / cdAz_src;
-        float u_src = (pointing.El - (cEl0_src + cdEl_src*_j_src)) / cdEl_src;
-
-        for(int j=0; j<cnf_src; j++)
-        {   
-            freq = cf0_src + cdf_src * j;
-            eta_atm_interp = interpValue(PWV_tr, freq, 
-                    cPWV0_atm, cf0_atm, cnPWV_atm, cnf_atm, cdPWV_atm, cdf_atm, eta_atm, 0);
-
-            if(offsource) {I_nu = I_CMB[j];}
+        else {
+            x0y0 = cnf_src * (iAz + iEl * cnAz_src);
+            x1y0 = cnf_src * (iAz + 1 + iEl * cnAz_src);
+            x0y1 = cnf_src * (iAz + (iEl+1) * cnAz_src);
+            x1y1 = cnf_src * (iAz + 1 + (iEl+1) * cnAz_src);
             
-            else {
-                I_nu = (1-t_src)*(1-u_src) * source[start_slice + j];
-                I_nu += t_src*(1-u_src) * source[start_slice + cnf_src + j];
-                I_nu += t_src*u_src * source[start_slice + cnf_src*cnAz_src + j];
-                I_nu += (1-t_src)*u_src * source[start_slice + cnf_src * (1 + cnAz_src) + j];
-            }
-
-            if(flag == 0 or flag == -1) {
-                eta_ap = tex1Dfetch(tex_eta_ap_ON, j); 
-            }
-
-            else {
-                eta_ap = tex1Dfetch(tex_eta_ap_OFF, j);
-            }
-
-            PSD_nu[j] = eta_ap * eta_atm_interp * const_effs[0] * I_nu;
-                //+ ( const_effs[0] * (1 - eta_atm_interp) * I_atm[j] 
-                //+ const_effs[1] * I_gnd[j] 
-                //+ const_effs[2] * I_tel[j]) 
-                //* cCL*cCL / (freq*freq);
-            PSD_nu[j] = I_nu;
+            t = (pointing.Az - (cAz0_src + cdAz_src*iAz)) / cdAz_src;
+            u = (pointing.El - (cEl0_src + cdEl_src*iEl)) / cdEl_src;
+            
+            I_nu = (1-t)*(1-u) * source[x0y0 + idy];
+            I_nu += t*(1-u) * source[x1y0 + idy];
+            I_nu += (1-t)*u * source[x0y1 + idy];
+            I_nu += t*u * source[x1y1 + idy];
         }
-        
-        // In this loop, calculate P_k, NEP_k and noise
-        curand_normal(&localState);
-        state[idx] = localState;
-       
-        
-        __syncthreads(); 
-        for(int k=0; k<cnf_filt; k++) {
-            float P_k = 0.; // Initialise each channel to zero, for each timestep
-            float NEP_accum = 0.;
 
-            // Can loop over bins again, cheap operations this time
-            for(int j=0; j<cnf_src; j++) {   
-                freq = cf0_src + cdf_src * j;
-                eta_kj = tex1Dfetch( tex_filterbank, k*cnf_src + j);
-                
-                NEP_accum += PSD_nu[j] * eta_kj * (cHP * freq + PSD_nu[j] * eta_kj + 2 * cdelta / const_effs[3]);
-                P_k += PSD_nu[j] * eta_kj;
-            }
+        commonJob(idx, idy, sigout, nepout, PWV_trace, eta_atm, I_nu, flag);
+    }
+}
 
-            sigma_k = sqrt(2 * NEP_accum * cdf_src) * sqrt_samp;
-            P_k *= cdf_src;
+/**
+  Calculate the total photon noise in a filter channel.
 
-            //P_k += sigma_k * curand_normal(&localState);
-           
-            // STORAGE: Add signal to signal array in output
-            __syncthreads(); 
-            sigout[k * cnt + idx] = P_k; 
+  After calculating the noise std from the NEP, a random number from a Gaussian is drawn and added to the total power in a channel.
+  Note that, because we do not need the NEP after this step, we replace the value with a random Gaussian. 
+  This is necessary for the TLS noise calculation, which comes after.
+
+  @param sigout Array for storing output power, for each channel, for each time, in SI units.
+  @param nepout Array for storing output NEP, for each channel, for each time, in SI units.
+  @param state Array with states for drawing random Gaussian values for noise calculations.
+ */
+__global__ void calcPhotonNoise(float *sigout, float *nepout, curandState *state) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x; 
+    if (idx < cnt) {
+        curandState localState = state[idx];
+        float sqrt_samp = sqrtf(0.5 * cf_sample); // Constant term needed for noise calculation
+        float sigma_k, P_k;
+
+
+        for(int k=0; k<cnf_ch; k++) {
+            sigma_k = sqrtf(2 * nepout[k*cnt + idx]) * sqrt_samp;
+            P_k = sigma_k * curand_normal(&localState);
+
+            state[idx] = localState;
+
+            sigout[k*cnt + idx] += P_k;
+
+            nepout[k*cnt + idx] = curand_normal(&localState);
+            state[idx] = localState;
         }
-        delete[] PSD_nu;
     }
 }
 
@@ -538,37 +700,62 @@ __global__ void runSimulation(float *I_atm, float *I_gnd, float *I_tel, float *I
  */
 void runTiEMPO2_CUDA(CuInstrument *instrument, CuTelescope *telescope, CuAtmosphere *atmosphere, CuSource *source, 
         CuSimParams *simparams, CuOutput *output) {
+    // FLOATS
+    float *d_sigout;        // Device pointer for output power array
+    float *d_nepout;        // Device pointer for output NEP array
+    float *d_azout;         // Device pointer for output Azimuth array 
+    float *d_elout;         // Device pointer for output Elevation array
+    float *d_I_nu;          // Device pointer for source intensities
+    
+    // INTEGERS
+    int *d_flagout;         // Device pointer for output chopping flags
+    int nffnt;              // Number of filter frequencies times number of time evaluations
+    int nf_src;             // Number of frequency points in source.
+    int numSMs;             // Number of streaming multiprocessors on GPU
+    int nThreads1D;         // Number of threads in 1D block
+    int nThreads2D;         // Number of threads per dimension of 2D block
+    int nBlocks1D;          // Number of 1D blocks, in terms of number of SMs
+    int nBlocks2Dx;         // Number of 2D blocks, in terms of number of SMs, along the x-dimension
+    int nBlocks2Dy;         // Number of 2D blocks, in terms of number of SMs, along the y-dimension
 
-    Timer timer;
-    int numSMs;
-    cudaDeviceGetAttribute(&numSMs, cudaDevAttrMultiProcessorCount, 0);
-    // Set total heap reservation to 128 mb
-    gpuErrchk( cudaDeviceSetLimit(cudaLimitMallocHeapSize, 128*1024*1024) );
+    // OTHER DECLARATIONS
+    dim3 blockSize1D;       // Size of 1D block (same as nThreads1D, but dim3 type)
+    dim3 gridSize1D;        // Number of 1D blocks per grid
+    dim3 blockSize2D;       // Size of 2D block, along x and y dimension
+    dim3 gridSize2D;        // Number of 2D blocks per grid
+    Timer timer;            // Timer class for timing kernel invocations
 
-    int nThreads1D = 256;
-    int nBlocks1D = ceilf((float)simparams->nTimes / nThreads1D / numSMs);
-    printf("%d %d\n", numSMs, nBlocks1D); 
+    nf_src = instrument->f_spec->num;
+    nffnt = instrument->nf_ch * simparams->nTimes;
+    
+    gpuErrchk( cudaDeviceGetAttribute(&numSMs, cudaDevAttrMultiProcessorCount, 0) );
 
-    dim3 blockSize1D = nThreads1D;
-    dim3 gridSize1D = nBlocks1D*numSMs;
+    // TiEMPO2 prefers larger L1 cache over shared memory.
+    gpuErrchk( cudaDeviceSetCacheConfig(cudaFuncCachePreferL1) );
+    
+    nThreads1D = 256;
+    nBlocks1D = ceilf((float)simparams->nTimes / nThreads1D / numSMs);
+
+    blockSize1D = nThreads1D;
+    gridSize1D = nBlocks1D*numSMs;
+    
+    nThreads2D = 16;
+    nBlocks2Dx = ceilf((float)simparams->nTimes / nThreads2D / numSMs);
+    nBlocks2Dy = ceilf((float)instrument->nf / nThreads2D / numSMs);
+
+    blockSize2D = dim3(nThreads2D, nThreads2D);
+    gridSize2D = dim3(nBlocks2Dx * numSMs, nBlocks2Dy * numSMs);
 
     timer.start();
     
     initCUDA(instrument, telescope, simparams, source, atmosphere);
     
     // Allocate output arrays
-    float *sigout;
-    gpuErrchk( cudaMalloc((void**)&sigout, (instrument->nfreqs_filt * simparams->nTimes) * sizeof(float)) );
-    float *azout, *elout;
-    gpuErrchk( cudaMalloc((void**)&azout, simparams->nTimes * sizeof(float)) );
-    gpuErrchk( cudaMalloc((void**)&elout, simparams->nTimes * sizeof(float)) );
-    
-    int *flagout;
-    gpuErrchk( cudaMalloc((void**)&flagout, simparams->nTimes * sizeof(int)) );
-
-    int *idx_Az, *idx_El;
-    gpuErrchk( cudaMalloc((void**)&idx_Az, simparams->nTimes * sizeof(int)) );
-    gpuErrchk( cudaMalloc((void**)&idx_El, simparams->nTimes * sizeof(int)) );
+    gpuErrchk( cudaMalloc((void**)&d_sigout, nffnt * sizeof(float)) );
+    gpuErrchk( cudaMalloc((void**)&d_nepout, nffnt * sizeof(float)) );
+    gpuErrchk( cudaMalloc((void**)&d_azout, simparams->nTimes * sizeof(float)) );
+    gpuErrchk( cudaMalloc((void**)&d_elout, simparams->nTimes * sizeof(float)) );
+    gpuErrchk( cudaMalloc((void**)&d_flagout, simparams->nTimes * sizeof(int)) );
 
     // Allocate PWV screen now, delete CUDA allocation after first kernel call
     float *dPWV_screen;
@@ -588,20 +775,20 @@ void runTiEMPO2_CUDA(CuInstrument *instrument, CuTelescope *telescope, CuAtmosph
     
     curandState *devStates;
     gpuErrchk( cudaMalloc((void **)&devStates, simparams->nTimes * sizeof(curandState)) );
-    
-    get_chop_pwv_rng<<<gridSize1D, blockSize1D>>>(dpointing_center, dPWV_screen, PWV_out, flagout, azout, elout, idx_Az, idx_El, devStates);
+
+    get_chop_pwv_rng<<<gridSize1D, blockSize1D>>>(dpointing_center, dPWV_screen, PWV_out, d_flagout, d_azout, d_elout, devStates);
 
     float freq;    // Frequency, used for initialising background sources.
 
     // Allocate and copy blackbodies
-    float *I_atm = new float[source->nf];
-    float *I_gnd = new float[source->nf];
-    float *I_tel = new float[source->nf];
-    float *I_CMB = new float[source->nf];
+    float *I_atm = new float[instrument->nf];
+    float *I_gnd = new float[instrument->nf];
+    float *I_tel = new float[instrument->nf];
+    float *I_CMB = new float[instrument->nf];
 
-    for(int j=0; j<source->nf; j++)
+    for(int j=0; j<instrument->nf; j++)
     {
-        freq = source->f0 + source->df * j;
+        freq = instrument->f0 + instrument->df * j;
         
         I_atm[j] = getPlanck(atmosphere->Tatm, freq); 
         I_gnd[j] = getPlanck(telescope->Tgnd, freq); 
@@ -610,33 +797,34 @@ void runTiEMPO2_CUDA(CuInstrument *instrument, CuTelescope *telescope, CuAtmosph
     }
    
     gpuErrchk( cudaFree(dPWV_screen) );
+
+
     float *dI_atm, *dI_gnd, *dI_tel, *dI_CMB;
-    gpuErrchk( cudaMalloc((void**)&dI_atm, source->nf * sizeof(float)) );
-    gpuErrchk( cudaMalloc((void**)&dI_gnd, source->nf * sizeof(float)) );
-    gpuErrchk( cudaMalloc((void**)&dI_tel, source->nf * sizeof(float)) );
-    gpuErrchk( cudaMalloc((void**)&dI_CMB, source->nf * sizeof(float)) );
+    gpuErrchk( cudaMalloc((void**)&dI_atm, instrument->nf * sizeof(float)) );
+    gpuErrchk( cudaMalloc((void**)&dI_gnd, instrument->nf * sizeof(float)) );
+    gpuErrchk( cudaMalloc((void**)&dI_tel, instrument->nf * sizeof(float)) );
+    gpuErrchk( cudaMalloc((void**)&dI_CMB, instrument->nf * sizeof(float)) );
 
-    gpuErrchk( cudaMemcpy(dI_atm, I_atm, source->nf * sizeof(float), cudaMemcpyHostToDevice) );
-    gpuErrchk( cudaMemcpy(dI_gnd, I_gnd, source->nf * sizeof(float), cudaMemcpyHostToDevice) );
-    gpuErrchk( cudaMemcpy(dI_tel, I_tel, source->nf * sizeof(float), cudaMemcpyHostToDevice) );
-    gpuErrchk( cudaMemcpy(dI_CMB, I_CMB, source->nf * sizeof(float), cudaMemcpyHostToDevice) );
+    gpuErrchk( cudaMemcpy(dI_atm, I_atm, instrument->nf * sizeof(float), cudaMemcpyHostToDevice) );
+    gpuErrchk( cudaMemcpy(dI_gnd, I_gnd, instrument->nf * sizeof(float), cudaMemcpyHostToDevice) );
+    gpuErrchk( cudaMemcpy(dI_tel, I_tel, instrument->nf * sizeof(float), cudaMemcpyHostToDevice) );
+    gpuErrchk( cudaMemcpy(dI_CMB, I_CMB, instrument->nf * sizeof(float), cudaMemcpyHostToDevice) );
     
-    // Allocate and copy source array I_nu
-    float *dI_nu;
-    int nI_nu = source->nAz * source->nEl * source->nf;
-
-    gpuErrchk( cudaMalloc((void**)&dI_nu, nI_nu * sizeof(float)) );
-    gpuErrchk( cudaMemcpy(dI_nu, source->I_nu, nI_nu * sizeof(float), cudaMemcpyHostToDevice) );
+    gpuErrchk( cudaBindTexture((size_t)0, tex_I_atm, dI_atm, instrument->nf * sizeof(float)) );
+    gpuErrchk( cudaBindTexture((size_t)0, tex_I_gnd, dI_gnd, instrument->nf * sizeof(float)) );
+    gpuErrchk( cudaBindTexture((size_t)0, tex_I_tel, dI_tel, instrument->nf * sizeof(float)) );
+    gpuErrchk( cudaBindTexture((size_t)0, tex_I_CMB, dI_CMB, instrument->nf * sizeof(float)) );
+    
     
     // Allocate and copy telescope arrays
     float *deta_ap_ON, *deta_ap_OFF;
-    gpuErrchk( cudaMalloc((void**)&deta_ap_ON, source->nf * sizeof(float)) );
-    gpuErrchk( cudaMalloc((void**)&deta_ap_OFF, source->nf * sizeof(float)) );
-    gpuErrchk( cudaMemcpy(deta_ap_ON, telescope->eta_ap_ON, source->nf * sizeof(float), cudaMemcpyHostToDevice) );
-    gpuErrchk( cudaMemcpy(deta_ap_OFF, telescope->eta_ap_OFF, source->nf * sizeof(float), cudaMemcpyHostToDevice) );
+    gpuErrchk( cudaMalloc((void**)&deta_ap_ON, instrument->nf * sizeof(float)) );
+    gpuErrchk( cudaMalloc((void**)&deta_ap_OFF, instrument->nf * sizeof(float)) );
+    gpuErrchk( cudaMemcpy(deta_ap_ON, telescope->eta_ap_ON, instrument->nf * sizeof(float), cudaMemcpyHostToDevice) );
+    gpuErrchk( cudaMemcpy(deta_ap_OFF, telescope->eta_ap_OFF, instrument->nf * sizeof(float), cudaMemcpyHostToDevice) );
     
-    gpuErrchk( cudaBindTexture((size_t)0, tex_eta_ap_ON, deta_ap_ON, source->nf * sizeof(float)) );
-    gpuErrchk( cudaBindTexture((size_t)0, tex_eta_ap_OFF, deta_ap_OFF, source->nf * sizeof(float)) );
+    gpuErrchk( cudaBindTexture((size_t)0, tex_eta_ap_ON, deta_ap_ON, instrument->nf * sizeof(float)) );
+    gpuErrchk( cudaBindTexture((size_t)0, tex_eta_ap_OFF, deta_ap_OFF, instrument->nf * sizeof(float)) );
 
     // Allocate and copy atmosphere arrays
     float *deta_atm;
@@ -647,7 +835,7 @@ void runTiEMPO2_CUDA(CuInstrument *instrument, CuTelescope *telescope, CuAtmosph
 
     // Allocate and copy instrument arrays
     float *dfilterbank;
-    int nfilterbank = source->nf * instrument->nfreqs_filt;
+    int nfilterbank = instrument->nf * instrument->nf_ch;
     gpuErrchk( cudaMalloc((void**)&dfilterbank, nfilterbank * sizeof(float)) );
     
     gpuErrchk( cudaMemcpy(dfilterbank, instrument->filterbank, nfilterbank * sizeof(float), cudaMemcpyHostToDevice) );
@@ -657,28 +845,61 @@ void runTiEMPO2_CUDA(CuInstrument *instrument, CuTelescope *telescope, CuAtmosph
     timer.stop();
 
     output->t_diag[0] = timer.get();
-    
+
+    //printf("%d\n", source->nI_nu);
+
+    gpuErrchk( cudaMalloc((void**)&d_I_nu, source->nI_nu * sizeof(float)) );
+    gpuErrchk( cudaMemcpy(d_I_nu, source->I_nu, source->nI_nu * sizeof(float), cudaMemcpyHostToDevice) );
+
     // CALL TO MAIN SIMULATION KERNEL
     timer.start();
+    
+    // SINGLE POINTING, NO CHOP
+    if(telescope->scantype == 0 && telescope->chop_mode == 0) {
+        calcPowerNEP_1<<<gridSize2D, blockSize2D>>>(d_sigout, d_nepout, d_flagout,
+            PWV_out, deta_atm, d_I_nu);
+    }
+    
+    // SINGLE POINTING, STRICT ON-OFF
+    else if(telescope->scantype == 0 && telescope->chop_mode == 1) {
+        calcPowerNEP_2<<<gridSize2D, blockSize2D>>>(d_sigout, d_nepout, d_flagout,
+            PWV_out, deta_atm, d_I_nu);
+    }
 
-    runSimulation<<<gridSize1D, blockSize1D>>>(dI_atm, dI_gnd, dI_tel, dI_CMB,
-            sigout, azout, elout, flagout,
-            idx_Az, idx_El,
-            PWV_out, deta_atm, dI_nu, devStates);
+    // SINGLE POINTING, ABBA CHOPPING
+    else if(telescope->scantype == 0 && telescope->chop_mode == 2) {
+        calcPowerNEP_3<<<gridSize2D, blockSize2D>>>(d_sigout, d_nepout, d_flagout,
+            PWV_out, deta_atm, d_I_nu);
+    }
+
+    else {
+        calcPowerNEP<<<gridSize2D, blockSize2D>>>(d_sigout, d_nepout, d_azout, d_elout, d_flagout,
+                PWV_out, deta_atm, d_I_nu);
+    }
     
     gpuErrchk( cudaDeviceSynchronize() );
     
+    gpuErrchk( cudaFree(dI_atm) );
+    gpuErrchk( cudaFree(dI_gnd) );
+    gpuErrchk( cudaFree(dI_tel) );
+    gpuErrchk( cudaFree(dI_CMB) );
+    gpuErrchk( cudaFree(d_I_nu) );
+    
+    calcPhotonNoise<<<gridSize1D, blockSize1D>>>(d_sigout, d_nepout, devStates);
+
+    gpuErrchk( cudaDeviceSynchronize() );
     timer.stop();
+
     output->t_diag[1] = timer.get();
     
     timer.start();
 
-    gpuErrchk( cudaMemcpy(output->signal, sigout, (instrument->nfreqs_filt * simparams->nTimes) * sizeof(float), cudaMemcpyDeviceToHost) );
+    gpuErrchk( cudaMemcpy(output->signal, d_sigout, nffnt * sizeof(float), cudaMemcpyDeviceToHost) );
 
-    gpuErrchk( cudaMemcpy(output->Az, azout, simparams->nTimes * sizeof(int), cudaMemcpyDeviceToHost) );
-    gpuErrchk( cudaMemcpy(output->El, elout, simparams->nTimes * sizeof(int), cudaMemcpyDeviceToHost) );
+    gpuErrchk( cudaMemcpy(output->Az, d_azout, simparams->nTimes * sizeof(int), cudaMemcpyDeviceToHost) );
+    gpuErrchk( cudaMemcpy(output->El, d_elout, simparams->nTimes * sizeof(int), cudaMemcpyDeviceToHost) );
     
-    gpuErrchk( cudaMemcpy(output->flag, flagout, simparams->nTimes * sizeof(int), cudaMemcpyDeviceToHost) );
+    gpuErrchk( cudaMemcpy(output->flag, d_flagout, simparams->nTimes * sizeof(int), cudaMemcpyDeviceToHost) );
 
     gpuErrchk( cudaDeviceReset() );
 

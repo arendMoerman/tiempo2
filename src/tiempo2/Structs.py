@@ -6,17 +6,36 @@ Structs that are passed to the C++ backend.
 import ctypes
 import numpy as np
 
+class ArrSpec(ctypes.Structure):
+    """!
+    Struct used for passing array specifications a0, da, na.
+    Used when it is not necessary to pass full dictionaries.
+    """
+
+    _fields_ = [("start", ctypes.c_double),
+                ("step", ctypes.c_double),
+                ("num", ctypes.c_int)]
+
+class CuArrSpec(ctypes.Structure):
+    """!
+    Struct used for passing array specifications a0, da, na.
+    Used when it is not necessary to pass full dictionaries.
+    """
+
+    _fields_ = [("start", ctypes.c_float),
+                ("step", ctypes.c_float),
+                ("num", ctypes.c_int)]
+
 class Instrument(ctypes.Structure):
     """!
     Struct representing the simulated instrument.
     """
 
-    _fields_ = [("freqs_filt", ctypes.POINTER(ctypes.c_double)),
-                ("nfreqs_filt", ctypes.c_int),
-                ("R", ctypes.c_int),
+    _fields_ = [("nf_ch", ctypes.c_int),
+                ("f_spec", ArrSpec),
                 ("eta_inst", ctypes.c_double),
                 ("eta_misc", ctypes.c_double),
-                ("freq_sample", ctypes.c_double),
+                ("f_sample", ctypes.c_double),
                 ("filterbank", ctypes.POINTER(ctypes.c_double)),
                 ("delta", ctypes.c_double),
                 ("eta_pb", ctypes.c_double)]
@@ -57,18 +76,10 @@ class Atmosphere(ctypes.Structure):
     _fields_ = [("Tatm", ctypes.c_double),
                 ("v_wind", ctypes.c_double),
                 ("h_column", ctypes.c_double),
-                ("x0", ctypes.c_double),
-                ("dx", ctypes.c_double),
-                ("nx", ctypes.c_int),
-                ("y0", ctypes.c_double),
-                ("dy", ctypes.c_double),
-                ("ny", ctypes.c_int),
-                ("f0", ctypes.c_double),
-                ("df", ctypes.c_double),
-                ("nf", ctypes.c_int),
-                ("PWV0", ctypes.c_double),
-                ("dPWV", ctypes.c_double),
-                ("nPWV", ctypes.c_int),
+                ("x_spec", ArrSpec),
+                ("y_spec", ArrSpec),
+                ("f_spec", ArrSpec),
+                ("PWV_spec", ArrSpec),
                 ("PWV", ctypes.POINTER(ctypes.c_double)),
                 ("eta_atm", ctypes.POINTER(ctypes.c_double))]
 
@@ -77,26 +88,18 @@ class Source(ctypes.Structure):
     Struct representing simulated astronomical source.
     """
 
-    _fields_ = [("Az0", ctypes.c_double),
-                ("dAz", ctypes.c_double),
-                ("nAz", ctypes.c_int),
-                ("El0", ctypes.c_double),
-                ("dEl", ctypes.c_double),
-                ("nEl", ctypes.c_int),
-                ("f0", ctypes.c_double),
-                ("df", ctypes.c_double),
-                ("nf", ctypes.c_int),
+    _fields_ = [("Az_spec", ArrSpec),
+                ("El_spec", ArrSpec),
                 ("I_nu", ctypes.POINTER(ctypes.c_double)),
                 ("nI_nu", ctypes.c_int)]
 
-class SimParams(ctypes.Structure):
+class CalOutput(ctypes.Structure):
     """!
-    Struct representing simulation parameters.
+    Struct used as output for a power to temperature conversion database.
     """
 
-    _fields_ = [("t_obs", ctypes.c_double),
-                ("nTimes", ctypes.c_int),
-                ("nThreads", ctypes.c_int)]
+    _fields_ = [("power", ctypes.POINTER(ctypes.c_double)),
+                ("temperature", ctypes.POINTER(ctypes.c_double))]
 
 class Output(ctypes.Structure):
     """!
@@ -115,12 +118,11 @@ class CuInstrument(ctypes.Structure):
     Struct representing the simulated instrument.
     """
 
-    _fields_ = [("freqs_filt", ctypes.POINTER(ctypes.c_float)),
-                ("nfreqs_filt", ctypes.c_int),
-                ("R", ctypes.c_int),
+    _fields_ = [("nf_ch", ctypes.c_int),
+                ("f_spec", CuArrSpec),
                 ("eta_inst", ctypes.c_float),
                 ("eta_misc", ctypes.c_float),
-                ("freq_sample", ctypes.c_float),
+                ("f_sample", ctypes.c_float),
                 ("filterbank", ctypes.POINTER(ctypes.c_float)),
                 ("delta", ctypes.c_float),
                 ("eta_pb", ctypes.c_float)]
@@ -162,18 +164,10 @@ class CuAtmosphere(ctypes.Structure):
     _fields_ = [("Tatm", ctypes.c_float),
                 ("v_wind", ctypes.c_float),
                 ("h_column", ctypes.c_float),
-                ("x0", ctypes.c_float),
-                ("dx", ctypes.c_float),
-                ("nx", ctypes.c_int),
-                ("y0", ctypes.c_float),
-                ("dy", ctypes.c_float),
-                ("ny", ctypes.c_int),
-                ("f0", ctypes.c_float),
-                ("df", ctypes.c_float),
-                ("nf", ctypes.c_int),
-                ("PWV0", ctypes.c_float),
-                ("dPWV", ctypes.c_float),
-                ("nPWV", ctypes.c_int),
+                ("x_spec", CuArrSpec),
+                ("y_spec", CuArrSpec),
+                ("f_spec", CuArrSpec),
+                ("PWV_spec", CuArrSpec),
                 ("PWV", ctypes.POINTER(ctypes.c_float)),
                 ("eta_atm", ctypes.POINTER(ctypes.c_float))]
 
@@ -182,15 +176,8 @@ class CuSource(ctypes.Structure):
     Struct representing simulated astronomical source.
     """
 
-    _fields_ = [("Az0", ctypes.c_float),
-                ("dAz", ctypes.c_float),
-                ("nAz", ctypes.c_int),
-                ("El0", ctypes.c_float),
-                ("dEl", ctypes.c_float),
-                ("nEl", ctypes.c_int),
-                ("f0", ctypes.c_float),
-                ("df", ctypes.c_float),
-                ("nf", ctypes.c_int),
+    _fields_ = [("Az_spec", CuArrSpec),
+                ("El_spec", CuArrSpec),
                 ("I_nu", ctypes.POINTER(ctypes.c_float)),
                 ("nI_nu", ctypes.c_int)]
 
@@ -203,6 +190,14 @@ class CuSimParams(ctypes.Structure):
                 ("nTimes", ctypes.c_int),
                 ("nThreads", ctypes.c_int)]
 
+class CuCalOutput(ctypes.Structure):
+    """!
+    Struct used as output for a power to temperature conversion database.
+    """
+
+    _fields_ = [("power", ctypes.POINTER(ctypes.c_float)),
+                ("temperature", ctypes.POINTER(ctypes.c_float))]
+
 class CuOutput(ctypes.Structure):
     """!
     Struct used as output container.
@@ -213,3 +208,4 @@ class CuOutput(ctypes.Structure):
                 ("El", ctypes.POINTER(ctypes.c_float)),
                 ("flag", ctypes.POINTER(ctypes.c_int)),
                 ("t_diag", ctypes.POINTER(ctypes.c_float))]
+

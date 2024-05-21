@@ -22,12 +22,15 @@ def allfillInstrument(InstDict, InstStruct, ct_t=ctypes.c_double):
     arr_t = 'd' if ct_t == ctypes.c_double else 'f'
     arr_filterbank = ar.array(arr_t, InstDict["filterbank"].ravel())
 
-    InstStruct.freqs_filt = (ct_t * InstDict["freqs_filt"].size)(*(InstDict["freqs_filt"].ravel().tolist()))
-    InstStruct.nfreqs_filt = ctypes.c_int(InstDict["n_freqs"])
-    InstStruct.R = ctypes.c_int(InstDict["R"])
+    df_src = (InstDict["f1_src"] - InstDict["f0_src"]) / InstDict["nf_src"]
+
+    InstStruct.nf_ch = ctypes.c_int(InstDict["nf_ch"])
+
+    InstStruct.f_spec = arr2ArrSpec(InstDict["f_src"], ct_t)
+
     InstStruct.eta_inst = ct_t(InstDict["eta_inst"])
     InstStruct.eta_misc = ct_t(InstDict["eta_misc"])
-    InstStruct.freq_sample = ct_t(InstDict["freq_sample"])
+    InstStruct.f_sample = ct_t(InstDict["f_sample"])
     InstStruct.filterbank = (ct_t * InstDict["filterbank"].size).from_buffer(arr_filterbank)
     InstStruct.delta = ct_t(InstDict["delta"])
     InstStruct.eta_pb = ct_t(InstDict["eta_pb"])
@@ -78,26 +81,15 @@ def allfillAtmosphere(AtmDict, AtmStruct, ct_t=ctypes.c_double, coalesce=False):
     arr_t = 'd' if ct_t == ctypes.c_double else 'f'
     arr_PWV = ar.array(arr_t, AtmDict["PWV"].ravel())
     arr_eta = ar.array(arr_t, AtmDict["eta_atm"].ravel())
+    
+    AtmStruct.x_spec = arr2ArrSpec(AtmDict["x_atm"], ct_t)
+    AtmStruct.y_spec = arr2ArrSpec(AtmDict["y_atm"], ct_t)
+    AtmStruct.f_spec = arr2ArrSpec(AtmDict["f_atm"], ct_t)
+    AtmStruct.PWV_spec = arr2ArrSpec(AtmDict["PWV_atm"], ct_t)
 
     AtmStruct.Tatm = ct_t(AtmDict["Tatm"])
     AtmStruct.v_wind = ct_t(AtmDict["v_wind"])
     AtmStruct.h_column = ct_t(AtmDict["h_column"])
-    
-    AtmStruct.x0 = ct_t(AtmDict["x_atm"][0])
-    AtmStruct.dx = ct_t(AtmDict["x_atm"][1] - AtmDict["x_atm"][0])
-    AtmStruct.nx = ctypes.c_int(AtmDict["x_atm"].size)
-
-    AtmStruct.y0 = ct_t(AtmDict["y_atm"][0])
-    AtmStruct.dy = ct_t(AtmDict["y_atm"][1] - AtmDict["y_atm"][0])
-    AtmStruct.ny = ctypes.c_int(AtmDict["y_atm"].size)
-
-    AtmStruct.f0 = ct_t(AtmDict["f_atm"][0])
-    AtmStruct.df = ct_t(AtmDict["f_atm"][1] - AtmDict["f_atm"][0])
-    AtmStruct.nf = ctypes.c_int(AtmDict["f_atm"].size)
-
-    AtmStruct.PWV0 = ct_t(AtmDict["PWV_atm"][0])
-    AtmStruct.dPWV = ct_t(AtmDict["PWV_atm"][1] - AtmDict["PWV_atm"][0])
-    AtmStruct.nPWV = ctypes.c_int(AtmDict["PWV_atm"].size)
 
     AtmStruct.PWV = (ct_t * AtmDict["PWV"].ravel().size).from_buffer(arr_PWV)
 
@@ -115,21 +107,9 @@ def allfillSource(SourceDict, SourceStruct, ct_t=ctypes.c_double):
     I_nu = SourceDict["I_nu"]
 
     nI_nu = I_nu.ravel().size
-    
-    if len(I_nu.shape) == 3:
-        I_nu = np.transpose(I_nu, axes=(1,0,2))
 
-    SourceStruct.Az0 = ct_t(SourceDict["Az"][0])
-    SourceStruct.dAz = ct_t(SourceDict["Az"][1] - SourceDict["Az"][0])
-    SourceStruct.nAz = ctypes.c_int(SourceDict["Az"].size)
-
-    SourceStruct.El0 = ct_t(SourceDict["El"][0])
-    SourceStruct.dEl = ct_t(SourceDict["El"][1] - SourceDict["El"][0])
-    SourceStruct.nEl = ctypes.c_int(SourceDict["El"].size)
-
-    SourceStruct.f0 = ct_t(SourceDict["f_src"][0])
-    SourceStruct.df = ct_t(SourceDict["f_src"][1] - SourceDict["f_src"][0])
-    SourceStruct.nf = ctypes.c_int(SourceDict["f_src"].size)
+    SourceStruct.Az_spec = arr2ArrSpec(SourceDict["Az_src"], ct_t)
+    SourceStruct.El_spec = arr2ArrSpec(SourceDict["El_src"], ct_t)
     
     SourceStruct.I_nu = (ct_t * nI_nu)(*(I_nu.ravel().tolist())) 
     SourceStruct.nI_nu = ctypes.c_int(nI_nu)
@@ -159,7 +139,6 @@ def allocateOutput(OutputStruct, size_t, size_f, ct_t=ctypes.c_double):
 
     fill_sig = np.zeros(size_t * size_f)
     fill_t = np.zeros(size_t)
-    print(type(fill_sig))
 
     OutputStruct.signal = (ct_t * (size_t * size_f)).from_buffer(fill_sig)
     OutputStruct.Az = (ct_t * size_t).from_buffer(fill_t)
@@ -171,6 +150,22 @@ def allocateOutput(OutputStruct, size_t, size_f, ct_t=ctypes.c_double):
 
     else:
         OutputStruct.t_diag = (ct_t * 3)(0, 0, 0)
+
+def allocateCalOutput(CalOutputStruct, size_t, size_f, ct_t=ctypes.c_double):
+    """!
+    Allocate memory for a power-temperature calibration output struct.
+
+    @param CalOutputStruct Struct to be allocated and passed to ctypes.
+    @param size_t Number of PWV evaluations.
+    @param size_f Number of channels in filterbank.
+    @param ct_t Type of data. Use ctypes.c_double for CPU, ctypes.c_float for GPU.
+    """
+
+    fill_power = np.zeros(size_t * size_f)
+    fill_temperature = np.zeros(size_t * size_f)
+
+    CalOutputStruct.power = (ct_t * (size_t * size_f)).from_buffer(fill_power)
+    CalOutputStruct.temperature = (ct_t * (size_t * size_f)).from_buffer(fill_temperature)
 
 def OutputStructToDict(OutputStruct, size_t, size_f, np_t):
     """!
@@ -200,3 +195,43 @@ def OutputStructToDict(OutputStruct, size_t, size_f, np_t):
     }
 
     return OutputDict
+
+def CalOutputStructToDict(CalOutputStruct, size_t, size_f, np_t):
+    """!
+    Convert a calibration output struct to a dictionary.
+
+    @param CalOutputStruct Struct filled with output.
+    @param size_t Number of PWV evaluations.
+    @param size_f Number of channels in filterbank.
+    @param np_t Numpy type of array elements.
+    """
+
+    sig_shape = (size_f, size_t)
+    t_shape = (size_t,)
+
+    CalOutputDict = {
+    "power" : np.ctypeslib.as_array(CalOutputStruct.power, shape=sig_shape).astype(np_t).T,
+    "temperature" : np.ctypeslib.as_array(CalOutputStruct.temperature, shape=sig_shape).astype(np_t).T,
+    }
+
+    return CalOutputDict
+
+def allfillArrSpec(arr, ArrSpecStruct, ct_t=ctypes.c_double):
+    ArrSpecStruct.start = ct_t(arr[0])    
+    ArrSpecStruct.step = ct_t(arr[1] - arr[0])    
+    ArrSpecStruct.num = ctypes.c_int(arr.size)    
+
+def arr2ArrSpec(arr, ct_t=ctypes.c_double):
+    spec_t = TStructs.ArrSpec
+    if ct_t == ctypes.c_float:
+        spec_t = TStructs.CuArrSpec
+
+    arrspec = spec_t()
+    allfillArrSpec(arr, arrspec, ct_t)
+
+    return arrspec
+
+
+
+
+

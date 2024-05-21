@@ -28,27 +28,42 @@ def loadTiEMPO2lib():
         except:
             lib = ctypes.CDLL(os.path.join(path_cur, "libtiempo2.dylib"))
 
-    lib.runTiEMPO2.argtypes = [ctypes.POINTER(TStructs.Instrument), ctypes.POINTER(TStructs.Telescope),
-                            ctypes.POINTER(TStructs.Atmosphere), ctypes.POINTER(TStructs.Source),
-                            ctypes.POINTER(TStructs.SimParams), ctypes.POINTER(TStructs.Output)]
+    lib.runTiEMPO2.argtypes = [ctypes.POINTER(TStructs.Instrument), 
+                               ctypes.POINTER(TStructs.Telescope),
+                               ctypes.POINTER(TStructs.Atmosphere), 
+                               ctypes.POINTER(TStructs.Source),
+                               ctypes.POINTER(TStructs.Output),
+                               ctypes.c_int, ctypes.c_int]
     
-    lib.getSourceSignal.argtypes = [ctypes.POINTER(TStructs.Instrument), ctypes.POINTER(TStructs.Telescope),
-                            ctypes.POINTER(TStructs.Source), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double),
-                            ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double),
-                            ctypes.c_int, ctypes.c_int, 
-                            ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_bool]
+    lib.calcW2K.argtypes = [ctypes.POINTER(TStructs.Instrument), 
+                            ctypes.POINTER(TStructs.Telescope),
+                            ctypes.POINTER(TStructs.Atmosphere), 
+                            ctypes.POINTER(TStructs.CalOutput),
+                            ctypes.c_int, ctypes.c_int]
     
-    lib.getEtaAtm.argtypes = [ctypes.POINTER(TStructs.Source), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double),
-                            ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double),
-                            ctypes.c_int, ctypes.c_int, ctypes.c_double]
+    lib.getSourceSignal.argtypes = [ctypes.POINTER(TStructs.Instrument), 
+                                    ctypes.POINTER(TStructs.Telescope),
+                                    ctypes.POINTER(ctypes.c_double), 
+                                    ctypes.POINTER(ctypes.c_double),
+                                    ctypes.POINTER(ctypes.c_double),
+                                    TStructs.ArrSpec, TStructs.ArrSpec,
+                                    ctypes.c_double, ctypes.c_bool]
     
-    lib.getNEP.argtypes = [ctypes.POINTER(TStructs.Instrument), ctypes.POINTER(TStructs.Telescope),
-                            ctypes.POINTER(TStructs.Source), ctypes.POINTER(ctypes.c_double), 
-                            ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double),
-                            ctypes.c_int, ctypes.c_int, 
-                            ctypes.POINTER(ctypes.c_double), ctypes.c_double, ctypes.c_double]
+    lib.getEtaAtm.argtypes = [TStructs.ArrSpec, 
+                              ctypes.POINTER(ctypes.c_double), 
+                              ctypes.POINTER(ctypes.c_double),
+                              TStructs.ArrSpec, TStructs.ArrSpec,
+                              ctypes.c_double]
+    
+    lib.getNEP.argtypes = [ctypes.POINTER(TStructs.Instrument), 
+                           ctypes.POINTER(TStructs.Telescope),
+                           ctypes.POINTER(ctypes.c_double), 
+                           TStructs.ArrSpec, TStructs.ArrSpec,
+                           ctypes.POINTER(ctypes.c_double), 
+                           ctypes.c_double, ctypes.c_double]
     
     lib.runTiEMPO2.restype = None
+    lib.calcW2K.restype = None
     lib.getSourceSignal.restype = None
     lib.getEtaAtm.restype = None
     lib.getNEP.restype = None
@@ -71,15 +86,18 @@ def loadTiEMPO2lib_CUDA():
         except:
             lib = ctypes.CDLL(os.path.join(path_cur, "libcutiempo2.dylib"))
 
-    lib.runTiEMPO2_CUDA.argtypes = [ctypes.POINTER(TStructs.CuInstrument), ctypes.POINTER(TStructs.CuTelescope),
-                            ctypes.POINTER(TStructs.CuAtmosphere), ctypes.POINTER(TStructs.CuSource),
-                            ctypes.POINTER(TStructs.CuSimParams), ctypes.POINTER(TStructs.CuOutput)]
+    lib.runTiEMPO2_CUDA.argtypes = [ctypes.POINTER(TStructs.CuInstrument), 
+                                    ctypes.POINTER(TStructs.CuTelescope),
+                                    ctypes.POINTER(TStructs.CuAtmosphere), 
+                                    ctypes.POINTER(TStructs.CuSource),
+                                    ctypes.POINTER(TStructs.CuOutput),
+                                    ctypes.c_int]
     
     lib.runTiEMPO2_CUDA.restype = None
 
     return lib
 
-def runTiEMPO2(instrument, telescope, atmosphere, source, simparams):
+def runTiEMPO2(instrument, telescope, atmosphere, source, nTimes, nThreads):
     """!
     Binding for running the TiEMPO2 simulation on CPU.
 
@@ -87,7 +105,6 @@ def runTiEMPO2(instrument, telescope, atmosphere, source, simparams):
     @param telescope Dictionary containing telescope parameters.
     @param atmosphere Dictionary containing atmosphere parameters.
     @param source Dictionary containing astronomical source parameters.
-    @param simparams Dictionary containing simulation parameters.
 
     @returns 2D array containing timestreams of power in detector, for each channel frequency
     """
@@ -99,7 +116,6 @@ def runTiEMPO2(instrument, telescope, atmosphere, source, simparams):
     _telescope = TStructs.Telescope()
     _atmosphere = TStructs.Atmosphere()
     _source = TStructs.Source()
-    _simparams = TStructs.SimParams()
 
     _output = TStructs.Output()
 
@@ -107,19 +123,59 @@ def runTiEMPO2(instrument, telescope, atmosphere, source, simparams):
     TBUtils.allfillTelescope(telescope, _telescope)
     TBUtils.allfillAtmosphere(atmosphere, _atmosphere)
     TBUtils.allfillSource(source, _source)
-    TBUtils.allfillSimParams(simparams, _simparams)
 
-    TBUtils.allocateOutput(_output, simparams["nTimes"], instrument["freqs_filt"].size)
+    cnTimes = ctypes.c_int(nTimes)
+    cnThreads = ctypes.c_int(nThreads)
 
-    args = [_instrument, _telescope, _atmosphere, _source, _simparams, _output]
+    TBUtils.allocateOutput(_output, nTimes, instrument["nf_ch"])
+
+    args = [_instrument, _telescope, _atmosphere, _source, _output, cnTimes, cnThreads]
 
     mgr.new_thread(target=lib.runTiEMPO2, args=args)
 
-    res = TBUtils.OutputStructToDict(_output, simparams["nTimes"], instrument["freqs_filt"].size, np_t=np.float64)
+    res = TBUtils.OutputStructToDict(_output, nTimes, instrument["nf_ch"], np_t=np.float64)
 
     return res
 
-def getSourceSignal(instrument, telescope, source, atmosphere, Az_point, El_point, PWV, ON):
+def calcW2K(instrument, telescope, atmosphere, nPWV, nThreads):
+    """!
+    Binding for calculating a power-temperature conversion table.
+
+    @param instrument Dictionary containing instrument parameters.
+    @param telescope Dictionary containing telescope parameters.
+    @param atmosphere Dictionary containing atmosphere parameters.
+    @param w2k Watt to Kelvin specification parameters.
+
+    @returns A CalOutput dictionary, containing power-temperature relations.
+    """
+
+    lib = loadTiEMPO2lib()
+    mgr = TManager.Manager()
+
+    _instrument = TStructs.Instrument()
+    _telescope = TStructs.Telescope()
+    _atmosphere = TStructs.Atmosphere()
+
+    _caloutput = TStructs.CalOutput()
+
+    TBUtils.allfillInstrument(instrument, _instrument)
+    TBUtils.allfillTelescope(telescope, _telescope)
+    TBUtils.allfillAtmosphere(atmosphere, _atmosphere)
+
+    TBUtils.allocateCalOutput(_caloutput, nPWV, instrument["nf_ch"])
+
+    cnPWV = ctypes.c_int(nPWV)
+    cnThreads = ctypes.c_int(nThreads)
+
+    args = [_instrument, _telescope, _atmosphere, _caloutput, cnPWV, cnThreads]
+
+    mgr.new_thread(target=lib.calcW2K, args=args)
+
+    res = TBUtils.CalOutputStructToDict(_caloutput, nPWV, instrument["nf_ch"], np_t=np.float64)
+
+    return res
+
+def getSourceSignal(instrument, telescope, atmosphere, I_nu, PWV, ON):
     """!
     Binding for calculating the source signal, through the optical path, but without noise.
 
@@ -140,30 +196,28 @@ def getSourceSignal(instrument, telescope, source, atmosphere, Az_point, El_poin
 
     _instrument = TStructs.Instrument()
     _telescope = TStructs.Telescope()
-    _source = TStructs.Source()
+    
+    _f_atm = TStructs.ArrSpec()
+    _PWV_atm = TStructs.ArrSpec()
 
-    coutput = (ctypes.c_double * instrument["freqs_filt"].size)(*(np.zeros(instrument["freqs_filt"].size).tolist()))
+    coutput = (ctypes.c_double * instrument["nf_ch"]).from_buffer(np.zeros(instrument["nf_ch"]))
+
     ceta_atm = (ctypes.c_double * atmosphere["eta_atm"].size)(*(atmosphere["eta_atm"].ravel().tolist()))
-    cPWV_atm = (ctypes.c_double * atmosphere["PWV_atm"].size)(*(atmosphere["PWV_atm"].tolist()))
-    cfreqs_atm = (ctypes.c_double * atmosphere["f_atm"].size)(*(atmosphere["f_atm"].tolist()))
+    cI_nu = (ctypes.c_double * I_nu.size)(*(I_nu.ravel().tolist()))
 
-    cnfreqs_atm = ctypes.c_int(atmosphere["nfreqs_atm"])
-    cnPWV_atm = ctypes.c_int(atmosphere["PWV_atm"].size)
-
-    cAz_point = ctypes.c_double(Az_point)
-    cEl_point = ctypes.c_double(El_point)
     cPWV = ctypes.c_double(PWV)
     cON = ctypes.c_bool(ON)
 
     TBUtils.allfillInstrument(instrument, _instrument)
     TBUtils.allfillTelescope(telescope, _telescope)
-    TBUtils.allfillSource(source, _source)
+    TBUtils.allfillArrSpec(atmosphere["f_atm"], _f_atm)
+    TBUtils.allfillArrSpec(atmosphere["PWV_atm"], _PWV_atm)
 
-    args = [_instrument, _telescope, _source, coutput, ceta_atm, cfreqs_atm, cPWV_atm, cnfreqs_atm, cnPWV_atm, cAz_point, cEl_point, cPWV, cON]
+    args = [_instrument, _telescope, coutput, cI_nu, ceta_atm, _f_atm, _PWV_atm, cPWV, cON]
 
     mgr.new_thread(target=lib.getSourceSignal, args=args)
 
-    res = np.ctypeslib.as_array(coutput, shape=instrument["freqs_filt"]).astype(np.float64)
+    res = np.ctypeslib.as_array(coutput, shape=instrument["nf_ch"]).astype(np.float64)
     
     return res
 
@@ -231,7 +285,7 @@ def getNEP(instrument, telescope, atmosphere, source, PWV):
     cnfreqs_atm = ctypes.c_int(atmosphere["nfreqs_atm"])
     cnPWV_atm = ctypes.c_int(atmosphere["PWV_atm"].size)
 
-    coutput = (ctypes.c_double * instrument["freqs_filt"].size)(*(np.zeros(instrument["freqs_filt"].size).tolist()))
+    coutput = (ctypes.c_double * instrument["freqs_filt"].size).from_buffer(np.zeros(instrument["freqs_filt"].size))
 
     cPWV = ctypes.c_double(PWV_value)
     cTatm = ctypes.c_double(atmosphere["Tatm"])
@@ -248,7 +302,7 @@ def getNEP(instrument, telescope, atmosphere, source, PWV):
     
     return res
 
-def runTiEMPO2_CUDA(instrument, telescope, atmosphere, source, simparams):
+def runTiEMPO2_CUDA(instrument, telescope, atmosphere, source, nTimes):
     """!
     Binding for running the TiEMPO2 simulation on GPU.
 
@@ -270,7 +324,6 @@ def runTiEMPO2_CUDA(instrument, telescope, atmosphere, source, simparams):
     _telescope = TStructs.CuTelescope()
     _atmosphere = TStructs.CuAtmosphere()
     _source = TStructs.CuSource()
-    _simparams = TStructs.CuSimParams()
 
     _output = TStructs.CuOutput()
 
@@ -278,22 +331,23 @@ def runTiEMPO2_CUDA(instrument, telescope, atmosphere, source, simparams):
 
     TBUtils.allfillInstrument(instrument, _instrument, ct_t)
     TBUtils.allfillTelescope(telescope, _telescope, ct_t)
-    TBUtils.allfillAtmosphere(atmosphere, _atmosphere, ct_t, coalesce=True)
-    TBUtils.allfillSource(source, _source, ct_t)
-    TBUtils.allfillSimParams(simparams, _simparams, ct_t)
-
     start = time.time()
-    TBUtils.allocateOutput(_output, simparams["nTimes"], instrument["freqs_filt"].size, ct_t)
+    TBUtils.allfillAtmosphere(atmosphere, _atmosphere, ct_t, coalesce=True)
     end = time.time()
+    TBUtils.allfillSource(source, _source, ct_t)
+
+    cnTimes = ctypes.c_int(nTimes)
+
+    TBUtils.allocateOutput(_output, nTimes, instrument["nf_ch"], ct_t)
 
     timed = end-start
     print(f"Time : {timed}")
 
-    args = [_instrument, _telescope, _atmosphere, _source, _simparams, _output]
+    args = [_instrument, _telescope, _atmosphere, _source, _output, cnTimes]
 
     mgr.new_thread(target=lib.runTiEMPO2_CUDA, args=args)
 
-    res = TBUtils.OutputStructToDict(_output, simparams["nTimes"], instrument["freqs_filt"].size, np_t=np.float64)
+    res = TBUtils.OutputStructToDict(_output, nTimes, instrument["nf_ch"], np_t=np.float64)
 
     return res
 
