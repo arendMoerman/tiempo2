@@ -14,7 +14,9 @@ double inline getPlanck(double T, double nu)
 
 
 
-TIEMPO2_DLL void runTiEMPO2(Instrument *instrument, Telescope *telescope, Atmosphere *atmosphere, Source *source, Output *output, int nTimes, int nThreads) {
+TIEMPO2_DLL void runTiEMPO2(Instrument<double> *instrument, Telescope<double> *telescope, 
+            Atmosphere<double> *atmosphere, Source<double> *source, 
+            Output<double> *output, int nTimes, int nThreads) {
     
     // ALLOCATIONS
     // Doubles 
@@ -33,7 +35,7 @@ TIEMPO2_DLL void runTiEMPO2(Instrument *instrument, Telescope *telescope, Atmosp
     double* I_CMB = new double[nf_src];
 
     // Initialise constant efficiency struct
-    Effs effs;
+    Effs<double> effs;
     effs.eta_tot_chain = instrument->eta_inst * instrument->eta_misc * telescope->eta_fwd * telescope->eta_mir * 0.5;
     effs.eta_tot_gnd = instrument->eta_inst  * instrument->eta_misc * (1 - telescope->eta_fwd) * telescope->eta_mir * 0.5;
     effs.eta_tot_mir = instrument->eta_inst  * instrument->eta_misc * (1 - telescope->eta_mir) * 0.5;
@@ -46,7 +48,7 @@ TIEMPO2_DLL void runTiEMPO2(Instrument *instrument, Telescope *telescope, Atmosp
     dt = 1. / instrument->f_sample;
     step = ceil(nTimes / nThreads);
     
-    printf("\033[1;32m\r");
+    //printf("\033[1;32m\r");
     
     // Calculate I_atm, I_gnd, I_tel before entering time loop.
     // These stay constant during observation anyways.
@@ -65,6 +67,12 @@ TIEMPO2_DLL void runTiEMPO2(Instrument *instrument, Telescope *telescope, Atmosp
 
     timer.start();
     // Main thread spawning loop
+    double *eta_atm;
+    ArrSpec<double> PWV_atm;
+    ArrSpec<double> f_atm;
+
+    readEtaATM<double, ArrSpec<double>>(&eta_atm, &PWV_atm, &f_atm);
+
     for(int n=0; n < nThreads; n++) {
         int final_step; // Final step for 
         
@@ -78,6 +86,7 @@ TIEMPO2_DLL void runTiEMPO2(Instrument *instrument, Telescope *telescope, Atmosp
             threadPool[n] = std::thread(&parallelJobs_1, instrument, 
                                         telescope, atmosphere, 
                                         source, output, 
+                                        eta_atm, PWV_atm, f_atm,
                                         &effs, nTimes,
                                         n * step, final_step, dt,
                                         I_atm, I_gnd, I_tel, I_CMB, n);
@@ -87,6 +96,7 @@ TIEMPO2_DLL void runTiEMPO2(Instrument *instrument, Telescope *telescope, Atmosp
             threadPool[n] = std::thread(&parallelJobs_2, instrument, 
                                         telescope, atmosphere, 
                                         source, output, 
+                                        eta_atm, PWV_atm, f_atm,
                                         &effs, nTimes,
                                         n * step, final_step, dt,
                                         I_atm, I_gnd, I_tel, I_CMB, n);
@@ -96,6 +106,7 @@ TIEMPO2_DLL void runTiEMPO2(Instrument *instrument, Telescope *telescope, Atmosp
             threadPool[n] = std::thread(&parallelJobs_3, instrument, 
                                         telescope, atmosphere, 
                                         source, output, 
+                                        eta_atm, PWV_atm, f_atm,
                                         &effs, nTimes,
                                         n * step, final_step, dt,
                                         I_atm, I_gnd, I_tel, I_CMB, n);
@@ -105,6 +116,7 @@ TIEMPO2_DLL void runTiEMPO2(Instrument *instrument, Telescope *telescope, Atmosp
             threadPool[n] = std::thread(&parallelJobs, instrument, 
                                         telescope, atmosphere, 
                                         source, output, 
+                                        eta_atm, PWV_atm, f_atm,
                                         &effs, nTimes,
                                         n * step, final_step, dt,
                                         I_atm, I_gnd, I_tel, I_CMB, n);
@@ -121,16 +133,18 @@ TIEMPO2_DLL void runTiEMPO2(Instrument *instrument, Telescope *telescope, Atmosp
     timer.stop();
     output->t_thread = timer.get();
     
-    printf("\033[0m\n");
+    //printf("\033[0m\n");
 
     delete[] I_atm;
     delete[] I_gnd;
     delete[] I_tel;
     delete[] I_CMB;
+    delete[] eta_atm;
 }
 
 
-TIEMPO2_DLL void calcW2K(Instrument *instrument, Telescope *telescope, Atmosphere *atmosphere, CalOutput *output, int nPWV, int nThreads) {
+TIEMPO2_DLL void calcW2K(Instrument<double> *instrument, Telescope<double> *telescope, 
+            Atmosphere<double> *atmosphere, CalOutput<double> *output, int nPWV, int nThreads) {
     // ALLOCATIONS
     // Doubles 
     double freq;    // Frequency, used for initialising background sources.
@@ -146,7 +160,7 @@ TIEMPO2_DLL void calcW2K(Instrument *instrument, Telescope *telescope, Atmospher
     double* I_CMB = new double[nf_src];
 
     // Initialise constant efficiency struct
-    Effs effs;
+    Effs<double> effs;
     effs.eta_tot_chain = instrument->eta_inst * instrument->eta_misc * telescope->eta_fwd * telescope->eta_mir * 0.5;
     effs.eta_tot_gnd = instrument->eta_inst  * instrument->eta_misc * (1 - telescope->eta_fwd) * telescope->eta_mir * 0.5;
     effs.eta_tot_mir = instrument->eta_inst  * instrument->eta_misc * (1 - telescope->eta_mir) * 0.5;
@@ -158,7 +172,7 @@ TIEMPO2_DLL void calcW2K(Instrument *instrument, Telescope *telescope, Atmospher
     // PREAMBLE
     step = ceil(nPWV / nThreads);
     
-    printf("\033[1;32m\r");
+    //printf("\033[1;32m\r");
     
     // Calculate I_atm, I_gnd, I_tel before entering time loop.
     // These stay constant during observation anyways.
@@ -175,9 +189,14 @@ TIEMPO2_DLL void calcW2K(Instrument *instrument, Telescope *telescope, Atmospher
     Timer timer;
 
     timer.start();
+    
+    double *eta_atm;
+    ArrSpec<double> PWV_atm;
+    ArrSpec<double> f_atm;
 
-    double dPWV_arr = (atmosphere->PWV_spec.num * atmosphere->PWV_spec.step - 
-                       atmosphere->PWV_spec.start ) / nPWV;
+    readEtaATM<double, ArrSpec<double>>(&eta_atm, &PWV_atm, &f_atm);
+
+    double dPWV_arr = (PWV_atm.num * PWV_atm.step - PWV_atm.start ) / nPWV;
 
     // Main thread spawning loop
     for(int n=0; n < nThreads; n++) {
@@ -190,7 +209,7 @@ TIEMPO2_DLL void calcW2K(Instrument *instrument, Telescope *telescope, Atmospher
         }
         
         threadPool[n] = std::thread(&parallelJobsW2K, instrument, atmosphere, 
-                output, &effs, nPWV, n * step, final_step, dPWV_arr,
+                output, eta_atm, PWV_atm, f_atm, &effs, nPWV, n * step, final_step, dPWV_arr,
                 I_atm, I_gnd, I_tel, I_CMB, n);
     }
 
@@ -204,16 +223,18 @@ TIEMPO2_DLL void calcW2K(Instrument *instrument, Telescope *telescope, Atmospher
     timer.stop();
     //output->t_thread = timer.get();
     
-    printf("\033[0m\n");
+    //printf("\033[0m\n");
 
     delete[] I_atm;
     delete[] I_gnd;
     delete[] I_tel;
     delete[] I_CMB;
+    delete[] eta_atm;
 }
 
 
-TIEMPO2_DLL void getSourceSignal(Instrument *instrument, Telescope *telescope, double *output, double *I_nu, double *eta_atm, ArrSpec f_atm, ArrSpec PWV_atm, double PWV, bool ON) {
+TIEMPO2_DLL void getSourceSignal(Instrument<double> *instrument, Telescope<double> *telescope, 
+            double *output, double *I_nu, double PWV, bool ON) {
     double freq; // Bin frequency
     double eta_kj; // Filter efficiency for bin j, at channel k
     double eta_atm_interp; // Interpolated eta_atm, over frequency and PWV
@@ -222,6 +243,13 @@ TIEMPO2_DLL void getSourceSignal(Instrument *instrument, Telescope *telescope, d
     
     double eta_tot_chain = instrument->eta_inst * instrument->eta_misc * telescope->eta_fwd * telescope->eta_mir * 0.5;
     double eta_ap;
+    
+    double *eta_atm;
+    ArrSpec<double> PWV_atm;
+    ArrSpec<double> f_atm;
+
+    readEtaATM<double, ArrSpec<double>>(&eta_atm, &PWV_atm, &f_atm);
+    
     for(int j=0; j<instrument->f_spec.num; j++) { 
         freq = instrument->f_spec.start + instrument->f_spec.step * j;
         
@@ -247,27 +275,38 @@ TIEMPO2_DLL void getSourceSignal(Instrument *instrument, Telescope *telescope, d
             output[k] += PSD_nu * eta_kj * instrument->f_spec.step; 
         }
     }
+    delete[] eta_atm;
 }
 
-TIEMPO2_DLL void getEtaAtm(ArrSpec f_src, double *output, double *eta_atm, ArrSpec f_atm, ArrSpec PWV_atm, double PWV) {
+TIEMPO2_DLL void getEtaAtm(ArrSpec<double> f_src, double *output, double PWV) {
     double freq;
+
+    double *eta_atm;
+    ArrSpec<double> PWV_atm;
+    ArrSpec<double> f_atm;
+
+
+    readEtaATM<double, ArrSpec<double>>(&eta_atm, &PWV_atm, &f_atm);
 
     for(int j=0; j<f_src.num; j++)
     {   
-        freq = f_src.start + f_src.num * j;
+        freq = f_src.start + f_src.step * j;
         output[j] = interpValue(PWV, freq, 
                 PWV_atm, f_atm, eta_atm);
     }
+
+    delete[] eta_atm;
 }
 
-TIEMPO2_DLL void getNEP(Instrument *instrument, Telescope *telescope, double *eta_atm, ArrSpec f_atm, ArrSpec PWV_atm, double *output, double PWV, double Tatm) {
+TIEMPO2_DLL void getNEP(Instrument<double> *instrument, Telescope<double> *telescope, 
+            double *output, double PWV, double Tatm) {
     // Double array types
     double I_atm;
     double I_gnd;
     double I_tel;
 
     // Initialise constant efficiency struct
-    Effs effs;
+    Effs<double> effs;
     effs.eta_tot_chain = instrument->eta_inst * instrument->eta_misc * telescope->eta_fwd * telescope->eta_mir * 0.5;
     effs.eta_tot_gnd = instrument->eta_inst  * instrument->eta_misc * (1 - telescope->eta_fwd) * telescope->eta_mir * 0.5;
     effs.eta_tot_mir = instrument->eta_inst  * instrument->eta_misc * (1 - telescope->eta_mir) * 0.5;
@@ -277,6 +316,13 @@ TIEMPO2_DLL void getNEP(Instrument *instrument, Telescope *telescope, double *et
     double eta_kj; // Filter efficiency for bin j, at channel k
 
     double PSD_back;
+    
+    double *eta_atm;
+    ArrSpec<double> PWV_atm;
+    ArrSpec<double> f_atm;
+
+    readEtaATM<double, ArrSpec<double>>(&eta_atm, &PWV_atm, &f_atm);
+
     for(int j=0; j<instrument->f_spec.num; j++) { 
         freq = instrument->f_spec.start + instrument->f_spec.step * j;
         
@@ -301,11 +347,14 @@ TIEMPO2_DLL void getNEP(Instrument *instrument, Telescope *telescope, double *et
     for(int k=0; k<instrument->nf_ch; k++) {
         output[k] = sqrt(output[k]);
     }
+    delete[] eta_atm;
 }
 
-void parallelJobs_1(Instrument *instrument, Telescope *telescope, 
-                  Atmosphere *atmosphere, Source *source, 
-                  Output* output, Effs* effs, int nTimes,
+void parallelJobs_1(Instrument<double> *instrument, Telescope<double> *telescope, 
+                  Atmosphere<double> *atmosphere, Source<double> *source, 
+                  Output<double> *output, double *eta_atm,
+                  ArrSpec<double> PWV_atm, ArrSpec<double> f_atm,
+                  Effs<double> *effs, int nTimes,
                   int start, int stop, double dt, 
                   double* I_atm, double* I_gnd, double* I_tel, double *I_CMB, int threadIdx) {
     
@@ -318,7 +367,7 @@ void parallelJobs_1(Instrument *instrument, Telescope *telescope,
     double freq; // Bin frequency
     double I_nu; // Specific intensity of source.
     
-    struct ArrSpec _f_spec = instrument->f_spec;
+    struct ArrSpec<double> _f_spec = instrument->f_spec;
 
     double* PSD_nu = new double[_f_spec.num];
 
@@ -338,13 +387,13 @@ void parallelJobs_1(Instrument *instrument, Telescope *telescope,
     std::mt19937 geno{rd()};
     
     for(int i=start; i<stop; i++) { // Update time 
-        if(threadIdx == 0 and chunk_count <= 100) {
-            if(i >= chunk_count * prog_chunk) {
-                printf("*** Progress: %d / 100 ***\r", chunk_count);
-                fflush(stdout);
-                chunk_count++;
-            }
-        }
+        //if(threadIdx == 0 and chunk_count <= 100) {
+        //    if(i >= chunk_count * prog_chunk) {
+        //        printf("*** Progress: %d / 100 ***\r", chunk_count);
+        //        fflush(stdout);
+        //        chunk_count++;
+        //    }
+        //}
 
         t_start = i * dt;
         
@@ -368,7 +417,7 @@ void parallelJobs_1(Instrument *instrument, Telescope *telescope,
         {   
             freq = _f_spec.start + _f_spec.step * j;
             eta_atm_interp = interpValue(PWV_Gauss_interp, freq, 
-                    atmosphere->PWV_spec, atmosphere->f_spec, atmosphere->eta_atm);
+                    PWV_atm, f_atm, eta_atm);
         
             I_nu = source->I_nu[j];
 
@@ -383,9 +432,11 @@ void parallelJobs_1(Instrument *instrument, Telescope *telescope,
     delete[] PSD_nu;
 }
 
-void parallelJobs_2(Instrument *instrument, Telescope *telescope, 
-                  Atmosphere *atmosphere, Source *source, 
-                  Output* output, Effs* effs, int nTimes,
+void parallelJobs_2(Instrument<double> *instrument, Telescope<double> *telescope, 
+                  Atmosphere<double> *atmosphere, Source<double> *source, 
+                  Output<double> *output, double *eta_atm,
+                  ArrSpec<double> PWV_atm, ArrSpec<double> f_atm,
+                  Effs<double> *effs, int nTimes,
                   int start, int stop, double dt, 
                   double* I_atm, double* I_gnd, double* I_tel, double *I_CMB, int threadIdx) {
     
@@ -400,7 +451,7 @@ void parallelJobs_2(Instrument *instrument, Telescope *telescope,
 
     int n_chop;
     
-    struct ArrSpec _f_spec = instrument->f_spec;
+    struct ArrSpec<double> _f_spec = instrument->f_spec;
 
     double* PSD_nu = new double[_f_spec.num];
 
@@ -426,13 +477,13 @@ void parallelJobs_2(Instrument *instrument, Telescope *telescope,
 
     double t_src, u_src;
     for(int i=start; i<stop; i++) { // Update time 
-        if(threadIdx == 0 and chunk_count <= 100) {
-            if(i >= chunk_count * prog_chunk) {
-                printf("*** Progress: %d / 100 ***\r", chunk_count);
-                fflush(stdout);
-                chunk_count++;
-            }
-        }
+        //if(threadIdx == 0 and chunk_count <= 100) {
+        //    if(i >= chunk_count * prog_chunk) {
+        //        printf("*** Progress: %d / 100 ***\r", chunk_count);
+        //        fflush(stdout);
+        //        chunk_count++;
+        //    }
+        //}
 
         t_start = i * dt;
 
@@ -457,7 +508,7 @@ void parallelJobs_2(Instrument *instrument, Telescope *telescope,
         {   
             freq = _f_spec.start + _f_spec.step * j;
             eta_atm_interp = interpValue(PWV_Gauss_interp, freq, 
-                    atmosphere->PWV_spec, atmosphere->f_spec, atmosphere->eta_atm);
+                    PWV_atm, f_atm, eta_atm);
 
             I_nu = source->I_nu[output->flag[i] * _f_spec.num + j];
         
@@ -478,9 +529,11 @@ void parallelJobs_2(Instrument *instrument, Telescope *telescope,
     delete[] PSD_nu;
 }
 
-void parallelJobs_3(Instrument *instrument, Telescope *telescope, 
-                  Atmosphere *atmosphere, Source *source, 
-                  Output* output, Effs* effs, int nTimes,
+void parallelJobs_3(Instrument<double> *instrument, Telescope<double> *telescope, 
+                  Atmosphere<double> *atmosphere, Source<double> *source, 
+                  Output<double> *output, double *eta_atm,
+                  ArrSpec<double> PWV_atm, ArrSpec<double> f_atm,
+                  Effs<double> *effs, int nTimes,
                   int start, int stop, double dt, 
                   double* I_atm, double* I_gnd, double* I_tel, double *I_CMB, int threadIdx) {
     
@@ -495,7 +548,7 @@ void parallelJobs_3(Instrument *instrument, Telescope *telescope,
 
     int n_chop, n_nod;
     
-    struct ArrSpec _f_spec = instrument->f_spec;
+    struct ArrSpec<double> _f_spec = instrument->f_spec;
     
     double* PSD_nu = new double[_f_spec.num];
 
@@ -523,13 +576,13 @@ void parallelJobs_3(Instrument *instrument, Telescope *telescope,
     std::mt19937 geno{rd()};
     
     for(int i=start; i<stop; i++) { // Update time 
-        if(threadIdx == 0 and chunk_count <= 100) {
-            if(i >= chunk_count * prog_chunk) {
-                printf("*** Progress: %d / 100 ***\r", chunk_count);
-                fflush(stdout);
-                chunk_count++;
-            }
-        }
+        //if(threadIdx == 0 and chunk_count <= 100) {
+        //    if(i >= chunk_count * prog_chunk) {
+        //        printf("*** Progress: %d / 100 ***\r", chunk_count);
+        //        fflush(stdout);
+        //        chunk_count++;
+        //    }
+        //}
 
         t_start = i * dt;
 
@@ -558,7 +611,7 @@ void parallelJobs_3(Instrument *instrument, Telescope *telescope,
         {   
             freq = _f_spec.start + _f_spec.step * j;
             eta_atm_interp = interpValue(PWV_Gauss_interp, freq, 
-                    atmosphere->PWV_spec, atmosphere->f_spec, atmosphere->eta_atm);
+                    PWV_atm, f_atm, eta_atm);
 
             I_nu = source->I_nu[position * _f_spec.num + j];
         
@@ -579,9 +632,11 @@ void parallelJobs_3(Instrument *instrument, Telescope *telescope,
     delete[] PSD_nu;
 }
 
-void parallelJobs(Instrument *instrument, Telescope *telescope, 
-                  Atmosphere *atmosphere, Source *source, 
-                  Output* output, Effs* effs, int nTimes,
+void parallelJobs(Instrument<double> *instrument, Telescope<double> *telescope, 
+                  Atmosphere<double> *atmosphere, Source<double> *source, 
+                  Output<double> *output, double *eta_atm,
+                  ArrSpec<double> PWV_atm, ArrSpec<double> f_atm,
+                  Effs<double> *effs, int nTimes,
                   int start, int stop, double dt, 
                   double* I_atm, double* I_gnd, double* I_tel, double *I_CMB, int threadIdx) {
     
@@ -596,9 +651,9 @@ void parallelJobs(Instrument *instrument, Telescope *telescope,
 
     int n_chop, n_nod, start_slice, end_slice;
     
-    struct ArrSpec _f_spec = instrument->f_spec;
-    struct ArrSpec _Az_src = source->Az_spec;
-    struct ArrSpec _El_src = source->El_spec;
+    struct ArrSpec<double> _f_spec = instrument->f_spec;
+    struct ArrSpec<double> _Az_src = source->Az_spec;
+    struct ArrSpec<double> _El_src = source->El_spec;
     
     double Az_src_max = _Az_src.start + _Az_src.step*(_Az_src.num - 1);
     double El_src_max = _El_src.start + _El_src.step*(_El_src.num - 1);
@@ -634,13 +689,13 @@ void parallelJobs(Instrument *instrument, Telescope *telescope,
 
     double t_src, u_src;
     for(int i=start; i<stop; i++) { // Update time 
-        if(threadIdx == 0 and chunk_count <= 100) {
-            if(i >= chunk_count * prog_chunk) {
-                printf("*** Progress: %d / 100 ***\r", chunk_count);
-                fflush(stdout);
-                chunk_count++;
-            }
-        }
+        //if(threadIdx == 0 and chunk_count <= 100) {
+        //   if(i >= chunk_count * prog_chunk) {
+        //        printf("*** Progress: %d / 100 ***\r", chunk_count);
+        //        fflush(stdout);
+        //        chunk_count++;
+        //    }
+        //}
 
         t_start = i * dt;
 
@@ -681,7 +736,7 @@ void parallelJobs(Instrument *instrument, Telescope *telescope,
         {   
             freq = _f_spec.start + _f_spec.step * j;
             eta_atm_interp = interpValue(PWV_Gauss_interp, freq, 
-                    atmosphere->PWV_spec, atmosphere->f_spec, atmosphere->eta_atm);
+                    PWV_atm, f_atm, eta_atm);
 
             start_slice = num_AzEl * j;
             
@@ -711,8 +766,8 @@ void parallelJobs(Instrument *instrument, Telescope *telescope,
     delete[] PSD_nu;
 }
 
-void calcPhotonNoise(Instrument *instrument, double *PSD_nu, 
-        std::mt19937 &geno, Output *output, int idx, int nTimes) {
+void calcPhotonNoise(Instrument<double> *instrument, double *PSD_nu, 
+        std::mt19937 &geno, Output<double> *output, int idx, int nTimes) {
     
     double freq;
     double sigma_k; // Noise per channel.
@@ -744,8 +799,9 @@ void calcPhotonNoise(Instrument *instrument, double *PSD_nu,
     }
 }
 
-void parallelJobsW2K(Instrument *instrument, Atmosphere *atmosphere, CalOutput* output, 
-        Effs* effs, int nPWV, int start, int stop, double dPWV,
+void parallelJobsW2K(Instrument<double> *instrument, Atmosphere<double> *atmosphere, 
+        CalOutput<double> *output, double *eta_atm, ArrSpec<double> PWV_atm, ArrSpec<double> f_atm,
+        Effs<double> *effs, int nPWV, int start, int stop, double dPWV,
         double* I_atm, double* I_gnd, double* I_tel, double *I_CMB, int threadIdx) {
     
     // Get starting time and chop parameters
@@ -753,21 +809,19 @@ void parallelJobsW2K(Instrument *instrument, Atmosphere *atmosphere, CalOutput* 
     double eta_kj; // Filter efficiency for bin j, at channel k
     double _PWV;
 
-    struct ArrSpec _f_spec = instrument->f_spec;
-
-    double* eta_atm = new double[_f_spec.num];
-    double* PSD_nu = new double[_f_spec.num];
+    double* eta_atm_interp = new double[f_atm.num];
+    double* PSD_nu = new double[f_atm.num];
     
 
     for(int i=start; i<stop; i++) {
-        _PWV = atmosphere->PWV_spec.start + i * dPWV;
-        for(int j=0; j<_f_spec.num; j++) { 
-            freq = _f_spec.start + _f_spec.step * j;
+        _PWV = PWV_atm.start + i * dPWV;
+        for(int j=0; j<instrument->f_spec.num; j++) { 
+            freq = instrument->f_spec.start + instrument->f_spec.step * j;
 
-            eta_atm[j] = interpValue(_PWV, freq, 
-                    atmosphere->PWV_spec, atmosphere->f_spec, atmosphere->eta_atm);
+            eta_atm_interp[j] = interpValue(_PWV, freq, 
+                    PWV_atm, f_atm, eta_atm);
             
-            PSD_nu[j] = ( effs->eta_tot_chain * (1 - eta_atm[j]) * I_atm[j] 
+            PSD_nu[j] = ( effs->eta_tot_chain * (1 - eta_atm_interp[j]) * I_atm[j] 
                 + effs->eta_tot_gnd * I_gnd[j] 
                 + effs->eta_tot_mir * I_tel[j]) 
                 * CL*CL / (freq*freq);
@@ -781,21 +835,21 @@ void parallelJobsW2K(Instrument *instrument, Atmosphere *atmosphere, CalOutput* 
 
             // Can loop over bins again, cheap operations this time
             for(int j=0; j<instrument->f_spec.num; j++) { 
-                freq = _f_spec.start + _f_spec.step * j;
-                eta_kj = instrument->filterbank[k * _f_spec.num + j];
+                freq = instrument->f_spec.start + instrument->f_spec.step * j;
+                eta_kj = instrument->filterbank[k * instrument->f_spec.num + j];
                 
-                eta_atm_avg += eta_atm[j] * eta_kj;
+                eta_atm_avg += eta_atm_interp[j] * eta_kj;
                 eta_kj_accum += eta_kj;
                 P_k += PSD_nu[j] * eta_kj;
             }
 
             // STORAGE: Add signal to signal array in output
             //printf("%d\n", nPWV*k + i);
-            output->power[k * nPWV + i] = P_k * _f_spec.step; 
+            output->power[k * nPWV + i] = P_k * instrument->f_spec.step; 
             output->temperature[k * nPWV + i] = atmosphere->Tatm * (1 - eta_atm_avg/eta_kj_accum); 
             //printf("%d\n", nPWV*k + i);
         }
     }
-    delete[] eta_atm;
+    delete[] eta_atm_interp;
     delete[] PSD_nu;
 }

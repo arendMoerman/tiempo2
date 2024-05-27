@@ -14,10 +14,11 @@
 #include "cuda.h"
 #include "curand_kernel.h"
 
-#include "CuStructs.h"
 #include "CuScan.h"
 #include "CuInterpUtils.h"
 #include "Timer.h"
+#include "FileIO.h"
+#include "Structs.h"
 
 #define CEFFSSIZE 4
 
@@ -32,7 +33,8 @@
 
 extern "C"
 {
-    TIEMPO2_DLL void runTiEMPO2_CUDA(CuInstrument *instrument, CuTelescope *telescope, CuAtmosphere *atmosphere, CuSource *source, CuOutput *output, int nTimes);
+    TIEMPO2_DLL void runTiEMPO2_CUDA(Instrument<float> *instrument, Telescope<float> *telescope, 
+                Atmosphere<float> *atmosphere, Source<float> *source, Output<float> *output, int nTimes);
 }
 
 #endif

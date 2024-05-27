@@ -80,7 +80,18 @@ class Interface(object):
     clog = clog_mgr.getCustomLogger()
     
     c = 2.99792458e8
+
+    def __init__(self, verbose=True):
+        if not verbose:
+            self.clog.setLevel(logging.CRITICAL)
     
+    def setLoggingVerbosity(self, verbose=True):
+        if not verbose:
+            self.clog.setLevel(logging.CRITICAL)
+        
+        else:
+            self.clog.setLevel(logging.INFO)
+
     def setSourceDict(self, sourceDict):
         errlist = TCheck.checkSourceDict(sourceDict)
 
@@ -148,13 +159,16 @@ class Interface(object):
         TAtm.prepAtmospherePWV(self.__atmosphereDict, self.__telescopeDict, self.clog)
 
     # NUMBER PARAMETER IS TEMPORARY
-    def initSetup(self, use_ARIS=True, number=0):
+    def initSetup(self, use_ARIS=True, number=1):
         """!
         Initialise a TiEMPO2 setup. 
 
         The idea is that a TiEMPO2 setup can be done sequentially, the first step being a setup of the terrestrial part.
         This means that the first setup should consist of everything on Earth: instrument, telescope, and atmosphere.
         Therefore, this is the first initialisation that should be performed.
+
+        This function will check wether or not the instrument, telescope, and atmosphere are set.
+        If not, an InitialError will be raised.
 
         @param use_ARIS Whether to load an ARIS screen or not. Some functions of TiEMPO2 do not require an ARIS screen to be loaded. Default is True (load the ARIS screen).
         """
@@ -237,13 +251,6 @@ class Interface(object):
             self.atmosphereDict["nx"] = nx
             self.atmosphereDict["ny"] = ny
             self.atmosphereDict["PWV"] = PWV_atm
-        
-        eta_atm, freqs_atm, pwv_curve = TAtm.readAtmTransmissionText()        
-
-        freqs_atm *= 1e9
-        self.atmosphereDict["f_atm"] = freqs_atm
-        self.atmosphereDict["PWV_atm"] = pwv_curve
-        self.atmosphereDict["eta_atm"] = eta_atm
 
         #### END INITIALISATION ####
         self.initialisedSetup = True
@@ -321,9 +328,8 @@ class Interface(object):
 
         @returns Atmospheric transmission and its frequency range (Hz).
         """
-
-        res = TBCPU.getEtaAtm(self.sourceDict, self.atmosphereDict, PWV_value)
-        return res, self.sourceDict["freqs_src"]
+        res = TBCPU.getEtaAtm(self.instrumentDict, PWV_value)
+        return res, self.instrumentDict["f_src"]
 
     def getNEP(self, PWV_value):
         """!
@@ -334,7 +340,7 @@ class Interface(object):
         @returns NEP (SI) and its frequency range (Hz).
         """
 
-        res = TBCPU.getNEP(self.instrumentDict, self.telescopeDict, self.atmosphereDict, self.sourceDict, PWV_value)
+        res = TBCPU.getNEP(self.instrumentDict, self.telescopeDict, self.atmosphereDict, PWV_value)
         return res, self.instrumentDict["f_ch_arr"]
 
     def runSimulation(self, t_obs, device="CPU", nThreads=None, verbosity=1):
@@ -353,7 +359,6 @@ class Interface(object):
         """
 
         nThreads = 1 if nThreads is None else nThreads
-        print(nThreads)
 
         if not self.initialisedSetup:
             self.clog.error("initSetup() MUST be called before running a simulation!")
@@ -473,7 +478,7 @@ class Interface(object):
         
         output["signal"] = w2k["a"] * output["signal"] + w2k["b"]
 
-    def calcSignalPSD(self, output, x, axis=0):
+    def calcSignalPSD(self, output, x):
         """!
         Calculate signal PSD of a simulation output.
 
@@ -485,13 +490,10 @@ class Interface(object):
         @returns freq_psd Frequencies at which the signal PSD is defined, in Hertz.
         """
 
-        if axis == 0:
-            dstep = 1 / self.instrumentDict["f_sample"]
-        else:
-            dstep = self.instrumentDict["f_ch_arr"] / self.instrumentDict["R"]
+        dstep = 1 / self.instrumentDict["f_sample"]
         N = x.size
 
-        signal_psd = 2 * dstep / N * np.absolute(fft.fftshift(fft.fft(output["signal"], axis=axis), axes=axis))**2
+        signal_psd = 2 * dstep / N * np.absolute(fft.fftshift(fft.fft(output["signal"], axis=0), axes=0))**2
         freq_signal = fft.fftshift(fft.fftfreq(N, dstep))
         
         return signal_psd, freq_signal

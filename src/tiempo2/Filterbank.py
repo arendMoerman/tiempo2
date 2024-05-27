@@ -32,7 +32,6 @@ def generateFilterbankFromR(instrumentDict):
 
 
     f_src = np.linspace(f0_src, f1_src, nf_src)
-    print(f_src)
     filterbank = np.zeros((nf_ch, nf_src))
 
     for j in range(nf_ch):

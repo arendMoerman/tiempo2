@@ -7,24 +7,18 @@ import os
 import numpy as np
 import unittest
 import tiempo2.Atmosphere as TAtm
+import resources.InputDicts as TInp
+from nose2.tools import params
 
-#class TestAtmosphere(unittest.TestCase):
-#    pass
+NXY = 160
+
 class TestAtmosphere(unittest.TestCase):
-    def test_prepAtmospherePWV(self):
-        atmD = {
-                "path" : "/home/arend/Projects/Simulations/tiempo2/thies/aris/",
-                "filename" : "sample00.dat",
-                "PWV0"      : 1,
-                }
-
-        telD = {
-                "Dtel"  : 10
-                }
-
-        test = TAtm.prepAtmospherePWV(atmD, telD)
-
-        print(test)
+    @params(1,2,3)
+    def test_prepAtmospherePWV(self, num):
+        screen, nx, ny = TAtm.prepAtmospherePWV(TInp.AtmDict, TInp.TelDict, number=num)
+        self.assertEqual(nx, num * NXY)
+        self.assertEqual(ny, NXY)
+        self.assertEqual(screen.shape, (num * NXY, NXY))
 
     @classmethod
     def tearDownClass(self):
@@ -32,5 +26,5 @@ class TestAtmosphere(unittest.TestCase):
 
 if __name__ == "__main__":
     import nose2
-    nose2.main(verbosity=10)
+    nose2.main()
 

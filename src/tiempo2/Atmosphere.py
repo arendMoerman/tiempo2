@@ -86,7 +86,7 @@ def generateAtmospherePWV(atmosphereDict, telescopeDict, clog):
 
     return PWV_Gauss, nx, ny
 
-def prepAtmospherePWV(atmosphereDict, telescopeDict, clog, number=0):
+def prepAtmospherePWV(atmosphereDict, telescopeDict, clog=None, number=1):
     """!   
     Prepare ARIS atmospheric screens for usage in TiEMPO2.
     This function works in the following way:
@@ -123,29 +123,22 @@ def prepAtmospherePWV(atmosphereDict, telescopeDict, clog, number=0):
         idx_l_srt = np.argsort(idx_l)
         l_srt = np.array(files)[idx_l_srt]
 
-        print(l_srt)
-
-        for i in range(number, number+5):
+        for i in range(number):
             subpath = os.path.join(path, l_srt[i])
             subchunk = np.loadtxt(subpath, delimiter=',')
 
-            if i == number: 
+            if i == 0: 
                 ny = np.unique(subchunk[:,1]).size
-            print(ny)
-            print(nx)
             nx += np.unique(subchunk[:,0]).size
 
             dEPL = subchunk[:,2].reshape((np.unique(subchunk[:,0]).size, ny))
             PWV = pwv0 + (1./a * dEPL*1e-6)*1e+3 #in mm
 
-            if i == number:
+            if i == 0:
                 PWV_st = PWV
             else:
                 PWV_st = np.concatenate((PWV_st, PWV), axis=0)
         PWV_Gauss = gaussian_filter(PWV_st, std, mode='mirror', truncate=truncate)
-        #import matplotlib.pyplot as pt
-        #pt.plot(PWV_Gauss[:90000,80])
-        #pt.show()
 
         return PWV_Gauss, nx, ny
         #for file in files:
@@ -192,73 +185,8 @@ def prepAtmospherePWV(atmosphereDict, telescopeDict, clog, number=0):
             #test_l.append(n_suby)
             #return test_l
     
-    clog.info(f"Finished preparing atmospheric screens.")
+    if clog is not None:
+        clog.info(f"Finished preparing atmospheric screens.")
+    else:
+        print(f"Finished preparing atmospheric screens.")
 
-def readAtmTransmissionText():
-    """!
-    Parser for reading atmospheric transmission curves from text file.
-    
-    @returns A 2D array containing atmospheric transmission.
-    @returns Array containing frequencies at which atmospheric transmission is defined.
-    @returns Array containing PWV values at which atmospheric transmission is defined.
-    """
-
-    dat_loc = os.path.join(os.path.dirname(__file__), "resources", "trans_data.dat")
-
-    with open(dat_loc, 'r') as file:
-        eta_atm = []
-        freqs = []
-
-        for line in file:
-            if line[0] == "#":
-                continue
-            elif line[0] == " ":
-                line = list(line.strip().split(" "))
-                while("" in line):
-                    line.remove("")
-                pwv_curve = np.array(line, dtype=np.float64)
-                continue
-            
-            line = list(line.strip().split(" "))
-            while("" in line):
-                line.remove("")
-            
-            eta_atm.append(np.array(line[1:]))
-            freqs.append(line[0])
-
-        freqs = np.array(freqs, dtype=np.float64)
-        eta_atm = np.array(eta_atm, dtype=np.float64)
-
-    return eta_atm.T, freqs, pwv_curve
-
-def readAtmTransmissionCSV():
-    """!
-    Parser for reading atmospheric transmission curves from csv file.
-    
-    @returns A 2D array containing atmospheric transmission.
-    @returns Array containing frequencies at which atmospheric transmission is defined.
-    @returns Array containing PWV values at which atmospheric transmission is defined.
-    """
-    csv_loc = os.path.join(os.path.dirname(__file__), "resources", "atm.csv")
-
-    with open(csv_loc, 'r') as file:
-        csvreader = list(csv.reader(file, delimiter=" "))
-
-        data = []
-
-        for row in csvreader:
-            if row[0] == "#":
-                continue
-            elif row[0] == "F":
-                pwv_curve = np.array(row[1:], dtype=np.float64)
-                continue
-            while("" in row):
-                row.remove("")
-            data.append(np.array(row, dtype=np.float64))
-
-        _arr = np.array(data)
-        freqs = _arr[:,0]
-        eta_atm = _arr[:,1:]
-    return eta_atm, freqs, pwv_curve
-
-            

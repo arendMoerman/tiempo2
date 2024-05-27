@@ -118,7 +118,6 @@ def avgDirectSubtract_spectrum(output):
 
     tot_avg = diff_container / n_nod_tot_ch
 
-    print(n_eff / n_samps)
     return tot_avg
 
 def avgDirectSubtract_chop(output):

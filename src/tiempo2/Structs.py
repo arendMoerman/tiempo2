@@ -11,7 +11,6 @@ class ArrSpec(ctypes.Structure):
     Struct used for passing array specifications a0, da, na.
     Used when it is not necessary to pass full dictionaries.
     """
-
     _fields_ = [("start", ctypes.c_double),
                 ("step", ctypes.c_double),
                 ("num", ctypes.c_int)]
@@ -78,10 +77,7 @@ class Atmosphere(ctypes.Structure):
                 ("h_column", ctypes.c_double),
                 ("x_spec", ArrSpec),
                 ("y_spec", ArrSpec),
-                ("f_spec", ArrSpec),
-                ("PWV_spec", ArrSpec),
-                ("PWV", ctypes.POINTER(ctypes.c_double)),
-                ("eta_atm", ctypes.POINTER(ctypes.c_double))]
+                ("PWV", ctypes.POINTER(ctypes.c_double))]
 
 class Source(ctypes.Structure):
     """!
@@ -166,10 +162,7 @@ class CuAtmosphere(ctypes.Structure):
                 ("h_column", ctypes.c_float),
                 ("x_spec", CuArrSpec),
                 ("y_spec", CuArrSpec),
-                ("f_spec", CuArrSpec),
-                ("PWV_spec", CuArrSpec),
-                ("PWV", ctypes.POINTER(ctypes.c_float)),
-                ("eta_atm", ctypes.POINTER(ctypes.c_float))]
+                ("PWV", ctypes.POINTER(ctypes.c_float))]
 
 class CuSource(ctypes.Structure):
     """!

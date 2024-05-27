@@ -27,6 +27,6 @@
   
   @returns val_interp Interpolated value of function on x0 and y0.
  */
-double interpValue(double x, double y, ArrSpec arrx, ArrSpec arry, double *vals, int offset = 0, bool debug=false);
+double interpValue(double x, double y, ArrSpec<double> arrx, ArrSpec<double> arry, double *vals, int offset = 0, bool debug=false);
 
 #endif

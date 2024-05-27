@@ -80,20 +80,15 @@ def allfillAtmosphere(AtmDict, AtmStruct, ct_t=ctypes.c_double, coalesce=False):
     
     arr_t = 'd' if ct_t == ctypes.c_double else 'f'
     arr_PWV = ar.array(arr_t, AtmDict["PWV"].ravel())
-    arr_eta = ar.array(arr_t, AtmDict["eta_atm"].ravel())
     
     AtmStruct.x_spec = arr2ArrSpec(AtmDict["x_atm"], ct_t)
     AtmStruct.y_spec = arr2ArrSpec(AtmDict["y_atm"], ct_t)
-    AtmStruct.f_spec = arr2ArrSpec(AtmDict["f_atm"], ct_t)
-    AtmStruct.PWV_spec = arr2ArrSpec(AtmDict["PWV_atm"], ct_t)
 
     AtmStruct.Tatm = ct_t(AtmDict["Tatm"])
     AtmStruct.v_wind = ct_t(AtmDict["v_wind"])
     AtmStruct.h_column = ct_t(AtmDict["h_column"])
 
     AtmStruct.PWV = (ct_t * AtmDict["PWV"].ravel().size).from_buffer(arr_PWV)
-
-    AtmStruct.eta_atm = (ct_t * AtmDict["eta_atm"].ravel().size).from_buffer(arr_eta) 
 
 def allfillSource(SourceDict, SourceStruct, ct_t=ctypes.c_double):
     """!
@@ -167,7 +162,7 @@ def allocateCalOutput(CalOutputStruct, size_t, size_f, ct_t=ctypes.c_double):
     CalOutputStruct.power = (ct_t * (size_t * size_f)).from_buffer(fill_power)
     CalOutputStruct.temperature = (ct_t * (size_t * size_f)).from_buffer(fill_temperature)
 
-def OutputStructToDict(OutputStruct, size_t, size_f, np_t):
+def OutputStructToDict(OutputStruct, size_t, size_f, np_t, CPU=True):
     """!
     Convert an output struct to a dictionary.
 
@@ -180,7 +175,7 @@ def OutputStructToDict(OutputStruct, size_t, size_f, np_t):
     sig_shape = (size_f, size_t)
     t_shape = (size_t,)
     
-    if isinstance(OutputStruct, TStructs.Output):
+    if CPU:
         times = float(OutputStruct.t_thread)
 
     else:

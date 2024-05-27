@@ -4,7 +4,7 @@
 
 #include "cuda.h"
 #include "math.h"
-#include "CuStructs.h"
+#include "Structs.h"
 
 #ifndef __CUINTERPUTILS_H
 #define __CUINTERPUTILS_H
@@ -26,7 +26,7 @@
   @returns val_interp Interpolated value of function on x0 and y0.
  */
 __device__ void interpValue(float x, float y, 
-            CuArrSpec *arrx, CuArrSpec *arry,
+            ArrSpec<float> *arrx, ArrSpec<float> *arry,
             float *vals, int offset, float &out) {
     
     int idx_x = floorf((x - arrx->start) / arrx->step);
