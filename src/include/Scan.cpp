@@ -19,7 +19,7 @@ void scanPoint(AzEl* center, AzEl* out, bool chop, double sep) {
     out->El = center->El;
 }
 
-void scanDaisy(AzEl* center, AzEl* out, Telescope* telescope, double t, bool chop, double sep) {
+void scanDaisy(AzEl* center, AzEl* out, Telescope<double> *telescope, double t, bool chop, double sep) {
     double offset = 0.;
     
     if (chop) {
@@ -44,7 +44,7 @@ void convertAnglesToSpatialAtm(AzEl* angles, xy_atm* out, double h_column) {
     out->yEl = coord;
 }
 
-void getABBA_posflag(double &t, AzEl *center, AzEl *pointing, Telescope* telescope, int &flagout) { 
+void getABBA_posflag(double &t, AzEl *center, AzEl *pointing, Telescope<double> *telescope, int &flagout) { 
     int n_chop;
     int n_nod;
     int position;
@@ -69,7 +69,7 @@ void getABBA_posflag(double &t, AzEl *center, AzEl *pointing, Telescope* telesco
     flagout = chop_flag * position + (1 - chop_flag) * (1 - position);
 }
 
-void getONOFF_posflag(double &t, AzEl *center, AzEl *pointing, Telescope* telescope, int &flagout) {
+void getONOFF_posflag(double &t, AzEl *center, AzEl *pointing, Telescope<double> *telescope, int &flagout) {
     int n_chop;
     bool chop_flag;
 
@@ -81,7 +81,7 @@ void getONOFF_posflag(double &t, AzEl *center, AzEl *pointing, Telescope* telesc
     flagout = chop_flag;
 }
 
-void getnochop_posflag(double &t, AzEl *center, AzEl *pointing, Telescope* telescope, int &flagout) { 
+void getnochop_posflag(double &t, AzEl *center, AzEl *pointing, Telescope<double> *telescope, int &flagout) { 
     if(telescope->scantype == 0) {scanPoint(center, pointing, 0, telescope->dAz_chop);}
     else if(telescope->scantype == 1) {scanDaisy(center, pointing, telescope, t, 0, telescope->dAz_chop);}
     flagout = 0;

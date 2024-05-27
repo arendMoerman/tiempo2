@@ -8,6 +8,7 @@ Most of these functions are concerned with allocating memory.
 import numpy as np
 import tiempo2.Structs as TStructs
 import ctypes
+import array as ar
 
 def allfillInstrument(InstDict, InstStruct, ct_t=ctypes.c_double):
     """!
@@ -15,15 +16,22 @@ def allfillInstrument(InstDict, InstStruct, ct_t=ctypes.c_double):
     
     @param InstDict Dictionary containing instrument parameters.
     @param InstStruct Struct to be filled and passed to ctypes.
+    @param ct_t Type of data. Use ctypes.c_double for CPU, ctypes.c_float for GPU.
     """
-    
-    InstStruct.freqs_filt = (ct_t * InstDict["freqs_filt"].size)(*(InstDict["freqs_filt"].ravel().tolist()))
-    InstStruct.nfreqs_filt = ctypes.c_int(InstDict["n_freqs"])
-    InstStruct.R = ctypes.c_int(InstDict["R"])
+
+    arr_t = 'd' if ct_t == ctypes.c_double else 'f'
+    arr_filterbank = ar.array(arr_t, InstDict["filterbank"].ravel())
+
+    df_src = (InstDict["f1_src"] - InstDict["f0_src"]) / InstDict["nf_src"]
+
+    InstStruct.nf_ch = ctypes.c_int(InstDict["nf_ch"])
+
+    InstStruct.f_spec = arr2ArrSpec(InstDict["f_src"], ct_t)
+
     InstStruct.eta_inst = ct_t(InstDict["eta_inst"])
     InstStruct.eta_misc = ct_t(InstDict["eta_misc"])
-    InstStruct.freq_sample = ct_t(InstDict["freq_sample"])
-    InstStruct.filterbank = (ct_t * InstDict["filterbank"].size)(*(InstDict["filterbank"].ravel().tolist()))
+    InstStruct.f_sample = ct_t(InstDict["f_sample"])
+    InstStruct.filterbank = (ct_t * InstDict["filterbank"].size).from_buffer(arr_filterbank)
     InstStruct.delta = ct_t(InstDict["delta"])
     InstStruct.eta_pb = ct_t(InstDict["eta_pb"])
 
@@ -33,6 +41,7 @@ def allfillTelescope(TelDict, TelStruct, ct_t=ctypes.c_double):
     
     @param TelDict Dictionary containing telescope parameters.
     @param TelStruct Struct to be filled and passed to ctypes.
+    @param ct_t Type of data. Use ctypes.c_double for CPU, ctypes.c_float for GPU.
     """
     
     TelStruct.Ttel = ct_t(TelDict["Ttel"])
@@ -60,27 +69,26 @@ def allfillTelescope(TelDict, TelStruct, ct_t=ctypes.c_double):
     TelStruct.phiy = ct_t(TelDict["phiy"])
 
 
-def allfillAtmosphere(AtmDict, AtmStruct, ct_t=ctypes.c_double):
+def allfillAtmosphere(AtmDict, AtmStruct, ct_t=ctypes.c_double, coalesce=False):
     """!
     Allocate and fill an atmosphere struct for ctypes.
     
     @param AtmDict Dictionary containing atmosphere parameters.
     @param AtmStruct Struct to be filled and passed to ctypes.
+    @param ct_t Type of data. Use ctypes.c_double for CPU, ctypes.c_float for GPU.
     """
+    
+    arr_t = 'd' if ct_t == ctypes.c_double else 'f'
+    arr_PWV = ar.array(arr_t, AtmDict["PWV"].ravel())
+    
+    AtmStruct.x_spec = arr2ArrSpec(AtmDict["x_atm"], ct_t)
+    AtmStruct.y_spec = arr2ArrSpec(AtmDict["y_atm"], ct_t)
 
     AtmStruct.Tatm = ct_t(AtmDict["Tatm"])
     AtmStruct.v_wind = ct_t(AtmDict["v_wind"])
     AtmStruct.h_column = ct_t(AtmDict["h_column"])
-    AtmStruct.x_atm = (ct_t * AtmDict["x_atm"].size)(*(AtmDict["x_atm"].ravel().tolist()))
-    AtmStruct.y_atm = (ct_t * AtmDict["y_atm"].size)(*(AtmDict["y_atm"].ravel().tolist())) 
-    AtmStruct.nx = ctypes.c_int(AtmDict["x_atm"].size)
-    AtmStruct.ny = ctypes.c_int(AtmDict["y_atm"].size)
-    AtmStruct.PWV = (ct_t * AtmDict["PWV"].ravel().size)(*(AtmDict["PWV"].ravel().tolist()))
-    AtmStruct.freqs_atm = (ct_t * AtmDict["freqs_atm"].size)(*(AtmDict["freqs_atm"].ravel().tolist()))
-    AtmStruct.nfreqs_atm = ctypes.c_int(AtmDict["freqs_atm"].size)
-    AtmStruct.PWV_atm = (ct_t * AtmDict["PWV_atm"].size)(*(AtmDict["PWV_atm"].ravel().tolist())) 
-    AtmStruct.nPWV_atm = ctypes.c_int(AtmDict["PWV_atm"].size)
-    AtmStruct.eta_atm = (ct_t * AtmDict["eta_atm"].ravel().size)(*(AtmDict["eta_atm"].ravel().tolist())) 
+
+    AtmStruct.PWV = (ct_t * AtmDict["PWV"].ravel().size).from_buffer(arr_PWV)
 
 def allfillSource(SourceDict, SourceStruct, ct_t=ctypes.c_double):
     """!
@@ -88,22 +96,18 @@ def allfillSource(SourceDict, SourceStruct, ct_t=ctypes.c_double):
     
     @param SourceDict Dictionary containing source angular extents and intensity maps.
     @param SourceStruct Struct to be filled and passed to ctypes.
+    @param ct_t Type of data. Use ctypes.c_double for CPU, ctypes.c_float for GPU.
     """
        
-    nAzEl = SourceDict["I_nu"].ravel().size
+    I_nu = SourceDict["I_nu"]
+
+    nI_nu = I_nu.ravel().size
+
+    SourceStruct.Az_spec = arr2ArrSpec(SourceDict["Az_src"], ct_t)
+    SourceStruct.El_spec = arr2ArrSpec(SourceDict["El_src"], ct_t)
     
-    present = 1
-    if SourceDict.get("type") == "atmosphere":
-        present = 0
-    
-    SourceStruct.present = ctypes.c_int(present)
-    SourceStruct.Az = (ct_t * SourceDict["Az"].size)(*(SourceDict["Az"].ravel().tolist())) 
-    SourceStruct.nAz = ctypes.c_int(SourceDict["Az"].size) 
-    SourceStruct.El = (ct_t * SourceDict["El"].size)(*(SourceDict["El"].ravel().tolist())) 
-    SourceStruct.nEl = ctypes.c_int(SourceDict["El"].size) 
-    SourceStruct.I_nu = (ct_t * SourceDict["I_nu"].ravel().size)(*(SourceDict["I_nu"].ravel().tolist())) 
-    SourceStruct.freqs_src = (ct_t * SourceDict["freqs_src"].ravel().size)(*(SourceDict["freqs_src"].ravel().tolist())) 
-    SourceStruct.nfreqs_src = ctypes.c_int(SourceDict["freqs_src"].size) 
+    SourceStruct.I_nu = (ct_t * nI_nu)(*(I_nu.ravel().tolist())) 
+    SourceStruct.nI_nu = ctypes.c_int(nI_nu)
 
 def allfillSimParams(SPDict, SPStruct, ct_t=ctypes.c_double):
     """!
@@ -111,13 +115,12 @@ def allfillSimParams(SPDict, SPStruct, ct_t=ctypes.c_double):
 
     @param SPDict Dictionary containing simulation parameters.
     @param SPStruct Struct to be filled and passed to ctypes.
+    @param ct_t Type of data. Use ctypes.c_double for CPU, ctypes.c_float for GPU.
     """
+    
     SPStruct.t_obs = ct_t(SPDict["t_obs"])
     SPStruct.nTimes = ctypes.c_int(SPDict["nTimes"])
     SPStruct.nThreads = ctypes.c_int(SPDict["nThreads"])
-    SPStruct.t0 = ct_t(SPDict["t0"])
-    SPStruct.OFF_empty = ctypes.c_int(SPDict["OFF_empty"])
-    SPStruct.use_noise = ctypes.c_int(SPDict["use_noise"])
 
 def allocateOutput(OutputStruct, size_t, size_f, ct_t=ctypes.c_double):
     """!
@@ -126,16 +129,16 @@ def allocateOutput(OutputStruct, size_t, size_f, ct_t=ctypes.c_double):
     @param OutputStruct Struct to be allocated and passed to ctypes.
     @param size_t Number of time evaluations.
     @param size_f Number of channels in filterbank.
-    @param ct_t Ctypes type of array.
+    @param ct_t Type of data. Use ctypes.c_double for CPU, ctypes.c_float for GPU.
     """
-    
+
     fill_sig = np.zeros(size_t * size_f)
     fill_t = np.zeros(size_t)
 
-    OutputStruct.signal = (ct_t * (size_t * size_f))(*(fill_sig.tolist()))
-    OutputStruct.Az = (ct_t * size_t)(*(fill_t.tolist()))
-    OutputStruct.El = (ct_t * size_t)(*(fill_t.tolist()))
-    OutputStruct.flag = (ctypes.c_int * size_t)(*(fill_t.astype(int).tolist()))
+    OutputStruct.signal = (ct_t * (size_t * size_f)).from_buffer(fill_sig)
+    OutputStruct.Az = (ct_t * size_t).from_buffer(fill_t)
+    OutputStruct.El = (ct_t * size_t).from_buffer(fill_t)
+    OutputStruct.flag = (ctypes.c_int * size_t).from_buffer(fill_t.astype(int))
     
     if isinstance(OutputStruct, TStructs.Output):
         OutputStruct.t_thread = ct_t(0.)
@@ -143,7 +146,23 @@ def allocateOutput(OutputStruct, size_t, size_f, ct_t=ctypes.c_double):
     else:
         OutputStruct.t_diag = (ct_t * 3)(0, 0, 0)
 
-def OutputStructToDict(OutputStruct, size_t, size_f, np_t):
+def allocateCalOutput(CalOutputStruct, size_t, size_f, ct_t=ctypes.c_double):
+    """!
+    Allocate memory for a power-temperature calibration output struct.
+
+    @param CalOutputStruct Struct to be allocated and passed to ctypes.
+    @param size_t Number of PWV evaluations.
+    @param size_f Number of channels in filterbank.
+    @param ct_t Type of data. Use ctypes.c_double for CPU, ctypes.c_float for GPU.
+    """
+
+    fill_power = np.zeros(size_t * size_f)
+    fill_temperature = np.zeros(size_t * size_f)
+
+    CalOutputStruct.power = (ct_t * (size_t * size_f)).from_buffer(fill_power)
+    CalOutputStruct.temperature = (ct_t * (size_t * size_f)).from_buffer(fill_temperature)
+
+def OutputStructToDict(OutputStruct, size_t, size_f, np_t, CPU=True):
     """!
     Convert an output struct to a dictionary.
 
@@ -153,17 +172,17 @@ def OutputStructToDict(OutputStruct, size_t, size_f, np_t):
     @param np_t Numpy type of array elements.
     """
 
-    sig_shape = (size_t, size_f)
+    sig_shape = (size_f, size_t)
     t_shape = (size_t,)
     
-    if isinstance(OutputStruct, TStructs.Output):
+    if CPU:
         times = float(OutputStruct.t_thread)
 
     else:
         times = np.ctypeslib.as_array(OutputStruct.t_diag, shape=(3,)).astype(np_t)
 
     OutputDict = {
-    "signal" : np.ctypeslib.as_array(OutputStruct.signal, shape=sig_shape).astype(np_t),
+    "signal" : np.ctypeslib.as_array(OutputStruct.signal, shape=sig_shape).astype(np_t).T,
     "Az" : np.ctypeslib.as_array(OutputStruct.Az, shape=t_shape).astype(np_t),
     "El" : np.ctypeslib.as_array(OutputStruct.El, shape=t_shape).astype(np_t),
     "flag" : np.ctypeslib.as_array(OutputStruct.flag, shape=t_shape).astype(ctypes.c_int),
@@ -171,3 +190,43 @@ def OutputStructToDict(OutputStruct, size_t, size_f, np_t):
     }
 
     return OutputDict
+
+def CalOutputStructToDict(CalOutputStruct, size_t, size_f, np_t):
+    """!
+    Convert a calibration output struct to a dictionary.
+
+    @param CalOutputStruct Struct filled with output.
+    @param size_t Number of PWV evaluations.
+    @param size_f Number of channels in filterbank.
+    @param np_t Numpy type of array elements.
+    """
+
+    sig_shape = (size_f, size_t)
+    t_shape = (size_t,)
+
+    CalOutputDict = {
+    "power" : np.ctypeslib.as_array(CalOutputStruct.power, shape=sig_shape).astype(np_t).T,
+    "temperature" : np.ctypeslib.as_array(CalOutputStruct.temperature, shape=sig_shape).astype(np_t).T,
+    }
+
+    return CalOutputDict
+
+def allfillArrSpec(arr, ArrSpecStruct, ct_t=ctypes.c_double):
+    ArrSpecStruct.start = ct_t(arr[0])    
+    ArrSpecStruct.step = ct_t(arr[1] - arr[0])    
+    ArrSpecStruct.num = ctypes.c_int(arr.size)    
+
+def arr2ArrSpec(arr, ct_t=ctypes.c_double):
+    spec_t = TStructs.ArrSpec
+    if ct_t == ctypes.c_float:
+        spec_t = TStructs.CuArrSpec
+
+    arrspec = spec_t()
+    allfillArrSpec(arr, arrspec, ct_t)
+
+    return arrspec
+
+
+
+
+

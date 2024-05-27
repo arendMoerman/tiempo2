@@ -6,17 +6,20 @@ File containing templates for input dictionaries.
 ##
 # Template for an instrument dictionary, to be passed to the interface object.
 # 
-# The current template is very m,uch geared towards MKID spectrometers, but it can of course be tuned to other instrument types as well.
+# The current template is very much geared towards MKID spectrometers, but it can of course be tuned to other instrument types as well.
 instrument = {
-        "freq_0"        : "Lowest frequency in filterbank in GHz.",
-        "n_freqs"       : "Number of frequencies in filterbank",
-        "R"             : "Resolving power f / df.",
-        "eta_inst"      : "Efficiency of entire chip, from antenna up to filterbank.",
-        "freq_sample"   : "Readout frequency in Hertz.",
-        "eta_filt"      : "Filter efficiency.",
+        "f0_ch"         : "Lowest frequency in filterbank in GHz (float or array). If an array is passed, 'nf_ch' is ignored and the filters are evaluated at the frequencies in the array",
+        "nf_ch"         : "Number of frequencies in filterbank (int).",
+        "f0_src"        : "Lowest frequency in source in GHz (float).",
+        "f1_src"        : "Largest frequency in source in GHz (float).",
+        "nf_src"        : "Number of source frequency points (int).",
+        "R"             : "Resolving power f / df (int).",
+        "eta_inst"      : "Efficiency of entire chip, from antenna up to filterbank (float).",
+        "f_sample"      : "Readout frequency in Hertz (float).",
+        "eta_filt"      : "Filter efficiency (float or array of floats).",
         "box_eq"        : "If True, eta_filt is height of equivalent box filter. If False, eta_filt is peak height. Default is True.",
-        "delta"         : "Bandgap energy of MKID, in micro electronvolt. Defaults to 188 ueV (Aluminium).",
-        "eta_pb"        : "Pair-breaking efficiency in MKID. Defaults to 0.4.",
+        "order"         : "Order of Lorentzian filterbank. Raises Lorentzian to given power, but keeps height same as normal Lorentzian. Defaults to 1."
+        "material"      : "Material(s) of MKID (string). If MKID is hybrid, for example Al and NbTiN, enter as: 'Al_NbTiN'."
         "eta_misc"      : "Miscellaneous constant efficiency terms."
         }
 
@@ -88,9 +91,6 @@ Source = {
         # GalSpec specific
         "lum"           : "Luminosity in log(L_fir/L_sol).",
         "z"             : "redshift of galaxy.",
-        "f_lo"          : "Lower frequency limit.",
-        "f_hi"          : "Upper frequency limit.",
-        "nfreqs"        : "Number of frequency bins, linearly spaced.",
         "lwidth"        : "Linewidth of spectral lines in km/s.",
         "COlines"       : "Kamenetzky or Rosenberg.",
         "lines"         : "Bonato or Spinoglio.",
@@ -103,12 +103,9 @@ load_source = {
         }
 
 ##
-# Template for simulation parameters.
-# Note that, when running on CUDA, nThreads is ignored.
-simparams = {
-        "name_sim"      : "Name of simulation.",
-        "t_obs"         : "Total observation time in seconds.",
-        "nThreads"      : "Number of CPU threads to use.",
-        "outDir"        : "Output directory of simulation. Automatically uses name_sim as name of file.",
-        "get_t_diag"    : "Get time diagnostics."
+# Template for a power-temperature (Watt-to-Kelvin, or W2K for short) dictionary.
+# Because TiEMPO2 calculates in SI units of Watt, it is necessary to calculate the calibration table if one wants to convert to Kelvin scale.
+W2K = {
+        "nPWV"          : "Number of PWV values to use in calculation. The actual range is set by the eta_atm screen, generated using ATM.",
+        "nThreads"      : "Number of CPU threads to use for calculation.",
         }

@@ -48,7 +48,7 @@ void scanPoint(AzEl* center, AzEl* out, bool chop, double sep = 0.);
   @param chop Whether chopper is in A (false) or B (true).
   @param sep Angular throw between chop A and B, in degrees.
  */
-void scanDaisy(AzEl* center, AzEl* out, Telescope* telescope, double t, bool chop, double sep = 0.);
+void scanDaisy(AzEl* center, AzEl* out, Telescope<double> *telescope, double t, bool chop, double sep = 0.);
 
 /**
   Calculate new Azimuth-Elevation co-ordinate, accoding to chop position.
@@ -63,9 +63,9 @@ void scanDaisy(AzEl* center, AzEl* out, Telescope* telescope, double t, bool cho
  */
 void convertAnglesToSpatialAtm(AzEl* angles, xy_atm* out, double h_column);
 
-void getABBA_posflag(double &t, AzEl *center, AzEl *pointing, Telescope* telescope, int &flagout); 
+void getABBA_posflag(double &t, AzEl *center, AzEl *pointing, Telescope<double> *telescope, int &flagout); 
 
-void getONOFF_posflag(double &t, AzEl *center, AzEl *pointing, Telescope* telescope, int &flagout);
+void getONOFF_posflag(double &t, AzEl *center, AzEl *pointing, Telescope<double> *telescope, int &flagout);
 
-void getnochop_posflag(double &t, AzEl *center, AzEl *pointing, Telescope* telescope, int &flagout); 
+void getnochop_posflag(double &t, AzEl *center, AzEl *pointing, Telescope<double> *telescope, int &flagout); 
 #endif

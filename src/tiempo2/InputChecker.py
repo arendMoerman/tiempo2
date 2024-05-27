@@ -1,16 +1,18 @@
 """!
 @file
 Checker functions for input dictionaries.
+
+Apart from checking, the functions also set default parameters that are not given by the user in the input dictionary.
 """
 
 import numpy as np
-
+import tiempo2.Materials as TMaterials
 
 def checkSourceDict(sourceDict):
     SZlist = ["type", "Az", "El", "nAz", "nEl", "Te", "ne0", "beta",
-              "v_pec", "thetac", "Da", "freqs_src"]
+              "v_pec", "thetac", "Da"]
 
-    atmlist = ["type", "freqs_src"]
+    backgroundlist = ["type"]
     
     loadlist = ["path", "filename"]
 
@@ -19,8 +21,8 @@ def checkSourceDict(sourceDict):
     if sourceDict.get("type") == "SZ":
         checklist = SZlist
 
-    elif sourceDict.get("type") == "atmosphere":
-        checklist = atmlist
+    elif sourceDict.get("type") == "background":
+        checklist = backgroundlist
     
     elif sourceDict.get("type") == "load":
         checklist = loadlist
@@ -45,9 +47,6 @@ def checkTelescopeDict(telescopeDict):
 
     errlist = []
 
-    for key in checklist:
-        if telescopeDict.get(key) is None:
-            errlist.append(key)
 
     if telescopeDict.get("chop_mode") is None:
         telescopeDict["chop_mode"] = 0
@@ -56,11 +55,14 @@ def checkTelescopeDict(telescopeDict):
     elif telescopeDict.get("chop_mode") == "abba":
         telescopeDict["chop_mode"] = 2
 
-    if telescopeDict.get("s_rms") is not None:
-        telescopeDict["s_rms"] *= 1e-6 # Convert um to m
 
     if telescopeDict.get("scantype") is None:
         telescopeDict["scantype"] = "point"
+        for item in checklist_daisy:
+            telescopeDict[item] = 0
+            telescopeDict["phix"] = 0
+            telescopeDict["phiy"] = 0
+        telescopeDict["scantype"] = 0
 
     elif telescopeDict.get("scantype") == "daisy":
         if telescopeDict.get("phix") is None:
@@ -79,30 +81,44 @@ def checkTelescopeDict(telescopeDict):
             telescopeDict[key] = 0
         telescopeDict["scantype"] = 0
 
+    for key in checklist:
+        if telescopeDict.get(key) is None:
+            errlist.append(key)
+
 
     return errlist
 
 def checkInstrumentDict(instrumentDict):
-    checklist = ["freq_0", "R", "n_freqs", "eta_inst", "freq_sample", "eta_filt", "delta", "eta_pb", "box_eq"]
+    checklist = ["material", "f0_ch", "R", "nf_ch", "f0_src", "f1_src", "nf_src", "eta_inst", "f_sample", "eta_filt", "box_eq", "order"]
 
     errlist = []
 
-    if instrumentDict.get("delta") is None:
-        instrumentDict["delta"] = 188 * 1.60218e-19 * 1e-6 # delta_Al, in micro eV
+    fail = False
 
-    else:
-        instrumentDict["delta"] *= 1.60218e-19 * 1e-6
-
-    if instrumentDict.get("eta_pb") is None:
-        instrumentDict["eta_pb"] = 0.4
+    if isinstance(instrumentDict.get("f0_ch"), np.ndarray):
+        instrumentDict["nf_ch"] = instrumentDict.get("f0_ch").size
 
     if instrumentDict.get("box_eq") is None:
         instrumentDict["box_eq"] = True
 
+    if instrumentDict.get("order") is None:
+        instrumentDict["order"] = 1
+
     for key in checklist:
         if instrumentDict.get(key) is None:
             errlist.append(key)
+            fail = True
     
+    if isinstance(instrumentDict.get("eta_filt"), float):
+        instrumentDict["eta_filt"] *= np.ones(instrumentDict.get("nf_ch"))
+    
+    if instrumentDict.get("material") == "Al_NbTiN":
+        instrumentDict["delta"] = TMaterials.Al_NbTiN["delta"]
+        instrumentDict["eta_pb"] = TMaterials.Al_NbTiN["eta_pb"]
+
+    else:
+        errlist.append("material")
+
     return errlist
 
 def checkAtmosphereDict(atmosphereDict):
@@ -117,7 +133,7 @@ def checkAtmosphereDict(atmosphereDict):
     return errlist
 
 def checkObservationDict(observationDict):
-    checklist = ["name_sim", "t_obs", "nThreads", "outDir", "OFF_empty", "get_t_diag"]
+    checklist = ["name_sim", "t_obs", "nThreads", "outDir", "get_t_diag"]
 
     errlist = []
 
@@ -127,14 +143,31 @@ def checkObservationDict(observationDict):
     if observationDict.get("use_noise") is None:
         observationDict["use_noise"] = 1
     
-    if observationDict.get("OFF_empty") is None:
-        observationDict["OFF_empty"] = 1
-    
     if observationDict.get("get_t_diag") is None:
         observationDict["get_t_diag"] = 1
+    
+    if observationDict.get("nThreads") is None:
+        observationDict["nThreads"] = 1
 
     for key in checklist:
         if observationDict.get(key) is None:
+            errlist.append(key)
+    
+    return errlist
+
+def checkW2KDict(w2kDict):
+    checklist = ["f0", "df", "nf", "nPWV", "nThreads"]
+
+    errlist = []
+
+    if w2kDict.get("nPWV") is None:
+        w2kDict["nPWV"] = 100
+    
+    if w2kDict.get("nThreads") is None:
+        w2kDict["nThreads"] = 1
+
+    for key in checklist:
+        if w2kDict.get(key) is None:
             errlist.append(key)
     
     return errlist

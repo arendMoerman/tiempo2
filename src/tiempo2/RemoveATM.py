@@ -1,6 +1,7 @@
 import numpy as np
 import math
 import matplotlib.pyplot as pt
+import copy
 
 def avgDirectSubtract_spectrum(output):
     """!
@@ -16,6 +17,8 @@ def avgDirectSubtract_spectrum(output):
    
     # Determine total length of each timestream to not go out of index
     n_samps = output.get("signal").shape[0]
+
+    n_eff = 0
 
     # We define two counters: 
     #   - pos_old
@@ -73,6 +76,8 @@ def avgDirectSubtract_spectrum(output):
             
             n_in_chop += 1
 
+            n_eff += 1
+
         # Encountered new chop position.
         else:
             
@@ -103,8 +108,10 @@ def avgDirectSubtract_spectrum(output):
                 
 
             # Reset loc_avg to new signal and set n_in_chop to one
-            loc_avg = output.get("signal")[i,:]
+            loc_avg = copy.deepcopy(output.get("signal")[i,:])
+            #loc_avg = output.get("signal")[i,:]
             n_in_chop = 1
+            n_eff += 1
         
             pos_old = pos_now
             nod_old = nod_now
