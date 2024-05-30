@@ -47,6 +47,8 @@ extern "C"
     TIEMPO2_DLL void getNEP(Instrument<double> *instrument, Telescope<double> *telescope, 
                             double *output, double PWV, double Tatm);
 
+    TIEMPO2_DLL void getChopperCalibration(Instrument<double> *instrument, double *output, double Tchopper);
+
 }
 
 /**

@@ -320,6 +320,14 @@ class Interface(object):
 
         return res, self.instrumentDict["f_ch_arr"]
     
+    def getChopperCalibration(self, Tcal):
+        """!
+        Get power emitted by a blackbody source in front of cryostat.
+        For calibration purposes.
+        """
+        res = TBCPU.getChopperCalibration(self.instrumentDict, Tcal)
+        return res
+    
     def getEtaAtm(self, PWV_value):
         """!
         Get atmosphere transmission at source frequencies given a PWV.

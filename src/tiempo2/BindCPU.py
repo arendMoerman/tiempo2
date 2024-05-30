@@ -46,6 +46,10 @@ def loadTiEMPO2lib():
                                     ctypes.POINTER(ctypes.c_double), 
                                     ctypes.POINTER(ctypes.c_double),
                                     ctypes.c_double, ctypes.c_bool]
+
+    lib.getChopperCalibration.argtypes = [ctypes.POINTER(TStructs.Instrument),
+                                          ctypes.POINTER(ctypes.c_double),
+                                          ctypes.c_double]
     
     lib.getEtaAtm.argtypes = [TStructs.ArrSpec, 
                               ctypes.POINTER(ctypes.c_double), 
@@ -59,6 +63,7 @@ def loadTiEMPO2lib():
     lib.runTiEMPO2.restype = None
     lib.calcW2K.restype = None
     lib.getSourceSignal.restype = None
+    lib.getChopperCalibration.restype = None
     lib.getEtaAtm.restype = None
     lib.getNEP.restype = None
 
@@ -204,6 +209,35 @@ def getSourceSignal(instrument, telescope, atmosphere, I_nu, PWV, ON):
     args = [_instrument, _telescope, coutput, cI_nu, cPWV, cON]
 
     mgr.new_thread(target=lib.getSourceSignal, args=args)
+
+    res = np.ctypeslib.as_array(coutput, shape=instrument["nf_ch"]).astype(np.float64)
+    
+    return res
+
+def getChopperCalibration(instrument, Tcal):
+    """!
+    Binding for calculating the power obtained from a calibration blackbody.
+
+    @param instrument Dictionary containing instrument parameters.
+    @param Tcal Temperature of calibration blackbody in Kelvin.
+
+    @returns 1D array containing power for each detector.
+    """
+
+    lib = loadTiEMPO2lib()
+    mgr = TManager.Manager()
+
+    _instrument = TStructs.Instrument()
+
+    coutput = (ctypes.c_double * instrument["nf_ch"]).from_buffer(np.zeros(instrument["nf_ch"]))
+
+    cTcal = ctypes.c_double(Tcal)
+
+    TBUtils.allfillInstrument(instrument, _instrument)
+    
+    args = [_instrument, coutput, cTcal]
+
+    mgr.new_thread(target=lib.getChopperCalibration, args=args)
 
     res = np.ctypeslib.as_array(coutput, shape=instrument["nf_ch"]).astype(np.float64)
     

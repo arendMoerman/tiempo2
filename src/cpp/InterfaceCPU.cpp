@@ -232,6 +232,26 @@ TIEMPO2_DLL void calcW2K(Instrument<double> *instrument, Telescope<double> *tele
     delete[] eta_atm;
 }
 
+TIEMPO2_DLL void getChopperCalibration(Instrument<double> *instrument, double *output, double Tcal) {
+    double freq; // Bin frequency
+    double eta_kj; // Filter efficiency for bin j, at channel k
+    double I_cal;
+    
+    double PSD_nu;
+    
+    double eta_tot_chain = instrument->eta_inst * instrument->eta_misc * 0.5;
+    
+    for(int j=0; j<instrument->f_spec.num; j++) { 
+        freq = instrument->f_spec.start + instrument->f_spec.step * j;
+        I_cal = getPlanck(Tcal, freq); 
+
+        PSD_nu = eta_tot_chain * I_cal * CL*CL / (freq*freq);
+        for(int k=0; k<instrument->nf_ch; k++) {
+            eta_kj = instrument->filterbank[k*instrument->f_spec.num + j];
+            output[k] += PSD_nu * eta_kj * instrument->f_spec.step; 
+        }
+    }
+}
 
 TIEMPO2_DLL void getSourceSignal(Instrument<double> *instrument, Telescope<double> *telescope, 
             double *output, double *I_nu, double PWV, bool ON) {
