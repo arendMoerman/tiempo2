@@ -16,6 +16,7 @@ import tiempo2.InputChecker as TCheck
 import tiempo2.Atmosphere as TAtm
 import tiempo2.BindCPU as TBCPU
 import tiempo2.RemoveATM as TRemove
+import tiempo2.FileIO as FIO
 
 import psutil
 import logging
@@ -80,6 +81,9 @@ class Interface(object):
     clog = clog_mgr.getCustomLogger()
     
     c = 2.99792458e8
+    def bullshit_func(self, path, nx, ny):
+        return FIO.unpack_output(path, 0)
+
 
     def __init__(self, verbose=True):
         if not verbose:
@@ -159,7 +163,7 @@ class Interface(object):
         TAtm.prepAtmospherePWV(self.__atmosphereDict, self.__telescopeDict, self.clog)
 
     # NUMBER PARAMETER IS TEMPORARY
-    def initSetup(self, use_ARIS=True, number=1):
+    def initSetup(self, use_ARIS=True, number=1, start=0):
         """!
         Initialise a TiEMPO2 setup. 
 
@@ -171,6 +175,8 @@ class Interface(object):
         If not, an InitialError will be raised.
 
         @param use_ARIS Whether to load an ARIS screen or not. Some functions of TiEMPO2 do not require an ARIS screen to be loaded. Default is True (load the ARIS screen).
+        @param number Number of ARIS chunks to concatenate and load into memory.
+        @param start ARIS chunk to start with. 
         """
 
         if not (self.instrument_set and 
@@ -237,21 +243,6 @@ class Interface(object):
         self.telescopeDict["Ay"] /= 3600
         self.telescopeDict["Aymin"] /= 3600
         
-        if use_ARIS:
-            #PWV_atm, nx, ny = TAtm.generateAtmospherePWV(self.atmosphereDict, self.telescopeDict, self.clog)  
-            PWV_atm, nx, ny = TAtm.prepAtmospherePWV(self.__atmosphereDict, self.__telescopeDict, self.clog, number)
-      
-            # At t=0, x=y=0 is in middle
-            x_atm = (np.arange(0, nx) - ny/2)*self.atmosphereDict.get("dx")
-            y_atm = (np.arange(0, ny) - ny/2)*self.atmosphereDict.get("dy")
-        
-
-            self.atmosphereDict["x_atm"] = x_atm
-            self.atmosphereDict["y_atm"] = y_atm
-            self.atmosphereDict["nx"] = nx
-            self.atmosphereDict["ny"] = ny
-            self.atmosphereDict["PWV"] = PWV_atm
-
         #### END INITIALISATION ####
         self.initialisedSetup = True
 
@@ -351,7 +342,7 @@ class Interface(object):
         res = TBCPU.getNEP(self.instrumentDict, self.telescopeDict, self.atmosphereDict, PWV_value)
         return res, self.instrumentDict["f_ch_arr"]
 
-    def runSimulation(self, t_obs, device="CPU", nThreads=None, verbosity=1):
+    def runSimulation(self, t_obs, device="CPU", nThreads=None, verbosity=1, outpath="./"):
         """!
         Run a TiEMPO2 simulation.
 
@@ -380,49 +371,41 @@ class Interface(object):
 
         if nTimes % 2 == 1:
             nTimes -= 1
-
-        # Check if atmosphere screen is long enough for given time and windspeed
-        length_req = self.atmosphereDict.get("v_wind") * t_obs
-        #if (length_req > np.max(x_atm)) and (self.loadedARIS):
-        #        t_obs_new = np.floor(T_OBS_BUFF * np.max(x_atm) / self.atmosphereDict.get("v_wind"))
-        #        self.clog.warning(f"Atmospheric screen too small for windspeed of {self.atmosphereDict.get('v_wind')} m/s and observation time of {self.observationDict.get('t_obs')} s. Reducing observation time to {t_obs_new} s.")
-
-         #       self.observationDict["t_obs"] = t_obs_new
         
         t_range = 1 / self.instrumentDict["f_sample"] * np.arange(nTimes)
 
+        if not os.path.exists(outpath):
+            os.mkdir(outpath)
 
         self.clog.info("\033[1;32m*** STARTING TiEMPO2 SIMULATION ***")
         
         start = time.time()
-       
-        self.clog.info("Starting observation.")
 
         if device == "CPU":
             res = TBCPU.runTiEMPO2(self.instrumentDict, self.telescopeDict, 
                         self.atmosphereDict, self.sourceDict, nTimes, nThreads)
         
         elif device == "GPU":
-            res = TBCPU.runTiEMPO2_CUDA(self.instrumentDict, self.telescopeDict, 
-                        self.atmosphereDict, self.sourceDict, nTimes)
+            TBCPU.runTiEMPO2_CUDA(self.instrumentDict, self.telescopeDict, 
+                        self.atmosphereDict, self.sourceDict, nTimes, outpath)
         
         end = time.time()        
         
         self.clog.info("\033[1;32m*** FINISHED TiEMPO2 SIMULATION ***")
         
-        if (verbosity == 1) and (device == "GPU"):
-            self.clog.info("\033[1;32m*** TIME DIAGNOSTICS ***")
-            self.clog.info(f"\033[1;32m*** TOTAL    : {end-start:.2f} seconds ***")
-            self.clog.info(f"\033[1;32m*** H2D      : {res.get('t_diag')[0]:.2f} seconds ***")
-            self.clog.info(f"\033[1;32m*** KERNEL   : {res.get('t_diag')[1]:.2f} seconds ***")
-            self.clog.info(f"\033[1;32m*** D2H      : {res.get('t_diag')[2]:.2f} seconds ***")
-        
-        elif (verbosity == 1):
-            self.clog.info("\033[1;32m*** TIME DIAGNOSTICS ***")
-            self.clog.info(f"\033[1;32m*** TOTAL    : {end-start:.2f} seconds ***")
-            self.clog.info(f"\033[1;32m*** THREAD   : {res.get('t_diag'):.2f} seconds ***")
+        #if (verbosity == 1) and (device == "GPU"):
+        #    self.clog.info("\033[1;32m*** TIME DIAGNOSTICS ***")
+        #    self.clog.info(f"\033[1;32m*** TOTAL    : {end-start:.2f} seconds ***")
+        #    self.clog.info(f"\033[1;32m*** H2D      : {res.get('t_diag')[0]:.2f} seconds ***")
+        #    self.clog.info(f"\033[1;32m*** KERNEL   : {res.get('t_diag')[1]:.2f} seconds ***")
+        #    self.clog.info(f"\033[1;32m*** D2H      : {res.get('t_diag')[2]:.2f} seconds ***")
+        #
+        #elif (verbosity == 1):
+        #    self.clog.info("\033[1;32m*** TIME DIAGNOSTICS ***")
+        #    self.clog.info(f"\033[1;32m*** TOTAL    : {end-start:.2f} seconds ***")
+        #    self.clog.info(f"\033[1;32m*** THREAD   : {res.get('t_diag'):.2f} seconds ***")
 
-        return res, t_range, self.instrumentDict["f_ch_arr"]
+        #return res, t_range, self.instrumentDict["f_ch_arr"]
 
     def calcW2K(self, nPWV, nThreads=None, verbosity=1):
         """!

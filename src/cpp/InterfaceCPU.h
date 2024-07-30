@@ -11,6 +11,7 @@
 #include "Scan.h"
 #include "Timer.h"
 #include "FileIO.h"
+#include "Filterbank.h"
 
 #ifdef _WIN32
 #   define TIEMPO2_DLL __declspec(dllexport)

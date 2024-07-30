@@ -30,6 +30,7 @@ __constant__ float cv_wind;                 // Windspeed
 
 // SCAN PARAMETERS
 __constant__ int cscantype;
+__constant__ float ccscEl0;
 __constant__ float cAx;
 __constant__ float cAxmin;
 __constant__ float cAy;
@@ -135,7 +136,7 @@ __device__ __inline__ void sgn(float val, int &out) {
 
   @param ang Angle in arcseconds.
  */
-__device__ __inline__ float as2rad(float ang) {
+__host__ __device__ __inline__ float as2rad(float ang) {
     return ang / 3600 / 180 * cPI;
 }
 
@@ -284,7 +285,10 @@ __host__ void initCUDA(Instrument<float> *instrument, Telescope<float> *telescop
     gpuErrchk( cudaMemcpyToSymbol(cv_wind, &(atmosphere->v_wind), sizeof(float)) );
 
     // SCAN PARAMETERS
+    float cscEl0 = 1. / sinf(PI * telescope->El0 / 180);
+
     gpuErrchk( cudaMemcpyToSymbol(cscantype, &(telescope->scantype), sizeof(int)) );
+    gpuErrchk( cudaMemcpyToSymbol(ccscEl0, &cscEl0, sizeof(float)) );
     gpuErrchk( cudaMemcpyToSymbol(cAx, &(telescope->Ax), sizeof(float)) );
     gpuErrchk( cudaMemcpyToSymbol(cAxmin, &(telescope->Axmin), sizeof(float)) );
     gpuErrchk( cudaMemcpyToSymbol(cAy, &(telescope->Ay), sizeof(float)) );
@@ -377,7 +381,6 @@ __device__ void commonJob(ArrSpec<float> *f_src, ArrSpec<float> *f_atm, ArrSpec<
     PWV_tr = PWV_trace[idx];
 
     freq = f_src->start + f_src->step * idy;
-    //printf("%.12e\n", PWV_tr);
 
     interpValue(PWV_tr, freq,
                 PWV_atm, f_atm,
@@ -390,6 +393,8 @@ __device__ void commonJob(ArrSpec<float> *f_src, ArrSpec<float> *f_atm, ArrSpec<
     else {
         eta_ap = tex1Dfetch(tex_eta_ap_OFF, idy);
     }
+
+    eta_atm_interp = powf(eta_atm_interp, ccscEl0);
 
     PSD_nu = eta_ap * eta_atm_interp * const_effs[0] * I_nu
         + ( const_effs[0] * (1 - eta_atm_interp) * tex1Dfetch(tex_I_atm, idy)
@@ -493,6 +498,7 @@ __global__ void calcPowerNEP_3(ArrSpec<float> f_src, ArrSpec<float> f_atm, ArrSp
         float I_nu;             // Specific intensity of source.
         int idx_point;          // Index for pointing of source (0 is OFF-B, 1 is ON-AB, 2 is OFF-A)
 
+        //printf("%d\n", idx);
         // INTEGERS
         int flag = flagout[idx];
         
@@ -613,7 +619,7 @@ __global__ void calcPhotonNoise(float *sigout, float *nepout, curandState *state
   @param output CuOutput object for storing simulation output.
   @param nTimes Number of time evaluations in simulation.
  */
-void runTiEMPO2_CUDA(Instrument<float> *instrument, Telescope<float> *telescope, Atmosphere<float> *atmosphere, Source<float> *source, Output<float> *output, int nTimes) {
+void runTiEMPO2_CUDA(Instrument<float> *instrument, Telescope<float> *telescope, Atmosphere<float> *atmosphere, Source<float> *source, Output<float> *output, int nTimesTotal, char *outpath) {
     // FLOATS
     float *d_sigout;        // Device pointer for output power array
     float *d_nepout;        // Device pointer for output NEP array
@@ -642,8 +648,6 @@ void runTiEMPO2_CUDA(Instrument<float> *instrument, Telescope<float> *telescope,
 
     // ALLOCATE ARRAY SPECIFICATION COPIES
     struct ArrSpec<float> _f_spec = instrument->f_spec;
-    struct ArrSpec<float> _x_atm = atmosphere->x_spec;
-    struct ArrSpec<float> _y_atm = atmosphere->y_spec;
     struct ArrSpec<float> _Az_src = source->Az_spec;
     struct ArrSpec<float> _El_src = source->El_spec;
     
@@ -651,11 +655,42 @@ void runTiEMPO2_CUDA(Instrument<float> *instrument, Telescope<float> *telescope,
     struct ArrSpec<float> _PWV_atm;
     float *eta_atm;
 
+
     readEtaATM<float, ArrSpec<float>>(&eta_atm, &_PWV_atm, &_f_atm);
+    
+    std::string str_path(atmosphere->path);
+    std::string str_outpath(outpath);
+
+    int *meta;
+    readAtmMeta(&meta, str_path);
+
+    // Calculate lengths of x and y of single screen
+    float lx = meta[1]*atmosphere->dx;
+    float ly = meta[2]*atmosphere->dy;
+    float lx_av = lx - ly;
+    float t_obs_av = lx_av / atmosphere->v_wind; // Max available time per screen
+
+    float timeTotal = nTimesTotal / instrument->f_sample;
+
+    int nJobs = ceil(timeTotal / t_obs_av);
+    int nTimesScreen = floor(t_obs_av * instrument->f_sample); // If error, change ceil to floor
+
+    struct ArrSpec<float> _x_atm;
+    struct ArrSpec<float> _y_atm;
+
+    _x_atm.start = -ly/2;
+    _x_atm.step = atmosphere->dx;
+    _x_atm.num = meta[1];
+    
+    _y_atm.start = -ly/2;
+    _y_atm.step = atmosphere->dy;
+    _y_atm.num = meta[2];
+
+    // Initialize constant memory
+    initCUDA(instrument, telescope, source, atmosphere, nTimesScreen); 
 
     
-    nf_src = _f_spec.num;
-    nffnt = instrument->nf_ch * nTimes;
+    nf_src = _f_spec.num; // Number of spectral points in source
     
     gpuErrchk( cudaDeviceGetAttribute(&numSMs, cudaDevAttrMultiProcessorCount, 0) );
 
@@ -663,50 +698,12 @@ void runTiEMPO2_CUDA(Instrument<float> *instrument, Telescope<float> *telescope,
     gpuErrchk( cudaDeviceSetCacheConfig(cudaFuncCachePreferL1) );
     
     nThreads1D = 256;
-    nBlocks1D = ceilf((float)nTimes / nThreads1D / numSMs);
 
-    blockSize1D = nThreads1D;
-    gridSize1D = nBlocks1D*numSMs;
-    
     nThreads2Dx = 32;
     nThreads2Dy = 16;
-    nBlocks2Dx = ceilf((float)nTimes / nThreads2Dx / numSMs);
-    nBlocks2Dy = ceilf((float)nf_src / nThreads2Dy / numSMs);
-
-    blockSize2D = dim3(nThreads2Dx, nThreads2Dy);
-    gridSize2D = dim3(nBlocks2Dx * numSMs, nBlocks2Dy * numSMs);
 
     timer.start();
     
-    initCUDA(instrument, telescope, source, atmosphere, nTimes);
-    
-    // Allocate output arrays
-    gpuErrchk( cudaMalloc((void**)&d_sigout, nffnt * sizeof(float)) );
-    gpuErrchk( cudaMalloc((void**)&d_nepout, nffnt * sizeof(float)) );
-    gpuErrchk( cudaMalloc((void**)&d_azout, nTimes * sizeof(float)) );
-    gpuErrchk( cudaMalloc((void**)&d_elout, nTimes * sizeof(float)) );
-    gpuErrchk( cudaMalloc((void**)&d_flagout, nTimes * sizeof(int)) );
-
-    // Allocate PWV screen now, delete CUDA allocation after first kernel call
-    float *dPWV_screen;
-    
-    int nPWV_screen = _x_atm.num * _y_atm.num;
-    
-    gpuErrchk( cudaMalloc((void**)&dPWV_screen, nPWV_screen * sizeof(float)) );
-    gpuErrchk( cudaMemcpy(dPWV_screen, atmosphere->PWV, nPWV_screen * sizeof(float), cudaMemcpyHostToDevice) );
-    
-    float *PWV_out;
-    gpuErrchk( cudaMalloc((void**)&PWV_out, nTimes * sizeof(float)) );
-    
-    float pointing_center[2] = {0., 0.};
-    float *dpointing_center;
-    gpuErrchk( cudaMalloc((void**)&dpointing_center, 2 * sizeof(float)) );
-    gpuErrchk( cudaMemcpy(dpointing_center, pointing_center, 2 * sizeof(float), cudaMemcpyHostToDevice) );
-    
-    curandState *devStates;
-    gpuErrchk( cudaMalloc((void **)&devStates, nTimes * sizeof(curandState)) );
-
-    get_chop_pwv_rng<<<gridSize1D, blockSize1D>>>(_Az_src, _El_src, _x_atm, _y_atm, dpointing_center, dPWV_screen, PWV_out, d_flagout, d_azout, d_elout, devStates);
 
     float freq;    // Frequency, used for initialising background sources.
 
@@ -725,10 +722,9 @@ void runTiEMPO2_CUDA(Instrument<float> *instrument, Telescope<float> *telescope,
         I_tel[j] = getPlanck(telescope->Ttel, freq);
         I_CMB[j] = getPlanck(2.725, freq);
     }
-   
-    gpuErrchk( cudaFree(dPWV_screen) );
-
+    
     float *dI_atm, *dI_gnd, *dI_tel, *dI_CMB;
+    
     gpuErrchk( cudaMalloc((void**)&dI_atm, nf_src * sizeof(float)) );
     gpuErrchk( cudaMalloc((void**)&dI_gnd, nf_src * sizeof(float)) );
     gpuErrchk( cudaMalloc((void**)&dI_tel, nf_src * sizeof(float)) );
@@ -773,70 +769,167 @@ void runTiEMPO2_CUDA(Instrument<float> *instrument, Telescope<float> *telescope,
     
     timer.stop();
 
-    output->t_diag[0] = timer.get();
+    //output->t_diag[0] = timer.get();
 
     gpuErrchk( cudaMalloc((void**)&d_I_nu, source->nI_nu * sizeof(float)) );
     gpuErrchk( cudaMemcpy(d_I_nu, source->I_nu, source->nI_nu * sizeof(float), cudaMemcpyHostToDevice) );
 
-    // CALL TO MAIN SIMULATION KERNEL
-    timer.start();
-    
-    // SINGLE POINTING, NO CHOP
-    if(telescope->scantype == 0 && telescope->chop_mode == 0) {
-        calcPowerNEP_1<<<gridSize2D, blockSize2D>>>(_f_spec, _f_atm, _PWV_atm, d_sigout, d_nepout, d_flagout,
-            PWV_out, deta_atm, d_I_nu);
-    }
-    
-    // SINGLE POINTING, STRICT ON-OFF
-    else if(telescope->scantype == 0 && telescope->chop_mode == 1) {
-        calcPowerNEP_2<<<gridSize2D, blockSize2D>>>(_f_spec, _f_atm, _PWV_atm, d_sigout, d_nepout, d_flagout,
-            PWV_out, deta_atm, d_I_nu);
-    }
+    std::string datp;
 
-    // SINGLE POINTING, ABBA CHOPPING
-    else if(telescope->scantype == 0 && telescope->chop_mode == 2) {
-        calcPowerNEP_3<<<gridSize2D, blockSize2D>>>(_f_spec, _f_atm, _PWV_atm, d_sigout, d_nepout, d_flagout,
-            PWV_out, deta_atm, d_I_nu);
-    }
+    // Loop starts here
+    int idx_wrap = 0;
+    float time_counter = 0;
+    for(int idx=0; idx<nJobs; idx++) {
+        if (idx_wrap == meta[0]) {
+            idx_wrap = 0;
+        }
 
-    else {
-        calcPowerNEP<<<gridSize2D, blockSize2D>>>(_f_spec, _f_atm, _PWV_atm, _Az_src, _El_src, d_sigout, d_nepout, d_azout, d_elout, d_flagout,
+        if (idx == (nJobs - 1)) {
+            nTimesScreen = nTimesTotal - nTimesScreen*(nJobs-1);
+        }
+
+        nffnt = instrument->nf_ch * nTimesScreen; // Number of elements in single-screen output.
+        gpuErrchk( cudaMemcpyToSymbol(cnt, &nTimesScreen, sizeof(int)) );
+        
+        nBlocks1D = ceilf((float)nTimesScreen / nThreads1D / numSMs);
+        blockSize1D = nThreads1D;
+        gridSize1D = nBlocks1D*numSMs;
+        nBlocks2Dx = ceilf((float)nTimesScreen / nThreads2Dx / numSMs);
+        nBlocks2Dy = ceilf((float)nf_src / nThreads2Dy / numSMs);
+
+        blockSize2D = dim3(nThreads2Dx, nThreads2Dy);
+        gridSize2D = dim3(nBlocks2Dx * numSMs, nBlocks2Dy * numSMs);
+    
+        // Allocate output arrays
+        gpuErrchk( cudaMalloc((void**)&d_sigout, nffnt * sizeof(float)) );
+        gpuErrchk( cudaMalloc((void**)&d_nepout, nffnt * sizeof(float)) );
+        gpuErrchk( cudaMalloc((void**)&d_azout, nTimesScreen * sizeof(float)) );
+        gpuErrchk( cudaMalloc((void**)&d_elout, nTimesScreen * sizeof(float)) );
+        gpuErrchk( cudaMalloc((void**)&d_flagout, nTimesScreen * sizeof(int)) );
+
+        // Allocate PWV screen now, delete CUDA allocation after first kernel call
+        float *PWV_screen;
+        float *dPWV_screen;
+        
+        int nPWV_screen = _x_atm.num * _y_atm.num;
+        
+        float *PWV_out;
+        gpuErrchk( cudaMalloc((void**)&PWV_out, nTimesScreen * sizeof(float)) );
+        
+        float pointing_center[2] = {0., 0.};
+        float *dpointing_center;
+        gpuErrchk( cudaMalloc((void**)&dpointing_center, 2 * sizeof(float)) );
+        gpuErrchk( cudaMemcpy(dpointing_center, pointing_center, 2 * sizeof(float), cudaMemcpyHostToDevice) );
+        
+        curandState *devStates;
+        gpuErrchk( cudaMalloc((void **)&devStates, nTimesScreen * sizeof(curandState)) );
+
+        datp = std::to_string(idx_wrap) + ".datp";
+        readAtmScreen<float, ArrSpec<float>>(&PWV_screen, &_x_atm, &_y_atm, str_path, datp);
+        
+        gpuErrchk( cudaMalloc((void**)&dPWV_screen, nPWV_screen * sizeof(float)) );
+        gpuErrchk( cudaMemcpy(dPWV_screen, PWV_screen, nPWV_screen * sizeof(float), cudaMemcpyHostToDevice) );
+        
+
+        get_chop_pwv_rng<<<gridSize1D, blockSize1D>>>(_Az_src, _El_src, _x_atm, _y_atm, dpointing_center, dPWV_screen, PWV_out, d_flagout, d_azout, d_elout, devStates);
+       
+        gpuErrchk( cudaFree(dpointing_center) );
+        gpuErrchk( cudaFree(dPWV_screen) );
+
+        // CALL TO MAIN SIMULATION KERNEL
+        timer.start();
+        std::cout << datp << std::endl;
+        
+        // SINGLE POINTING, NO CHOP
+        if(telescope->scantype == 0 && telescope->chop_mode == 0) {
+            calcPowerNEP_1<<<gridSize2D, blockSize2D>>>(_f_spec, _f_atm, _PWV_atm, d_sigout, d_nepout, d_flagout,
                 PWV_out, deta_atm, d_I_nu);
+        }
+        
+        // SINGLE POINTING, STRICT ON-OFF
+        else if(telescope->scantype == 0 && telescope->chop_mode == 1) {
+            calcPowerNEP_2<<<gridSize2D, blockSize2D>>>(_f_spec, _f_atm, _PWV_atm, d_sigout, d_nepout, d_flagout,
+                PWV_out, deta_atm, d_I_nu);
+        }
+
+
+        // SINGLE POINTING, ABBA CHOPPING
+        else if(telescope->scantype == 0 && telescope->chop_mode == 2) {
+            calcPowerNEP_3<<<gridSize2D, blockSize2D>>>(_f_spec, _f_atm, _PWV_atm, d_sigout, d_nepout, d_flagout,
+                PWV_out, deta_atm, d_I_nu);
+        }
+
+        else {
+            calcPowerNEP<<<gridSize2D, blockSize2D>>>(_f_spec, _f_atm, _PWV_atm, _Az_src, _El_src, d_sigout, d_nepout, d_azout, d_elout, d_flagout,
+                    PWV_out, deta_atm, d_I_nu);
+        }
+        
+        gpuErrchk( cudaDeviceSynchronize() );
+        
+        calcPhotonNoise<<<gridSize1D, blockSize1D>>>(d_sigout, d_nepout, devStates);
+
+        gpuErrchk( cudaDeviceSynchronize() );
+        timer.stop();
+
+        //output->t_diag[1] = timer.get();
+        
+
+        //timer.start();
+        // ALLOCATE STRINGS FOR WRITING OUTPUT
+        std::string signame = std::to_string(idx) + "signal.out";
+        std::string azname = std::to_string(idx) + "az.out";
+        std::string elname = std::to_string(idx) + "el.out";
+        std::string flagname = std::to_string(idx) + "flag.out";
+
+        float *sigout = new float[nffnt];
+        float *azout = new float[nTimesScreen];
+        float *elout = new float[nTimesScreen];
+        int *flagout = new int[nTimesScreen];
+
+        gpuErrchk( cudaMemcpy(sigout, d_sigout, nffnt * sizeof(float), cudaMemcpyDeviceToHost) );
+
+        gpuErrchk( cudaMemcpy(azout, d_azout, nTimesScreen * sizeof(float), cudaMemcpyDeviceToHost) );
+        gpuErrchk( cudaMemcpy(elout, d_elout, nTimesScreen * sizeof(float), cudaMemcpyDeviceToHost) );
+        
+        gpuErrchk( cudaMemcpy(flagout, d_flagout, nTimesScreen * sizeof(int), cudaMemcpyDeviceToHost) );
+
+        // Maak dit parallel ofzo
+        timer.start();
+        write1DArray<float>(sigout, nTimesScreen*instrument->nf_ch, str_outpath, signame);
+        timer.stop();
+
+        printf("writing signal: %f s\n", timer.get());
+        
+        timer.start();
+        write1DArray<float>(azout, nTimesScreen, str_outpath, azname);
+        timer.stop();
+        printf("writing az: %f s\n", timer.get());
+
+        timer.start();
+        write1DArray<float>(elout, nTimesScreen, str_outpath, elname);
+        timer.stop();
+        printf("writing el: %f s\n", timer.get());
+        
+        timer.start();
+        write1DArray<int>(flagout, nTimesScreen, str_outpath, flagname);
+        timer.stop();
+        printf("writing flag: %f s\n", timer.get());
+
+        delete[] sigout;
+        delete[] azout;
+        delete[] elout;
+        delete[] flagout;
+
+        //timer.stop();
+        //output->t_diag[2] = timer.get();
+        idx_wrap++;
     }
-    
-    gpuErrchk( cudaDeviceSynchronize() );
-    
-    gpuErrchk( cudaFree(dI_atm) );
-    gpuErrchk( cudaFree(dI_gnd) );
-    gpuErrchk( cudaFree(dI_tel) );
-    gpuErrchk( cudaFree(dI_CMB) );
-    gpuErrchk( cudaFree(d_I_nu) );
-    
-    calcPhotonNoise<<<gridSize1D, blockSize1D>>>(d_sigout, d_nepout, devStates);
-
-    gpuErrchk( cudaDeviceSynchronize() );
-    timer.stop();
-
-    output->t_diag[1] = timer.get();
-    
-    timer.start();
-
-    gpuErrchk( cudaMemcpy(output->signal, d_sigout, nffnt * sizeof(float), cudaMemcpyDeviceToHost) );
-
-    gpuErrchk( cudaMemcpy(output->Az, d_azout, nTimes * sizeof(int), cudaMemcpyDeviceToHost) );
-    gpuErrchk( cudaMemcpy(output->El, d_elout, nTimes * sizeof(int), cudaMemcpyDeviceToHost) );
-    
-    gpuErrchk( cudaMemcpy(output->flag, d_flagout, nTimes * sizeof(int), cudaMemcpyDeviceToHost) );
-
-    gpuErrchk( cudaDeviceReset() );
-
     delete[] I_atm;
     delete[] I_gnd;
     delete[] I_tel;
     delete[] I_CMB;
     delete[] eta_atm;
-    
-    timer.stop();
-    output->t_diag[2] = timer.get();
+
+    gpuErrchk( cudaDeviceReset() );
 }
 

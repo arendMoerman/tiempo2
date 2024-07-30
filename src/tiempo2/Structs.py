@@ -56,6 +56,7 @@ class Telescope(ctypes.Structure):
                 ("eta_mir", ctypes.c_double),
                 ("eta_fwd", ctypes.c_double),
                 ("scantype", ctypes.c_int),
+                ("El0", ctypes.c_double),
                 ("Ax", ctypes.c_double),
                 ("Axmin", ctypes.c_double),
                 ("Ay", ctypes.c_double),
@@ -75,9 +76,9 @@ class Atmosphere(ctypes.Structure):
     _fields_ = [("Tatm", ctypes.c_double),
                 ("v_wind", ctypes.c_double),
                 ("h_column", ctypes.c_double),
-                ("x_spec", ArrSpec),
-                ("y_spec", ArrSpec),
-                ("PWV", ctypes.POINTER(ctypes.c_double))]
+                ("dx", ctypes.c_double),
+                ("dy", ctypes.c_double),
+                ("path", ctypes.c_char_p)]
 
 class Source(ctypes.Structure):
     """!
@@ -140,6 +141,7 @@ class CuTelescope(ctypes.Structure):
                 ("eta_mir", ctypes.c_float),
                 ("eta_fwd", ctypes.c_float),
                 ("scantype", ctypes.c_int),
+                ("El0", ctypes.c_float),
                 ("Ax", ctypes.c_float),
                 ("Axmin", ctypes.c_float),
                 ("Ay", ctypes.c_float),
@@ -160,9 +162,9 @@ class CuAtmosphere(ctypes.Structure):
     _fields_ = [("Tatm", ctypes.c_float),
                 ("v_wind", ctypes.c_float),
                 ("h_column", ctypes.c_float),
-                ("x_spec", CuArrSpec),
-                ("y_spec", CuArrSpec),
-                ("PWV", ctypes.POINTER(ctypes.c_float))]
+                ("dx", ctypes.c_float),
+                ("dy", ctypes.c_float),
+                ("path", ctypes.c_char_p)]
 
 class CuSource(ctypes.Structure):
     """!

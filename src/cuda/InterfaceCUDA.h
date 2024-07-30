@@ -19,6 +19,7 @@
 #include "Timer.h"
 #include "FileIO.h"
 #include "Structs.h"
+#include "Filterbank.h"
 
 #define CEFFSSIZE 4
 
@@ -34,7 +35,7 @@
 extern "C"
 {
     TIEMPO2_DLL void runTiEMPO2_CUDA(Instrument<float> *instrument, Telescope<float> *telescope, 
-                Atmosphere<float> *atmosphere, Source<float> *source, Output<float> *output, int nTimes);
+                Atmosphere<float> *atmosphere, Source<float> *source, Output<float> *output, int nTimesTotal, char *outpath);
 }
 
 #endif

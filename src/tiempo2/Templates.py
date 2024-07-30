@@ -45,6 +45,7 @@ telescope = {
         "freq_chop"     : "Chopping frequency in Hertz. If None, no chopping.",
         "dAz_chop"      : "Angular separation between chopping paths in arcseconds.",
         "scantype"      : "Type of scanning pattern. Can choose between 'point' or 'daisy'. Default is point.",
+        "El0"           : "Elevation of telescope in degrees.",
         "Ax"            : "Amplitude of petal of Daisy scan, along Azimuth axis, in arcsec.",
         "Ay"            : "Amplitude of petal of Daisy scan, along Elevation axis, in arcsec.",
         "Axmin"         : "Amplitude of Daisy scan, along Azimuth axis, in arcsec.",
