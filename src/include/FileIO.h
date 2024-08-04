@@ -151,11 +151,11 @@ void readAtmScreen(T **PWV_screen, U *x_spec, U *y_spec, std::string path, std::
 }
 
 template <typename T>
-void write1DArray(T *array, int narr, std::string path, std::string name) {
+void write1DArray(std::vector<T> array, std::string path, std::string name) {
     fs::path dir(path);
     fs::path file(name);
     fs::path abs_loc = dir / file;
     std::ofstream myfile (abs_loc, std::ios::binary | std::ios::trunc);
-    myfile.write(reinterpret_cast<const char*>(array), narr * sizeof(T));
+    myfile.write(reinterpret_cast<const char*>(array.data()), array.size() * sizeof(T));
     myfile.close();
 }

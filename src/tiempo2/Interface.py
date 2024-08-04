@@ -81,9 +81,8 @@ class Interface(object):
     clog = clog_mgr.getCustomLogger()
     
     c = 2.99792458e8
-    def bullshit_func(self, path, nx, ny):
-        return FIO.unpack_output(path, 0)
-
+    def bullshit_func(self, path):
+        return FIO.unpack_output(path, "float", self.clog)
 
     def __init__(self, verbose=True):
         if not verbose:
@@ -342,7 +341,7 @@ class Interface(object):
         res = TBCPU.getNEP(self.instrumentDict, self.telescopeDict, self.atmosphereDict, PWV_value)
         return res, self.instrumentDict["f_ch_arr"]
 
-    def runSimulation(self, t_obs, device="CPU", nThreads=None, verbosity=1, outpath="./"):
+    def runSimulation(self, t_obs, device="CPU", nThreads=None, verbosity=1, outpath="./out/", overwrite=False):
         """!
         Run a TiEMPO2 simulation.
 
@@ -355,6 +354,9 @@ class Interface(object):
             0           : no extra output w.r.t. logger.
             1 (default) : show execution times of important routines.
             2           : show execution times of important routines and memory transactions.
+        @param outpath Directory to store output in.
+        @param overwrite Whether to overwrite existing output directories. 
+            If False (default), a prompt will appear to either overwrite or specify new directory.
         """
 
         nThreads = 1 if nThreads is None else nThreads
@@ -374,8 +376,20 @@ class Interface(object):
         
         t_range = 1 / self.instrumentDict["f_sample"] * np.arange(nTimes)
 
-        if not os.path.exists(outpath):
-            os.mkdir(outpath)
+        outpath_succes = False
+        while not outpath_succes:
+            if not os.path.exists(outpath):
+                os.mkdir(outpath)
+                outpath_succes = True
+
+            elif not overwrite:
+                self.clog.warning(f"Output path {outpath} exists! Overwrite or change path?")
+                choice = input("\033[93mOverwrite (y/n)? > ").lower()
+                if choice == "y":
+                    outpath_succes = True
+                else:
+                    outpath = input("\033[93mSpecify new output path: > ")
+
 
         self.clog.info("\033[1;32m*** STARTING TiEMPO2 SIMULATION ***")
         
