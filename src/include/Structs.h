@@ -40,7 +40,12 @@ struct Instrument {
     int nf_ch;          /**< Number of elements in freqs.*/
     
     struct ArrSpec<T> f_spec;
+
+    //T R;            /**< Resolving power.*/
+    //T *f_ch;        /**< Array with channel frequencies.*/
+    //int order;      /**< Order of Lorentzian filters.*/
     
+    //T *eta_filt;     /**<Peak height of filter, for each channel.*/
     T eta_inst;    /**< Instrument efficiency.*/
     T eta_misc;    /**< Miscellaneous constant efficiencies.*/
     T f_sample; /**< Readout frequency of instrument in Hertz.*/
@@ -63,6 +68,7 @@ struct Telescope {
     T eta_mir;     /**< Mirror reflection efficiency.*/
     T eta_fwd;     /**< Telescope forward efficiency.*/
     int scantype;
+    T El0;
     T Ax;
     T Axmin;
     T Ay;
@@ -80,11 +86,9 @@ struct Atmosphere {
     T Tatm;        /**< Temperature of atmosphere in Kelvin.*/
     T v_wind;      /**< Max windspeed in meters per second.*/
     T h_column;    /**< Reference column height of atmosphere, in meters.*/
-    
-    struct ArrSpec<T> x_spec;
-    struct ArrSpec<T> y_spec;
-    
-    T *PWV;        /**< Flat array containing smoothed PWV values at x and y.*/
+    T dx;          /**< Gridsize along x axis in meters.*/
+    T dy;          /**< Gridsize along y axis in meters.*/
+    char* path;    /**< Path to prepd folder.*/
 };
 
 template<typename T>

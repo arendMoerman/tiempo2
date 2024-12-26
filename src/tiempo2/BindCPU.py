@@ -46,6 +46,10 @@ def loadTiEMPO2lib():
                                     ctypes.POINTER(ctypes.c_double), 
                                     ctypes.POINTER(ctypes.c_double),
                                     ctypes.c_double, ctypes.c_bool]
+
+    lib.getChopperCalibration.argtypes = [ctypes.POINTER(TStructs.Instrument),
+                                          ctypes.POINTER(ctypes.c_double),
+                                          ctypes.c_double]
     
     lib.getEtaAtm.argtypes = [TStructs.ArrSpec, 
                               ctypes.POINTER(ctypes.c_double), 
@@ -59,6 +63,7 @@ def loadTiEMPO2lib():
     lib.runTiEMPO2.restype = None
     lib.calcW2K.restype = None
     lib.getSourceSignal.restype = None
+    lib.getChopperCalibration.restype = None
     lib.getEtaAtm.restype = None
     lib.getNEP.restype = None
 
@@ -84,8 +89,7 @@ def loadTiEMPO2lib_CUDA():
                                     ctypes.POINTER(TStructs.CuTelescope),
                                     ctypes.POINTER(TStructs.CuAtmosphere), 
                                     ctypes.POINTER(TStructs.CuSource),
-                                    ctypes.POINTER(TStructs.CuOutput),
-                                    ctypes.c_int]
+                                    ctypes.c_int, ctypes.c_char_p]
     
     lib.runTiEMPO2_CUDA.restype = None
 
@@ -209,6 +213,35 @@ def getSourceSignal(instrument, telescope, atmosphere, I_nu, PWV, ON):
     
     return res
 
+def getChopperCalibration(instrument, Tcal):
+    """!
+    Binding for calculating the power obtained from a calibration blackbody.
+
+    @param instrument Dictionary containing instrument parameters.
+    @param Tcal Temperature of calibration blackbody in Kelvin.
+
+    @returns 1D array containing power for each detector.
+    """
+
+    lib = loadTiEMPO2lib()
+    mgr = TManager.Manager()
+
+    _instrument = TStructs.Instrument()
+
+    coutput = (ctypes.c_double * instrument["nf_ch"]).from_buffer(np.zeros(instrument["nf_ch"]))
+
+    cTcal = ctypes.c_double(Tcal)
+
+    TBUtils.allfillInstrument(instrument, _instrument)
+    
+    args = [_instrument, coutput, cTcal]
+
+    mgr.new_thread(target=lib.getChopperCalibration, args=args)
+
+    res = np.ctypeslib.as_array(coutput, shape=instrument["nf_ch"]).astype(np.float64)
+    
+    return res
+
 def getEtaAtm(instrument, PWV):
     """!
     Binding for running the TiEMPO2 simulation.
@@ -274,7 +307,7 @@ def getNEP(instrument, telescope, atmosphere, PWV):
     
     return res
 
-def runTiEMPO2_CUDA(instrument, telescope, atmosphere, source, nTimes):
+def runTiEMPO2_CUDA(instrument, telescope, atmosphere, source, nTimes, outpath):
     """!
     Binding for running the TiEMPO2 simulation on GPU.
 
@@ -283,6 +316,7 @@ def runTiEMPO2_CUDA(instrument, telescope, atmosphere, source, nTimes):
     @param atmosphere Dictionary containing atmosphere parameters.
     @param source Dictionary containing astronomical source parameters.
     @param simparams Dictionary containing simulation parameters.
+    @param outpath Path to directory where TiEMPO2 output is stored.
 
     @returns 2D array containing timestreams of power in detector, for each channel frequency
     """
@@ -309,17 +343,13 @@ def runTiEMPO2_CUDA(instrument, telescope, atmosphere, source, nTimes):
     TBUtils.allfillSource(source, _source, ct_t)
 
     cnTimes = ctypes.c_int(nTimes)
+    coutpath = ctypes.c_char_p(outpath.encode())
 
-    TBUtils.allocateOutput(_output, nTimes, instrument["nf_ch"], ct_t)
+    size_out = nTimes * instrument["nf_ch"]
 
     timed = end-start
 
-    args = [_instrument, _telescope, _atmosphere, _source, _output, cnTimes]
+    args = [_instrument, _telescope, _atmosphere, _source, cnTimes, coutpath]
 
     mgr.new_thread(target=lib.runTiEMPO2_CUDA, args=args)
-
-    res = TBUtils.OutputStructToDict(_output, nTimes, instrument["nf_ch"], np_t=np.float64, CPU=False)
-
-    return res
-
 

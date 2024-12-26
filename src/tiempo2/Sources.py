@@ -72,7 +72,7 @@ def generateSZMaps(SZsourceDict, instrumentDict, clog, convolve_beam=True, teles
     
     #if convolve_beam:
     #    clog.info("Convolving beam patterns with SZ maps...")
-    #    SZ = _convolveMaps(SZ, Az, El, freq_Hz, telescopeDict.get("Dtel"))
+    #    SZ = _convolveMaps(SZ, Az, El, f_src, telescopeDict.get("Dtel"))
     
     SZ *= (MConst.c / f_src)**2 
     

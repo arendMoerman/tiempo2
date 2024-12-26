@@ -1,5 +1,6 @@
 import math
 import os
+import shutil
 import time
 import copy 
 import sys
@@ -53,6 +54,7 @@ class Interface(object):
         clog_mgr        :   Logger manager. Top-level wrapper for actual logger.
                             Manager handles meta information, such as pwd.
         clog            :   Custom logger for communicating information, warnings, and errors to user.
+        outPath         :   Path to directory where to store simulation output. Defaults to current working directory.
     """
 
     __sourceDict        = None
@@ -78,14 +80,36 @@ class Interface(object):
 
     clog_mgr = CustomLogger(os.path.basename(__file__))
     clog = clog_mgr.getCustomLogger()
+
+    outPath = os.getcwd() # Output path defaults to cwd    
     
     c = 2.99792458e8
 
-    def __init__(self, verbose=True):
+    def __init__(self, verbose=True, outPath=None, arisPath=None):
+        self.outPath = outPath if outPath is not None else self.outPath
         if not verbose:
             self.clog.setLevel(logging.CRITICAL)
+
+    def setOutPath(self, outPath):
+        """!
+        Set or change path to output directory.
+
+        @param outPath Path to output directory.
+
+        @ingroup settersgetters
+        """
+
+        self.outPath = outPath
     
     def setLoggingVerbosity(self, verbose=True):
+        """!
+        Set or change the verbosity of the TiEMPO2 logger.
+        
+        @param verbose Give verbose output. Default is True.
+
+        @ingroup settersgetters
+        """
+
         if not verbose:
             self.clog.setLevel(logging.CRITICAL)
         
@@ -93,6 +117,14 @@ class Interface(object):
             self.clog.setLevel(logging.INFO)
 
     def setSourceDict(self, sourceDict):
+        """!
+        Set a source dictionary.
+
+        @param sourceDict A dictionary specifying the source to simulate.
+
+        @ingroup inputdicts
+        """
+
         errlist = TCheck.checkSourceDict(sourceDict)
 
         if not errlist:
@@ -104,6 +136,14 @@ class Interface(object):
             raise FieldError(errstr)
 
     def setTelescopeDict(self, telescopeDict):
+        """!
+        Set a telescope dictionary.
+
+        @param telescopeDict A dictionary specifying the telescope for the simulation.
+
+        @ingroup inputdicts
+        """
+
         errlist = TCheck.checkTelescopeDict(telescopeDict)
 
         if not errlist:
@@ -115,6 +155,14 @@ class Interface(object):
             raise FieldError(errstr)
     
     def setInstrumentDict(self, instrumentDict):
+        """!
+        Set an instrument dictionary.
+
+        @param instrumentDict A dictionary specifying the instrument to simulate.
+
+        @ingroup inputdicts
+        """
+
         errlist = TCheck.checkInstrumentDict(instrumentDict)
 
         if not errlist:
@@ -127,6 +175,16 @@ class Interface(object):
         
     
     def setAtmosphereDict(self, atmosphereDict):
+        """!
+        Set an atmosphere dictionary.
+        Note that this dictionary only specifies some parameters, such as windspeed, scale height, etc. Actual atmosphere screens need to be generated using ARIS. 
+        Also, the directory containing the ARIS screens, together with the actual name of the screen files, is specified here.
+
+        @param atmosphereDict A dictionary specifying the atmosphere to simulate.
+
+        @ingroup inputdicts
+        """
+
         errlist = TCheck.checkAtmosphereDict(atmosphereDict)
 
         if not errlist:
@@ -136,19 +194,22 @@ class Interface(object):
         else:
             errstr = f"Errors encountered in atmosphere dictionary in fields :{errlist}."
             raise FieldError(errstr)
-    
-    def setObservationDict(self, observationDict):
-        errlist = TCheck.checkObservationDict(observationDict)
-
-        if not errlist:
-            self.__observationDict = observationDict
-            self.observation_set = True
-
-        else:
-            errstr = f"Errors encountered in observation dictionary in fields :{errlist}."
-            raise FieldError(errstr)
 
     def prepareAtmosphere(self):
+        """!
+        Prepare the ARIS screen chunks for usage in TiEMPO2 simulations.
+        A telescope and atmosphere dictionary need to be set, otherwise an error is raised.
+        
+        This function loads the ARIS screens, convolves them with an apodized Gaussian, the size of the telescope aperture and an edge taper of -10 dB (this will be adjustable in future updates). 
+        Then, the prepared ARIS screens are saved in the same directory, under the 'prepd' subdirectory. 
+        The original names are stripped, and only the screen index is used as name. The extension type is changed from .dat into .datp.
+
+        For each simulation setup (disregarding source) and ARIS screen set, this function only needs to be run once. 
+        For subsequent simulations the prepared screens can be reused.
+        
+        @ingroup initialise
+        """
+
         if not (self.telescope_set and
                 self.atmosphere_set):
             
@@ -159,7 +220,7 @@ class Interface(object):
         TAtm.prepAtmospherePWV(self.__atmosphereDict, self.__telescopeDict, self.clog)
 
     # NUMBER PARAMETER IS TEMPORARY
-    def initSetup(self, use_ARIS=True, number=1):
+    def initSetup(self, use_ARIS=True, number=1, start=0):
         """!
         Initialise a TiEMPO2 setup. 
 
@@ -170,7 +231,14 @@ class Interface(object):
         This function will check wether or not the instrument, telescope, and atmosphere are set.
         If not, an InitialError will be raised.
 
-        @param use_ARIS Whether to load an ARIS screen or not. Some functions of TiEMPO2 do not require an ARIS screen to be loaded. Default is True (load the ARIS screen).
+        @param use_ARIS Whether to load an ARIS screen or not. 
+            Some functions of TiEMPO2 do not require an ARIS screen to be loaded. 
+            Setting this parameter to False could reduce total memory footprint in these cases.
+            Default is True (load the ARIS screen).
+        @param number Number of ARIS chunks to concatenate and load into memory.
+        @param start ARIS chunk to start with. 
+        
+        @ingroup initialise
         """
 
         if not (self.instrument_set and 
@@ -237,26 +305,22 @@ class Interface(object):
         self.telescopeDict["Ay"] /= 3600
         self.telescopeDict["Aymin"] /= 3600
         
-        if use_ARIS:
-            #PWV_atm, nx, ny = TAtm.generateAtmospherePWV(self.atmosphereDict, self.telescopeDict, self.clog)  
-            PWV_atm, nx, ny = TAtm.prepAtmospherePWV(self.__atmosphereDict, self.__telescopeDict, self.clog, number)
-      
-            # At t=0, x=y=0 is in middle
-            x_atm = (np.arange(0, nx) - ny/2)*self.atmosphereDict.get("dx")
-            y_atm = (np.arange(0, ny) - ny/2)*self.atmosphereDict.get("dy")
-        
-
-            self.atmosphereDict["x_atm"] = x_atm
-            self.atmosphereDict["y_atm"] = y_atm
-            self.atmosphereDict["nx"] = nx
-            self.atmosphereDict["ny"] = ny
-            self.atmosphereDict["PWV"] = PWV_atm
-
         #### END INITIALISATION ####
         self.initialisedSetup = True
 
-    #### HAAL DE sflag WEG EN MAAK NETTER: OOK DE CPU VERSIE MOET DE TRACED SOURCE KUNNEN DOEN!!!
     def initSource(self, pointing=None):
+        """!
+        Initialise a TiEMPO2 source. 
+
+        The idea is that a TiEMPO2 setup can be done sequentially, the first step being a setup of the terrestrial part.
+        This means that the second setup should consist of everything in space: the astronomical source.
+        Therefore, this is the second initialisation that should be performed.
+
+        @param pointing Pointing center of telescope, w.r.t. center of astronomical source, in arcseconds.
+        
+        @ingroup initialise
+        """
+
         pointing = np.zeros(2) if pointing is None else pointing
         self.sourceDict = copy.deepcopy(self.__sourceDict)
         
@@ -276,8 +340,7 @@ class Interface(object):
                 trace_src[0,:] = np.array([pointing[0]])
                 trace_src[1,:] = np.array([pointing[1]])
             
-            SZ, Az, El = TSource.generateSZMaps(self.sourceDict, self.instrumentDict, self.clog, telescopeDict=self.telescopeDict, trace_src=trace_src)
-            I_nu = SZ
+            I_nu, Az, El = TSource.generateSZMaps(self.sourceDict, self.instrumentDict, self.clog, telescopeDict=self.telescopeDict, trace_src=trace_src)
 
         elif self.sourceDict.get("type") == "GalSpec":
             I_nu, Az, El, freqs = TSource.generateGalSpecMaps(self.sourceDict, self.instrumentDict, self.telescopeDict)
@@ -293,8 +356,7 @@ class Interface(object):
             El = np.zeros(self.instrumentDict["nf_src"])
 
         else:
-            SZ, Az, El, freqs = TSource.loadSZMaps(self.sourceDict)
-            I_nu = SZ
+            I_nu, Az, El, freqs = TSource.loadSZMaps(self.sourceDict)
         
         self.sourceDict["Az_src"] = Az / 3600
         self.sourceDict["El_src"] = El / 3600
@@ -310,6 +372,8 @@ class Interface(object):
         @param ON Whether to evaluate source in ON path (default), or OFF. Makes a difference when different eta_ap have been defined for each path.
 
         @returns Transmitted signal (SI) and its frequency range (Hz).
+
+        @ingroup auxilliarymethods
         """
         
         trace_src = np.array([[Az_point], [El_point]]) 
@@ -320,14 +384,28 @@ class Interface(object):
 
         return res, self.instrumentDict["f_ch_arr"]
     
+    def getChopperCalibration(self, Tcal):
+        """!
+        Get power emitted by a blackbody source in front of cryostat.
+        For calibration purposes.
+ 
+        @ingroup auxilliarymethods       
+        """
+
+        res = TBCPU.getChopperCalibration(self.instrumentDict, Tcal)
+        return res
+    
     def getEtaAtm(self, PWV_value):
         """!
         Get atmosphere transmission at source frequencies given a PWV.
 
-        @param PWV_value PWV value for atmospheric transmission. Defaults to -1 (no atmosphere).
+        @param PWV_value PWV value for atmospheric transmission. 
 
         @returns Atmospheric transmission and its frequency range (Hz).
+ 
+        @ingroup auxilliarymethods       
         """
+
         res = TBCPU.getEtaAtm(self.instrumentDict, PWV_value)
         return res, self.instrumentDict["f_src"]
 
@@ -338,12 +416,14 @@ class Interface(object):
         @param PWV_value PWV value at which to calculate atmospheric NEP.
 
         @returns NEP (SI) and its frequency range (Hz).
+ 
+        @ingroup auxilliarymethods       
         """
 
         res = TBCPU.getNEP(self.instrumentDict, self.telescopeDict, self.atmosphereDict, PWV_value)
         return res, self.instrumentDict["f_ch_arr"]
 
-    def runSimulation(self, t_obs, device="CPU", nThreads=None, verbosity=1):
+    def runSimulation(self, t_obs, device="CPU", nThreads=None, verbosity=1, outpath="./out/", overwrite=False):
         """!
         Run a TiEMPO2 simulation.
 
@@ -356,6 +436,9 @@ class Interface(object):
             0           : no extra output w.r.t. logger.
             1 (default) : show execution times of important routines.
             2           : show execution times of important routines and memory transactions.
+        @param outpath Directory to store output in.
+        @param overwrite Whether to overwrite existing output directories. 
+            If False (default), a prompt will appear to either overwrite or specify new directory.
         """
 
         nThreads = 1 if nThreads is None else nThreads
@@ -372,49 +455,39 @@ class Interface(object):
 
         if nTimes % 2 == 1:
             nTimes -= 1
-
-        # Check if atmosphere screen is long enough for given time and windspeed
-        length_req = self.atmosphereDict.get("v_wind") * t_obs
-        #if (length_req > np.max(x_atm)) and (self.loadedARIS):
-        #        t_obs_new = np.floor(T_OBS_BUFF * np.max(x_atm) / self.atmosphereDict.get("v_wind"))
-        #        self.clog.warning(f"Atmospheric screen too small for windspeed of {self.atmosphereDict.get('v_wind')} m/s and observation time of {self.observationDict.get('t_obs')} s. Reducing observation time to {t_obs_new} s.")
-
-         #       self.observationDict["t_obs"] = t_obs_new
         
         t_range = 1 / self.instrumentDict["f_sample"] * np.arange(nTimes)
+
+        outpath_succes = False
+        while not outpath_succes:
+            if not os.path.exists(outpath):
+                os.mkdir(outpath)
+                outpath_succes = True
+
+            elif not overwrite:
+                self.clog.warning(f"Output path {outpath} exists! Overwrite or change path?")
+                choice = input("\033[93mOverwrite (y/n)? > ").lower()
+                if choice == "y":
+                    shutil.rmtree(outpath)
+                else:
+                    outpath = input("\033[93mSpecify new output path: > ")
 
 
         self.clog.info("\033[1;32m*** STARTING TiEMPO2 SIMULATION ***")
         
         start = time.time()
-       
-        self.clog.info("Starting observation.")
 
         if device == "CPU":
             res = TBCPU.runTiEMPO2(self.instrumentDict, self.telescopeDict, 
                         self.atmosphereDict, self.sourceDict, nTimes, nThreads)
         
         elif device == "GPU":
-            res = TBCPU.runTiEMPO2_CUDA(self.instrumentDict, self.telescopeDict, 
-                        self.atmosphereDict, self.sourceDict, nTimes)
+            TBCPU.runTiEMPO2_CUDA(self.instrumentDict, self.telescopeDict, 
+                        self.atmosphereDict, self.sourceDict, nTimes, outpath)
         
         end = time.time()        
         
         self.clog.info("\033[1;32m*** FINISHED TiEMPO2 SIMULATION ***")
-        
-        if (verbosity == 1) and (device == "GPU"):
-            self.clog.info("\033[1;32m*** TIME DIAGNOSTICS ***")
-            self.clog.info(f"\033[1;32m*** TOTAL    : {end-start:.2f} seconds ***")
-            self.clog.info(f"\033[1;32m*** H2D      : {res.get('t_diag')[0]:.2f} seconds ***")
-            self.clog.info(f"\033[1;32m*** KERNEL   : {res.get('t_diag')[1]:.2f} seconds ***")
-            self.clog.info(f"\033[1;32m*** D2H      : {res.get('t_diag')[2]:.2f} seconds ***")
-        
-        elif (verbosity == 1):
-            self.clog.info("\033[1;32m*** TIME DIAGNOSTICS ***")
-            self.clog.info(f"\033[1;32m*** TOTAL    : {end-start:.2f} seconds ***")
-            self.clog.info(f"\033[1;32m*** THREAD   : {res.get('t_diag'):.2f} seconds ***")
-
-        return res, t_range, self.instrumentDict["f_ch_arr"]
 
     def calcW2K(self, nPWV, nThreads=None, verbosity=1):
         """!
@@ -426,6 +499,8 @@ class Interface(object):
             0           : no extra output w.r.t. logger.
             1 (default) : show execution times of important routines.
             2           : show execution times of important routines and memory transactions.
+
+        @ingroup auxilliarymethods
         """
 
         nThreads = 1 if nThreads is None else nThreads
@@ -455,11 +530,6 @@ class Interface(object):
         end = time.time()        
         
         self.clog.info("\033[1;32m*** FINISHED TiEMPO2 W2K CALIBRATION ***")
-        
-        #if (verbosity == 1):
-        #    self.clog.info("\033[1;32m*** TIME DIAGNOSTICS ***")
-        #    self.clog.info(f"\033[1;32m*** TOTAL    : {end-start:.2f} seconds ***")
-        #    self.clog.info(f"\033[1;32m*** THREAD   : {res.get('t_diag'):.2f} seconds ***")
 
         return res, self.instrumentDict["f_ch_arr"]
     
@@ -472,6 +542,8 @@ class Interface(object):
 
         @param output An output dictionary containing the signal.
         @param w2k A Watt-to-Kelvin (w2k) dictionary.
+
+        @ingroup auxilliarymethods
         """
 
         n_ch = output["signal"].shape[0]
@@ -488,6 +560,8 @@ class Interface(object):
 
         @returns signal_psd Signal PSD.
         @returns freq_psd Frequencies at which the signal PSD is defined, in Hertz.
+ 
+        @ingroup auxilliarymethods       
         """
 
         dstep = 1 / self.instrumentDict["f_sample"]

@@ -5,7 +5,8 @@ project(TiEMPO2
     DESCRIPTION "TiEMPO improved"
     LANGUAGES CXX C)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 add_library(interputils SHARED src/include/InterpUtils.cpp)
@@ -17,13 +18,13 @@ target_include_directories(scan PUBLIC src/include)
 add_library(timer SHARED src/include/Timer.cpp)
 target_include_directories(timer PUBLIC src/include)
 
-add_library(tiempo2 SHARED src/cpp/InterfaceCPU.cpp)
-target_link_libraries(tiempo2 PRIVATE interputils scan timer)
+#add_library(tiempo2 SHARED src/cpp/InterfaceCPU.cpp)
+#target_link_libraries(tiempo2 PRIVATE interputils scan timer)
 #target_include_directories(tiempo2 PRIVATE src/include)
-
-if(NOT WIN32)
-    target_compile_options(tiempo2 PRIVATE -pthread)
-endif()
+#
+#if(NOT WIN32)
+#    target_compile_options(tiempo2 PRIVATE -pthread)
+#endif()
 
 include(CheckLanguage)
 
@@ -31,7 +32,8 @@ check_language(CUDA)
 
 if(CMAKE_CUDA_COMPILER)
     enable_language(CUDA)
-    set(CMAKE_CUDA_STANDARD 11)
+    #set(CMAKE_CUDA_STANDARD 11)
+    #set(CMAKE_CUDA_STANDARD_REQUIRED TRUE)
     file(GLOB CUDAfiles src/cuda/*.cu)
 
     add_library(cutiempo2 SHARED ${CUDAfiles})

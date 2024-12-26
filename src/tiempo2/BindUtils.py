@@ -8,6 +8,7 @@ Most of these functions are concerned with allocating memory.
 import numpy as np
 import tiempo2.Structs as TStructs
 import ctypes
+import os
 import array as ar
 
 def allfillInstrument(InstDict, InstStruct, ct_t=ctypes.c_double):
@@ -57,6 +58,7 @@ def allfillTelescope(TelDict, TelStruct, ct_t=ctypes.c_double):
     TelStruct.eta_fwd = ct_t(TelDict["eta_fwd"])
 
     TelStruct.scantype = ctypes.c_int(TelDict["scantype"])
+    TelStruct.El0 = ct_t(TelDict["El0"])
     TelStruct.Ax = ct_t(TelDict["Ax"])
     TelStruct.Axmin = ct_t(TelDict["Axmin"])
     TelStruct.Ay = ct_t(TelDict["Ay"])
@@ -77,18 +79,13 @@ def allfillAtmosphere(AtmDict, AtmStruct, ct_t=ctypes.c_double, coalesce=False):
     @param AtmStruct Struct to be filled and passed to ctypes.
     @param ct_t Type of data. Use ctypes.c_double for CPU, ctypes.c_float for GPU.
     """
-    
-    arr_t = 'd' if ct_t == ctypes.c_double else 'f'
-    arr_PWV = ar.array(arr_t, AtmDict["PWV"].ravel())
-    
-    AtmStruct.x_spec = arr2ArrSpec(AtmDict["x_atm"], ct_t)
-    AtmStruct.y_spec = arr2ArrSpec(AtmDict["y_atm"], ct_t)
 
     AtmStruct.Tatm = ct_t(AtmDict["Tatm"])
     AtmStruct.v_wind = ct_t(AtmDict["v_wind"])
     AtmStruct.h_column = ct_t(AtmDict["h_column"])
-
-    AtmStruct.PWV = (ct_t * AtmDict["PWV"].ravel().size).from_buffer(arr_PWV)
+    AtmStruct.dx = ct_t(AtmDict["dx"])
+    AtmStruct.dy = ct_t(AtmDict["dy"])
+    AtmStruct.path = ctypes.c_char_p(os.path.join(AtmDict["path"], "prepd").encode())
 
 def allfillSource(SourceDict, SourceStruct, ct_t=ctypes.c_double):
     """!

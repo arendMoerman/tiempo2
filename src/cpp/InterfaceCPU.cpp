@@ -16,7 +16,7 @@ double inline getPlanck(double T, double nu)
 
 TIEMPO2_DLL void runTiEMPO2(Instrument<double> *instrument, Telescope<double> *telescope, 
             Atmosphere<double> *atmosphere, Source<double> *source, 
-            Output<double> *output, int nTimes, int nThreads) {
+            Output<double> *output, int nTimesTotal, int nThreads) {
     
     // ALLOCATIONS
     // Doubles 
@@ -39,6 +39,12 @@ TIEMPO2_DLL void runTiEMPO2(Instrument<double> *instrument, Telescope<double> *t
     effs.eta_tot_chain = instrument->eta_inst * instrument->eta_misc * telescope->eta_fwd * telescope->eta_mir * 0.5;
     effs.eta_tot_gnd = instrument->eta_inst  * instrument->eta_misc * (1 - telescope->eta_fwd) * telescope->eta_mir * 0.5;
     effs.eta_tot_mir = instrument->eta_inst  * instrument->eta_misc * (1 - telescope->eta_mir) * 0.5;
+    
+    double *eta_atm;
+    ArrSpec<double> PWV_atm;
+    ArrSpec<double> f_atm;
+
+    readEtaATM<double, ArrSpec<double>>(&eta_atm, &PWV_atm, &f_atm);
 
     // Make threadpool
     std::vector<std::thread> threadPool;
@@ -46,7 +52,6 @@ TIEMPO2_DLL void runTiEMPO2(Instrument<double> *instrument, Telescope<double> *t
     
     // PREAMBLE
     dt = 1. / instrument->f_sample;
-    step = ceil(nTimes / nThreads);
     
     //printf("\033[1;32m\r");
     
@@ -67,67 +72,105 @@ TIEMPO2_DLL void runTiEMPO2(Instrument<double> *instrument, Telescope<double> *t
 
     timer.start();
     // Main thread spawning loop
-    double *eta_atm;
-    ArrSpec<double> PWV_atm;
-    ArrSpec<double> f_atm;
+    std::string str_path(atmosphere->path);
 
-    readEtaATM<double, ArrSpec<double>>(&eta_atm, &PWV_atm, &f_atm);
+    int *meta;
+    readAtmMeta(&meta, str_path);
+    
+    double lx = meta[1]*atmosphere->dx;
+    double ly = meta[2]*atmosphere->dy;
+    double lx_av = lx - ly;
+    double t_obs_av = lx_av / atmosphere->v_wind; // Max available time per screen
 
-    for(int n=0; n < nThreads; n++) {
-        int final_step; // Final step for 
-        
-        if(n == (nThreads - 1)) {
-            final_step = nTimes;
-        } else {
-            final_step = (n+1) * step;
+    double timeTotal = nTimesTotal / instrument->f_sample;
+
+    int nJobs = ceil(timeTotal / t_obs_av);
+    int nTimesScreen = ceil(t_obs_av * instrument->f_sample); // If error, change ceil to floor
+
+    struct ArrSpec<double> _x_atm;
+    struct ArrSpec<double> _y_atm;
+
+    _x_atm.start = -ly/2;
+    _x_atm.step = atmosphere->dx;
+    _x_atm.num = meta[1];
+    
+    _y_atm.start = -ly/2;
+    _y_atm.step = atmosphere->dy;
+    _y_atm.num = meta[2];
+
+    std::string datp;
+
+    // Loop starts here
+    int idx_wrap = 0;
+    for(int idx=0; idx<nJobs; idx++) {
+        if (idx_wrap == meta[0]) {
+            idx_wrap = 0;
         }
 
-        if(telescope->scantype == 0 && telescope->chop_mode == 0) {
-            threadPool[n] = std::thread(&parallelJobs_1, instrument, 
-                                        telescope, atmosphere, 
-                                        source, output, 
-                                        eta_atm, PWV_atm, f_atm,
-                                        &effs, nTimes,
-                                        n * step, final_step, dt,
-                                        I_atm, I_gnd, I_tel, I_CMB, n);
-        }
-        
-        else if(telescope->scantype == 0 && telescope->chop_mode == 1) {
-            threadPool[n] = std::thread(&parallelJobs_2, instrument, 
-                                        telescope, atmosphere, 
-                                        source, output, 
-                                        eta_atm, PWV_atm, f_atm,
-                                        &effs, nTimes,
-                                        n * step, final_step, dt,
-                                        I_atm, I_gnd, I_tel, I_CMB, n);
-        }
-        
-        else if(telescope->scantype == 0 && telescope->chop_mode == 2) {
-            threadPool[n] = std::thread(&parallelJobs_3, instrument, 
-                                        telescope, atmosphere, 
-                                        source, output, 
-                                        eta_atm, PWV_atm, f_atm,
-                                        &effs, nTimes,
-                                        n * step, final_step, dt,
-                                        I_atm, I_gnd, I_tel, I_CMB, n);
+        if (idx == (nJobs - 1)) {
+            nTimesScreen = nTimesTotal - nTimesScreen*(nJobs-1);
         }
         
-        else {
-            threadPool[n] = std::thread(&parallelJobs, instrument, 
-                                        telescope, atmosphere, 
-                                        source, output, 
-                                        eta_atm, PWV_atm, f_atm,
-                                        &effs, nTimes,
-                                        n * step, final_step, dt,
-                                        I_atm, I_gnd, I_tel, I_CMB, n);
-        }
-    }
+        step = ceil(nTimes / nThreads);
 
-    // Wait with execution until all threads are done
-    for (std::thread &t : threadPool) {
-        if (t.joinable()) {
-            t.join();
+        for(int n=0; n < nThreads; n++) {
+            int final_step; // Final step for 
+            
+            if(n == (nThreads - 1)) {
+                final_step = nTimesScreen;
+            } else {
+                final_step = (n+1) * step;
+            }
+
+            if(telescope->scantype == 0 && telescope->chop_mode == 0) {
+                threadPool[n] = std::thread(&parallelJobs_1, instrument, 
+                                            telescope, atmosphere, 
+                                            source, output, 
+                                            eta_atm, PWV_atm, f_atm,
+                                            &effs, nTimes,
+                                            n * step, final_step, dt,
+                                            I_atm, I_gnd, I_tel, I_CMB, n);
+            }
+            
+            else if(telescope->scantype == 0 && telescope->chop_mode == 1) {
+                threadPool[n] = std::thread(&parallelJobs_2, instrument, 
+                                            telescope, atmosphere, 
+                                            source, output, 
+                                            eta_atm, PWV_atm, f_atm,
+                                            &effs, nTimes,
+                                            n * step, final_step, dt,
+                                            I_atm, I_gnd, I_tel, I_CMB, n);
+            }
+            
+            else if(telescope->scantype == 0 && telescope->chop_mode == 2) {
+                threadPool[n] = std::thread(&parallelJobs_3, instrument, 
+                                            telescope, atmosphere, 
+                                            source, output, 
+                                            eta_atm, PWV_atm, f_atm,
+                                            &effs, nTimes,
+                                            n * step, final_step, dt,
+                                            I_atm, I_gnd, I_tel, I_CMB, n);
+            }
+            
+            else {
+                threadPool[n] = std::thread(&parallelJobs, instrument, 
+                                            telescope, atmosphere, 
+                                            source, output, 
+                                            eta_atm, PWV_atm, f_atm,
+                                            &effs, nTimes,
+                                            n * step, final_step, dt,
+                                            I_atm, I_gnd, I_tel, I_CMB, n);
+            }
         }
+    
+
+        // Wait with execution until all threads are done
+        for (std::thread &t : threadPool) {
+            if (t.joinable()) {
+                t.join();
+            }
+        }
+        idx_wrap++;    
     }
 
     timer.stop();
@@ -232,6 +275,26 @@ TIEMPO2_DLL void calcW2K(Instrument<double> *instrument, Telescope<double> *tele
     delete[] eta_atm;
 }
 
+TIEMPO2_DLL void getChopperCalibration(Instrument<double> *instrument, double *output, double Tcal) {
+    double freq; // Bin frequency
+    double eta_kj; // Filter efficiency for bin j, at channel k
+    double I_cal;
+    
+    double PSD_nu;
+    
+    double eta_tot_chain = instrument->eta_inst * instrument->eta_misc * 0.5;
+    
+    for(int j=0; j<instrument->f_spec.num; j++) { 
+        freq = instrument->f_spec.start + instrument->f_spec.step * j;
+        I_cal = getPlanck(Tcal, freq); 
+
+        PSD_nu = eta_tot_chain * I_cal * CL*CL / (freq*freq);
+        for(int k=0; k<instrument->nf_ch; k++) {
+            eta_kj = instrument->filterbank[k*instrument->f_spec.num + j];
+            output[k] += PSD_nu * eta_kj * instrument->f_spec.step; 
+        }
+    }
+}
 
 TIEMPO2_DLL void getSourceSignal(Instrument<double> *instrument, Telescope<double> *telescope, 
             double *output, double *I_nu, double PWV, bool ON) {
