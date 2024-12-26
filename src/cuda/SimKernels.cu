@@ -603,10 +603,9 @@ __global__ void calcPhotonNoise(float *sigout, float *nepout, curandState *state
   @param telescope CuTelescope object containing telescope to be simulated.
   @param atmosphere CuAtmosphere object containing atmosphere parameters.
   @param source CuSource object containing source definitions.
-  @param output CuOutput object for storing simulation output.
   @param nTimes Number of time evaluations in simulation.
  */
-void runTiEMPO2_CUDA(Instrument<float> *instrument, Telescope<float> *telescope, Atmosphere<float> *atmosphere, Source<float> *source, Output<float> *output, int nTimesTotal, char *outpath) {
+void runTiEMPO2_CUDA(Instrument<float> *instrument, Telescope<float> *telescope, Atmosphere<float> *atmosphere, Source<float> *source, int nTimesTotal, char *outpath) {
     // FLOATS
     float *d_sigout;        // Device pointer for output power array
     float *d_nepout;        // Device pointer for output NEP array
@@ -749,8 +748,6 @@ void runTiEMPO2_CUDA(Instrument<float> *instrument, Telescope<float> *telescope,
     
     timer.stop();
 
-    //output->t_diag[0] = timer.get();
-
     gpuErrchk( cudaMalloc((void**)&d_I_nu, source->nI_nu * sizeof(float)) );
     gpuErrchk( cudaMemcpy(d_I_nu, source->I_nu, source->nI_nu * sizeof(float), cudaMemcpyHostToDevice) );
 
@@ -861,7 +858,6 @@ void runTiEMPO2_CUDA(Instrument<float> *instrument, Telescope<float> *telescope,
         gpuErrchk( cudaFree(d_nepout) );
 
         //output->t_diag[1] = timer.get();
-        
 
         //timer.start();
         // ALLOCATE STRINGS FOR WRITING OUTPUT
@@ -898,7 +894,6 @@ void runTiEMPO2_CUDA(Instrument<float> *instrument, Telescope<float> *telescope,
     }
     gpuErrchk( cudaDeviceReset() );
     timer.stop();
-    output->t_diag[2] = timer.get();
     printf("\033[0m\n");
 }
 

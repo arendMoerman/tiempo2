@@ -4,35 +4,50 @@ import os
 import struct
 
 _type2fmt = {
-        "float"     : [4, 'f'],
-        "double"    : [8, 'd'],
+        "f"     : 4,
+        "d"     : 8,
         }
 
-NFIELDS = 4
-
-def unpack_output(path, out_t, clog):
+def unpack_output(path, chunk_idx):
     """!
     Process binary files written with results from simulation into output jsons for further processing.
     """
     ntimes = 0
     nfreq = 0
+    dtype = "f"
 
-    nchunks = len(os.listdir(path)) // NFIELDS
-    if not isinstance(nchunks, int):
-        clog.error(f"Cannot load data from {path}: directory corrupt or not valid TiEMPO2 output directory!")
-        exit(1)
+    out = {
+            "signal"    : [],
+            "az"        : [],
+            "el"        : [],
+            "flag"      : [],
+            }
 
-    for chunk in range(nchunks):
-        clog.info(f"Loading chunk {chunk}")
-        with open(os.path.join(path, f"{chunk}flag.out"), 'rb') as fh:
-            data = fh.read()
-            ntimes = len(data)//4
-            data_l = struct.unpack(f"@{ntimes}i", data)
+    with open(os.path.join(path, f"{chunk_idx}flag.out"), 'rb') as fh:
+        data = fh.read()
+        ntimes = len(data)//4
+        data_flag = struct.unpack(f"@{ntimes}i", data)
+        out["flag"] = np.array(data_flag)
+    
+    with open(os.path.join(path, f"{chunk_idx}az.out"), 'rb') as fh:
+        data = fh.read()
         
-        with open(os.path.join(path, f"{chunk}signal.out"), 'rb') as fh:
-            data = fh.read()
-            nsig = len(data)//_type2fmt[out_t][0]
-            data_l = struct.unpack(f"@{nsig}{_type2fmt[out_t][1]}", data)
-            nfreq = nsig // ntimes
-            np.save("test", np.array(data_l).reshape((nfreq, ntimes)).T)
-    return np.array(data_l).reshape((nfreq, ntimes)).T
+        if (len(data)//4) != ntimes:
+            dtype = "d"
+
+        data_az = struct.unpack(f"@{ntimes}{dtype}", data)
+        out["az"] = np.array(data_az)
+    
+    with open(os.path.join(path, f"{chunk_idx}el.out"), 'rb') as fh:
+        data = fh.read()
+        data_el = struct.unpack(f"@{ntimes}{dtype}", data)
+        out["el"] = np.array(data_el)
+    
+    with open(os.path.join(path, f"{chunk_idx}signal.out"), 'rb') as fh:
+        data = fh.read()
+        nsig = len(data)//_type2fmt[dtype]
+        data_l = struct.unpack(f"@{nsig}{dtype}", data)
+        nfreq = nsig // ntimes
+        out["signal"] = np.array(data_l).reshape((nfreq, ntimes)).T
+
+    return out

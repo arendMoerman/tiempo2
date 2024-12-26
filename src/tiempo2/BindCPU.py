@@ -89,7 +89,6 @@ def loadTiEMPO2lib_CUDA():
                                     ctypes.POINTER(TStructs.CuTelescope),
                                     ctypes.POINTER(TStructs.CuAtmosphere), 
                                     ctypes.POINTER(TStructs.CuSource),
-                                    ctypes.POINTER(TStructs.CuOutput),
                                     ctypes.c_int, ctypes.c_char_p]
     
     lib.runTiEMPO2_CUDA.restype = None
@@ -346,11 +345,11 @@ def runTiEMPO2_CUDA(instrument, telescope, atmosphere, source, nTimes, outpath):
     cnTimes = ctypes.c_int(nTimes)
     coutpath = ctypes.c_char_p(outpath.encode())
 
-    TBUtils.allocateOutput(_output, nTimes, instrument["nf_ch"], ct_t)
+    size_out = nTimes * instrument["nf_ch"]
 
     timed = end-start
 
-    args = [_instrument, _telescope, _atmosphere, _source, _output, cnTimes, coutpath]
+    args = [_instrument, _telescope, _atmosphere, _source, cnTimes, coutpath]
 
     mgr.new_thread(target=lib.runTiEMPO2_CUDA, args=args)
 
