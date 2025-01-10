@@ -382,9 +382,10 @@ __device__ void commonJob(ArrSpec<float> *f_src, ArrSpec<float> *f_atm, ArrSpec<
     }
 
     eta_atm_interp = powf(eta_atm_interp, ccscEl0);
-
+    
+    // Note that perfect throughput is not applied to source here, as I_nu has already been multiplied by this in Python
     PSD_nu = eta_ap * eta_atm_interp * const_effs[0] * I_nu
-        + ( const_effs[0] * (1 - eta_atm_interp) * tex1Dfetch(tex_I_atm, idy)
+        + (const_effs[0] * (1 - eta_atm_interp) * tex1Dfetch(tex_I_atm, idy)
         + const_effs[1] * tex1Dfetch(tex_I_gnd, idy)
         + const_effs[2] * tex1Dfetch(tex_I_tel, idy)) 
         * CL*CL / (freq*freq);
@@ -648,15 +649,15 @@ void runTiEMPO2_CUDA(Instrument<float> *instrument, Telescope<float> *telescope,
     readAtmMeta(&meta, str_path);
 
     // Calculate lengths of x and y of single screen
-    float lx = meta[1]*atmosphere->dx;
-    float ly = meta[2]*atmosphere->dy;
-    float lx_av = lx - ly;
-    float t_obs_av = lx_av / atmosphere->v_wind; // Max available time per screen
+    float lx = meta[1]*atmosphere->dx;              // Length of a single screen along x, in meters
+    float ly = meta[2]*atmosphere->dy;              // Length of a single screen along y, in meters
+    float lx_av = lx - ly;                          // Available length along x, taking into account center of screen
+    float t_obs_av = lx_av / atmosphere->v_wind;    // Max available time per screen
 
-    float timeTotal = nTimesTotal / instrument->f_sample;
+    float timeTotal = nTimesTotal / instrument->f_sample;       // Total time required for simulation
 
-    int nJobs = ceil(timeTotal / t_obs_av);
-    int nTimesScreen = floor(t_obs_av * instrument->f_sample); // If error, change ceil to floor
+    int nJobs = ceil(timeTotal / t_obs_av);                     // Total number of times kernel needs to be run
+    int nTimesScreen = floor(t_obs_av * instrument->f_sample);  // Number of time evaluations available per atmosphere screen. Floored to be safe.
 
     struct ArrSpec<float> _x_atm;
     struct ArrSpec<float> _y_atm;
@@ -672,7 +673,6 @@ void runTiEMPO2_CUDA(Instrument<float> *instrument, Telescope<float> *telescope,
     // Initialize constant memory
     initCUDA(instrument, telescope, source, atmosphere, nTimesScreen); 
 
-    
     nf_src = _f_spec.num; // Number of spectral points in source
     
     gpuErrchk( cudaDeviceGetAttribute(&numSMs, cudaDevAttrMultiProcessorCount, 0) );
@@ -682,7 +682,6 @@ void runTiEMPO2_CUDA(Instrument<float> *instrument, Telescope<float> *telescope,
 
     timer.start();
     
-
     float freq;    // Frequency, used for initialising background sources.
 
     // Allocate and copy blackbodies

@@ -16,6 +16,7 @@ def get_num_chunks(path):
 def parallel_job(result_path, num_threads, job, args_list):
     """!
     Perform a job on a simulation result in parallel.
+    This is used for reduction operations, so the functions passed should return exactly two values: average and standard deviation.
     Note that this method does not calculate number of cores. This is purely user-specified.
 
     @param result_path Path to simulation results.
@@ -33,6 +34,7 @@ def parallel_job(result_path, num_threads, job, args_list):
     if num_chunks < num_threads:
         num_threads = num_chunks
 
+    print(num_threads)
     chunks = np.array_split(np.arange(num_chunks), num_threads)
     chunks = [chu for chu in chunks]
     
@@ -41,9 +43,11 @@ def parallel_job(result_path, num_threads, job, args_list):
     _func = partial(job, result_path=result_path, xargs=args_list)
 
     pool    = Pool(num_threads)
-    result  = np.nanmean(np.array(pool.map(_func, args)), axis=0)
+    
+    sum_l, var_l, N_l = zip(*pool.map(_func, args))
 
-    print(result.shape)
+    avg     = np.nansum(np.array(sum_l), axis=0) / np.nansum(np.array(N_l))
+    var     = np.nansum(np.array(var_l), axis=0) / num_threads**2
 
-    return result
+    return avg, var
 

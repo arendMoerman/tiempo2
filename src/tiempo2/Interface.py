@@ -85,21 +85,20 @@ class Interface(object):
     
     c = 2.99792458e8
 
-    def __init__(self, verbose=True, outPath=None, arisPath=None):
+    def __init__(self, verbose=True, outPath=None):
+        """!
+        Create an interface object for TiEMPO2.
+
+        @param verbose Set verbosity of logger. If False, will not log any output to screen.
+            If True, will log simulation information, warnings, and errors to screen. 
+            Default is True.
+        @param outPath Path to where the interface object will write output. 
+            Default is the current working directory.
+        """
+
         self.outPath = outPath if outPath is not None else self.outPath
         if not verbose:
             self.clog.setLevel(logging.CRITICAL)
-
-    def setOutPath(self, outPath):
-        """!
-        Set or change path to output directory.
-
-        @param outPath Path to output directory.
-
-        @ingroup settersgetters
-        """
-
-        self.outPath = outPath
     
     def setLoggingVerbosity(self, verbose=True):
         """!
@@ -115,6 +114,18 @@ class Interface(object):
         
         else:
             self.clog.setLevel(logging.INFO)
+
+    def setOutPath(self, outPath):
+        """!
+        Set or change path to output directory.
+
+        @param outPath Path to output directory.
+
+        @ingroup settersgetters
+        """
+
+        self.outPath = outPath
+    
 
     def setSourceDict(self, sourceDict):
         """!
@@ -346,7 +357,8 @@ class Interface(object):
             I_nu, Az, El, freqs = TSource.generateGalSpecMaps(self.sourceDict, self.instrumentDict, self.telescopeDict)
         
         elif self.sourceDict.get("type") == "background":
-            I_nu = np.zeros(self.instrumentDict["nf_src"])
+            if self.telescopeDict["scantype"] == 0 and self.telescopeDict["chop_mode"] == 2:
+                I_nu = np.zeros(3 * self.instrumentDict["nf_src"])
             Az = np.zeros(self.instrumentDict["nf_src"])
             El = np.zeros(self.instrumentDict["nf_src"])
         
@@ -461,7 +473,12 @@ class Interface(object):
         outpath_succes = False
         while not outpath_succes:
             if not os.path.exists(outpath):
-                os.mkdir(outpath)
+                os.makedirs(outpath)
+                outpath_succes = True
+
+            elif overwrite:
+                shutil.rmtree(outpath)
+                os.makedirs(outpath)
                 outpath_succes = True
 
             elif not overwrite:
