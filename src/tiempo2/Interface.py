@@ -17,6 +17,8 @@ import tiempo2.InputChecker as TCheck
 import tiempo2.Atmosphere as TAtm
 import tiempo2.BindCPU as TBCPU
 import tiempo2.RemoveATM as TRemove
+import tiempo2.Parallel as TParallel
+import tiempo2.Analyse as TAnalyse
 
 import psutil
 import logging
@@ -85,21 +87,20 @@ class Interface(object):
     
     c = 2.99792458e8
 
-    def __init__(self, verbose=True, outPath=None, arisPath=None):
+    def __init__(self, verbose=True, outPath=None):
+        """!
+        Create an interface object for TiEMPO2.
+
+        @param verbose Set verbosity of logger. If False, will not log any output to screen.
+            If True, will log simulation information, warnings, and errors to screen. 
+            Default is True.
+        @param outPath Path to where the interface object will write output. 
+            Default is the current working directory.
+        """
+
         self.outPath = outPath if outPath is not None else self.outPath
         if not verbose:
             self.clog.setLevel(logging.CRITICAL)
-
-    def setOutPath(self, outPath):
-        """!
-        Set or change path to output directory.
-
-        @param outPath Path to output directory.
-
-        @ingroup settersgetters
-        """
-
-        self.outPath = outPath
     
     def setLoggingVerbosity(self, verbose=True):
         """!
@@ -115,6 +116,18 @@ class Interface(object):
         
         else:
             self.clog.setLevel(logging.INFO)
+
+    def setOutPath(self, outPath):
+        """!
+        Set or change path to output directory.
+
+        @param outPath Path to output directory.
+
+        @ingroup settersgetters
+        """
+
+        self.outPath = outPath
+    
 
     def setSourceDict(self, sourceDict):
         """!
@@ -346,7 +359,8 @@ class Interface(object):
             I_nu, Az, El, freqs = TSource.generateGalSpecMaps(self.sourceDict, self.instrumentDict, self.telescopeDict)
         
         elif self.sourceDict.get("type") == "background":
-            I_nu = np.zeros(self.instrumentDict["nf_src"])
+            if self.telescopeDict["scantype"] == 0 and self.telescopeDict["chop_mode"] == 2:
+                I_nu = np.zeros(3 * self.instrumentDict["nf_src"])
             Az = np.zeros(self.instrumentDict["nf_src"])
             El = np.zeros(self.instrumentDict["nf_src"])
         
@@ -461,7 +475,12 @@ class Interface(object):
         outpath_succes = False
         while not outpath_succes:
             if not os.path.exists(outpath):
-                os.mkdir(outpath)
+                os.makedirs(outpath)
+                outpath_succes = True
+
+            elif overwrite:
+                shutil.rmtree(outpath)
+                os.makedirs(outpath)
                 outpath_succes = True
 
             elif not overwrite:
@@ -550,7 +569,7 @@ class Interface(object):
         
         output["signal"] = w2k["a"] * output["signal"] + w2k["b"]
 
-    def calcSignalPSD(self, output, x):
+    def calcSignalPSD(self, outpath, num_threads=1, nperseg=256):
         """!
         Calculate signal PSD of a simulation output.
 
@@ -564,13 +583,25 @@ class Interface(object):
         @ingroup auxilliarymethods       
         """
 
-        dstep = 1 / self.instrumentDict["f_sample"]
-        N = x.size
-
-        signal_psd = 2 * dstep / N * np.absolute(fft.fftshift(fft.fft(output["signal"], axis=0), axes=0))**2
-        freq_signal = fft.fftshift(fft.fftfreq(N, dstep))
+        if not self.instrument_set:
+            
+            self.clog.error("the instrument with which the data was simulated must be set in the interface!")
+            raise InitialError
+            sys.exit()
         
-        return signal_psd, freq_signal
+        self.clog.info("Calculating signal PSD.")
+        
+        Pxx, f_Pxx = TParallel.parallel_job(outpath, 
+                                      num_threads = num_threads, 
+                                      job = TAnalyse.calcSignalPSD, 
+                                      args_list = [self.instrumentDict["f_sample"], nperseg])
+        
+        arr_sizes = np.array([x.size for x in f_Pxx])
+
+        tot_Pxx = np.nanmean(Pxx[arr_sizes == np.max(arr_sizes)], axis=0)
+        tot_f_Pxx = np.nanmean(f_Pxx, axis=0)
+
+        return tot_Pxx, tot_f_Pxx
 
     def rebinSignal(self, output, freqs_old, nbins_add, final_bin=True):
         """!
@@ -609,25 +640,38 @@ class Interface(object):
 
         return output_binned, freqs_new
     
-    def avgDirectSubtract(self, output, resolution=0):
+    def avgDirectSubtract(self, outpath, resolution=0, num_threads=1, var_method="PSD"):
         """!
         Apply full time-averaging and direct atmospheric subtraction.
 
-        @param output Output object generated from a simulation.
+        @param outpath Path to where output from a simulation is saved.
         @param resolution How far to average and subtract. The following options are available:
             0: Reduce signal to a single spectrum, fully averaged and subtracted according to the chopping/nodding scheme.
             1: Reduce signal by averaging over ON-OFF chop positions.
+        @param num_threads Number of threads to use. If this number is more than necessary, it will automatically scale down.
 
         @returns red_signal Reduced signal.
         @returns red_Az Reduced Azimuth array. Only returned if resolution == 1.
         @returns red_El Reduced Elevation array. Only returned if resolution == 1.
         """
         
+        if not self.instrument_set:
+            self.clog.error("the instrument with which the data was simulated must be set in the interface!")
+            raise InitialError
+            sys.exit()
+        
         if resolution == 0:
             self.clog.info("Applying time-averaging and direct subtraction.")
-            red_signal = TRemove.avgDirectSubtract_spectrum(output)
             
-            return red_signal
+            avg_l, var_l, N_l = TParallel.parallel_job(outpath, 
+                                          num_threads = num_threads, 
+                                          job = TAnalyse.avgDirectSubtract, 
+                                          args_list = [self.instrumentDict["f_sample"], var_method])
+            
+            avg = np.nansum((N_l - 1) * avg_l.T, axis=1) / (np.nansum(N_l) - len(N_l))
+            var = np.nansum((N_l - 1) * var_l.T, axis=1) / (np.nansum(N_l) - len(N_l))**2
+
+            return avg, var
 
         elif resolution == 1:
             self.clog.info("Averaging and subtracting over ON-OFF pairs.")

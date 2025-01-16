@@ -3,10 +3,11 @@
 It is not meant to be used by users, only internally.
 """
 
-from multiprocessing import Pool
+from multiprocessing import get_context
 import numpy as np
 import os
 from functools import partial
+from itertools import starmap
 
 NFIELDS = 4
 
@@ -22,14 +23,12 @@ def parallel_job(result_path, num_threads, job, args_list):
     @param num_threads Number of CPU threads to use.
     @param job Function handle of function to apply to data.
     @param args_list List of extra arguments to pass to function.
-    @param clog Custom logger for catching log.
 
     @returns Output of job.
     """
 
     num_chunks = get_num_chunks(result_path)
 
-    # Check: is num_chunks > num_threads?
     if num_chunks < num_threads:
         num_threads = num_chunks
 
@@ -38,12 +37,12 @@ def parallel_job(result_path, num_threads, job, args_list):
     
     args = zip(chunks, np.arange(0, num_threads))
 
-    _func = partial(job, result_path=result_path, xargs=args_list)
+    _func = partial(job, 
+                    result_path = result_path, 
+                    xargs = args_list)
 
-    pool    = Pool(num_threads)
-    result  = np.nanmean(np.array(pool.map(_func, args)), axis=0)
+    with get_context("spawn").Pool(num_threads) as pool:
+        out = [np.array(x) for x in zip(*pool.map(_func, args))]
 
-    print(result.shape)
-
-    return result
+    return out
 

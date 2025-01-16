@@ -5,11 +5,74 @@ These are not meant to be used immediately by users. These functions are used by
 
 import numpy as np
 from scipy.signal import welch
+from scipy.interpolate import interp1d
+from scipy.optimize import curve_fit
 from tqdm import tqdm
 
 import tiempo2.FileIO as fio
 
-def calcSignalPSD(chunk_idxs, result_path, xargs):
+def avgDirectSubtract(args, result_path, xargs):
+    """!
+    Apply full time-averaging and direct atmospheric subtraction.
+    Only use for simulations of PSWSC (AB or ABBA) observations. If any scanning is involved, use directSubtract function.
+
+    The variance returned by this method is an estimate of the underlying distribution variance, i.e. the NEP.
+    In the interface, this is converted to variance of the mean.
+
+    @param chunk_idxs Array containing chunk indices to be processed by this particular instance of avgDirectSubtract.
+    @param result_path Path to simulation results.
+    """
+
+    select = lambda x,y, flags : np.squeeze(np.argwhere((flags == int(x)) | (flags == int(y))))
+    
+    chunk_idxs, thread_idx = args
+    f_sample, var_method = xargs
+
+    for idx in _iterator(chunk_idxs, thread_idx):
+        res_dict = fio.unpack_output(result_path, idx)
+
+        idx_on = select(0, 2, res_dict["flag"])
+        idx_off = select(-1, 1, res_dict["flag"])
+
+        chunks_off = _consecutive(idx_off)
+
+        mean_values_off = np.zeros((len(chunks_off), res_dict["signal"].shape[1]))
+        mean_index_off = np.zeros(len(chunks_off))
+        
+        for chu_idx, chu_off in enumerate(chunks_off):
+            mean_values_off[chu_idx] = np.nanmean(res_dict["signal"][chu_off,:], axis=0)
+            mean_index_off[chu_idx] = np.nanmean(chu_off)
+        
+        bkg_on = interp1d(mean_index_off, mean_values_off, kind="linear", axis=0, fill_value="extrapolate")(idx_on)    
+
+        on_sub = res_dict["signal"][idx_on,:] - bkg_on
+        N_on = on_sub.shape[0]
+        
+        if var_method == "PSD":
+            f_Pxx, Pxx = welch(on_sub, fs=f_sample, axis=0)
+            var_term = (N_on - 1) * np.nanmean(Pxx, axis=0) * f_sample
+
+        elif var_method == "TOD":
+            var_term = 2 * (N_on - 1) * np.nanvar(on_sub, axis=0) 
+
+        avg_term = (N_on - 1) * np.nanmean(on_sub, axis=0)
+
+        if idx == chunk_idxs[0]:
+            N_tot = N_on
+            tot_avg = avg_term
+            tot_var = var_term
+
+        else:
+            N_tot += N_on
+            tot_avg += avg_term
+            tot_var += var_term
+
+    tot_avg /= (N_tot - len(chunk_idxs))    
+    tot_var /= (N_tot - len(chunk_idxs))
+
+    return tot_avg, tot_var, N_tot
+
+def calcSignalPSD(args, result_path, xargs):
     """!
     Calculate signal PSD of a simulation output.
 
@@ -21,96 +84,43 @@ def calcSignalPSD(chunk_idxs, result_path, xargs):
     @returns signal_psd Averaged PSDs over the chunks handled by this particular instance of calcSignalPSD.
     @returns freq_psd Frequencies at which the signal PSD is defined, in Hertz.
     """
+    chunk_idxs, thread_idx = args
+    f_sample = xargs[0]
 
     freq_sample, nperseg = xargs
-    start_chunk = chunk_idxs[0]
 
-    for idx in chunk_idxs:
+    num_avg = 0
+    for idx in _iterator(chunk_idxs, thread_idx):
         res_dict = fio.unpack_output(result_path, idx)
-        freq_psd, Pxx = welch(res_dict["signal"], fs=freq_sample, nperseg=nperseg, axis=0)
+        f_Pxx, Pxx = welch(res_dict["signal"], fs=f_sample, axis=0)
 
-        if idx == start_chunk:
-            signal_psd = Pxx
-        else:
-            signal_psd += Pxx
-
-    signal_psd /= chunk_idxs.size
-
-    return signal_psd, freq_psd
-
-def rebinSignal(self, output, freqs_old, nbins_add, final_bin=True):
-    """!
-    Rebin a simulation result into a coarser bin size.
-    
-    @param final_bin If number of old bins divided by nbins_add is not an integer, wether to rebin final new bin with less bins, or add extra bins to second-to-last bin.
-    """
-
-    shape_old  = output.get("signal").shape
-    nbins_old = shape_old[1]
-    
-    if (not isinstance(nbins_add, int)) or (nbins_add == 1):
-        self.clog.error(f"Rebin number must be an integer and larger than 1.")
-        exit(1)
-
-    if final_bin:
-        nbins_new = math.ceil(nbins_old / nbins_add)
-    else:
-        nbins_new = math.floor(nbins_old / nbins_add)
-
-    signal_new = np.zeros((shape_old[0], nbins_new))
-    freqs_new = np.zeros(nbins_new)
-
-    for nbin in range(nbins_new):
-        start_bin = nbin * nbins_add
-        if nbin == nbins_new - 1:
-            signal_new[:,nbin] = np.mean(output.get("signal")[:,start_bin:], axis=1)
-            freqs_new[nbin] = np.mean(freqs_old[start_bin:])
-
-        else:
-            signal_new[:,nbin] = np.mean(output.get("signal")[:,start_bin:start_bin+nbins_add], axis=1)
-            freqs_new[nbin] = np.mean(freqs_old[start_bin:start_bin+nbins_add])
-
-    output_binned = copy.deepcopy(output)
-    output_binned["signal"] = signal_new
-
-    return output_binned, freqs_new
-
-def avgDirectSubtract(args, result_path, xargs):
-    """!
-    Apply full time-averaging and direct atmospheric subtraction.
-    Only use for simulations of PSWSC (AB or ABBA) observations. If any scanning is involved, use directSubtract function.
-
-    @param chunk_idxs Array containing chunk indices to be processed by this particular instance of avgDirectSubtract.
-    @param result_path Path to simulation results.
-    """
-
-    select = lambda x,y, flags : np.squeeze(np.argwhere((flags == int(x)) | (flags == int(y))))
-    
-    chunk_idxs, thread_idx = args
-
-    start_chunk = chunk_idxs[0]
-    import matplotlib.pyplot as pt
-    
-    iterator = lambda x, idx : tqdm(x, ncols=100, total=x.size, colour="GREEN") if idx == 0 else x 
-    for idx in iterator(chunk_idxs, thread_idx):
-        res_dict = fio.unpack_output(result_path, idx)
-
-        on = np.nanmean(res_dict["signal"][select(0, 2, res_dict["flag"]), :], axis=0)
-        off = np.nanmean(res_dict["signal"][select(-1, 1, res_dict["flag"]), :], axis=0)
-
-        if idx == start_chunk:
-            signal_avg = on - off          
+        if idx == chunk_idxs[0]:
+            tot_Pxx = Pxx
+            out_f_Pxx = f_Pxx 
+            num_avg += 1
+        
         elif idx == chunk_idxs[-1]:
-            continue
+            # Because it is hard to add arrays of different size, I just discard the last chunk (if there are more than one) and only keep unifomrly sized chunks.
+            break
+        
         else:
-            signal_avg += on - off
-            #pt.plot(signal_avg, label=f"{idx}")
+            tot_Pxx += Pxx
+            num_avg += 1
 
-    #pt.legend()
-    #pt.show()
+    tot_Pxx /= num_avg
 
-    signal_avg /= chunk_idxs.size
+    return tot_Pxx, out_f_Pxx
 
-    #if thread_idx == 0:
+def _consecutive(data, stepsize=1):
+    """
+    Take numpy array and return list with arrays containing consecutive blocks
+    
+    @param data Array in which consecutive chunks are to be located.
 
-    return signal_avg
+    @returns List with arrays of consecutive chunks of data as elements.
+    """
+
+    return np.split(data, np.where(np.diff(data) != stepsize)[0]+1)
+
+def _iterator(x, idx_thread):
+    return tqdm(x, ncols=100, total=x.size, colour="GREEN") if idx_thread == 0 else x 
