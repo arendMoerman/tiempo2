@@ -23,7 +23,7 @@ def generateFilterbankFromR(instrumentDict):
     eta_filt    = instrumentDict.get("eta_filt")
     order       = instrumentDict.get("order")
     
-    f_filt      = instrumentDict.get("f_ch_arr") * 1e-9
+    f_filt      = instrumentDict.get("f_ch_arr")
 
     A = 1
 
@@ -32,6 +32,9 @@ def generateFilterbankFromR(instrumentDict):
 
 
     f_src = np.linspace(f0_src, f1_src, nf_src)
+
+    instrumentDict["f_src_arr"] = f_src
+
     filterbank = np.zeros((nf_ch, nf_src))
 
     for j in range(nf_ch):

@@ -8,37 +8,6 @@ Apart from checking, the functions also set default parameters that are not give
 import numpy as np
 import tiempo2.Materials as TMaterials
 
-def checkSourceDict(sourceDict):
-    SZlist = ["type", "Az", "El", "nAz", "nEl", "Te", "ne0", "beta",
-              "v_pec", "thetac", "Da"]
-
-    backgroundlist = ["type"]
-    
-    loadlist = ["path", "filename"]
-
-    errlist = []
-
-    if sourceDict.get("type") == "SZ":
-        checklist = SZlist
-
-    elif sourceDict.get("type") == "background":
-        checklist = backgroundlist
-    
-    elif sourceDict.get("type") == "load":
-        checklist = loadlist
-    
-    elif sourceDict.get("type") == "GalSpec":
-        return errlist
-    else:
-        errlist.append("type")
-        return errlist
-
-    for key in checklist:
-        if sourceDict.get(key) is None:
-            errlist.append(key)
-    
-    return errlist
-
 def checkTelescopeDict(telescopeDict):
     checklist = ["Dtel", "Ttel", "Tgnd", "chop_mode", "eta_ap_ON", "eta_mir",
                      "eta_fwd", "freq_chop", "dAz_chop", "El0"]
@@ -50,6 +19,9 @@ def checkTelescopeDict(telescopeDict):
 
     if telescopeDict.get("chop_mode") is None:
         telescopeDict["chop_mode"] = 0
+        telescopeDict["freq_chop"] = -1
+        telescopeDict["dAz_chop"] = -1
+        telescopeDict["freq_nod"] = -1
     elif telescopeDict.get("chop_mode") == "direct":
         telescopeDict["chop_mode"] = 1
     elif telescopeDict.get("chop_mode") == "abba":
@@ -91,7 +63,7 @@ def checkTelescopeDict(telescopeDict):
     return errlist
 
 def checkInstrumentDict(instrumentDict):
-    checklist = ["material", "f0_ch", "R", "nf_ch", "f0_src", "f1_src", "nf_src", "eta_inst", "f_sample", "eta_filt", "box_eq", "order"]
+    checklist = ["material", "f0_ch", "eta_inst", "f_sample", "eta_filt", "box_eq", "order"]
 
     errlist = []
 

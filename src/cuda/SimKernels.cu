@@ -384,8 +384,8 @@ __device__ void commonJob(ArrSpec<float> *f_src, ArrSpec<float> *f_atm, ArrSpec<
     eta_atm_interp = powf(eta_atm_interp, ccscEl0);
     
     // Note that perfect throughput is not applied to source here, as I_nu has already been multiplied by this in Python
-    PSD_nu = eta_ap * eta_atm_interp * const_effs[0] * I_nu
-        + (const_effs[0] * (1 - eta_atm_interp) * tex1Dfetch(tex_I_atm, idy)
+    PSD_nu = (eta_ap * eta_atm_interp * const_effs[0] * I_nu
+        + const_effs[0] * (1 - eta_atm_interp) * tex1Dfetch(tex_I_atm, idy)
         + const_effs[1] * tex1Dfetch(tex_I_gnd, idy)
         + const_effs[2] * tex1Dfetch(tex_I_tel, idy)) 
         * CL*CL / (freq*freq);
@@ -399,105 +399,6 @@ __device__ void commonJob(ArrSpec<float> *f_src, ArrSpec<float> *f_atm, ArrSpec<
         eta_kj = tex1Dfetch( tex_filterbank, k*f_src->num + idy);
         atomicAdd(&sigout[k*cnt + idx], __fmul_rn(eta_kj, sigfactor)); 
         atomicAdd(&nepout[k*cnt + idx], __fmul_rn(eta_kj, __fmaf_rn(nepfactor2, eta_kj, nepfactor1))); 
-    }
-}
-
-/**
-  Calculate power and NEP in each channel.
-  This kernel is optimised for strict single-pointing (i.e., no sky-chopping) observations.
-
-  @param sigout Array for storing output power, for each channel, for each time, in SI units.
-  @param nepout Array for storing output NEP, for each channel, for each time, in SI units.
-  @param flagout Array for storing wether beam is in chop A or B, in nod AB or BA.
-  @param PWV_trace Array containing PWV value of atmosphere as seen by telescope over observation, in millimeters.
-  @param eta_atm Array with transmission parameters as function of PWV and frequency.
-  @param source Array containing source intensity at three pointings, as function of frequency, in SI units.
- */
-__global__ void calcPowerNEP_1(ArrSpec<float> f_src, ArrSpec<float> f_atm, ArrSpec<float> PWV_atm, float *sigout, float *nepout, int *flagout,
-        float *PWV_trace, float *eta_atm, float *source) {
-    
-    int idx = blockIdx.x * blockDim.x + threadIdx.x; 
-    int idy = blockIdx.y * blockDim.y + threadIdx.y; 
-
-    if (idx < cnt && idy < f_src.num) {
-        float I_nu;             // Specific intensity of source.
-
-        // INTEGERS
-        int flag = flagout[idx];
-
-        I_nu = source[idy];
-
-        commonJob(&f_src, &f_atm, &PWV_atm, idx, idy, sigout, nepout, PWV_trace, eta_atm, I_nu, flag);
-    }
-}
-
-/**
-  Calculate power and NEP in each channel.
-  This kernel is optimised for observations involving two pointings, encountered in single-pointing ON-OFF chopping.
-        
-  @param sigout Array for storing output power, for each channel, for each time, in SI units.
-  @param nepout Array for storing output NEP, for each channel, for each time, in SI units.
-  @param flagout Array for storing wether beam is in chop A or B, in nod AB or BA.
-  @param PWV_trace Array containing PWV value of atmosphere as seen by telescope over observation, in millimeters.
-  @param eta_atm Array with transmission parameters as function of PWV and frequency.
-  @param source Array containing source intensity at three pointings, as function of frequency, in SI units.
- */
-__global__ void calcPowerNEP_2(ArrSpec<float> f_src, ArrSpec<float> f_atm, ArrSpec<float> PWV_atm, float *sigout, float *nepout, int *flagout,
-        float *PWV_trace, float *eta_atm, float *source) {
-    
-    int idx = blockIdx.x * blockDim.x + threadIdx.x; 
-    int idy = blockIdx.y * blockDim.y + threadIdx.y; 
-
-    if (idx < cnt && idy < f_src.num) {
-        float I_nu;             // Specific intensity of source.
-        int idx_point;          // Index for pointing of source (0 is OFF-B, 1 is ON-AB, 2 is OFF-A)
-
-        // INTEGERS
-        int flag = flagout[idx];
-        
-        // Determine idx in source from chopping flag
-        if(flag==0) {idx_point = 0;}
-        else {idx_point = 1;}
-    
-        I_nu = source[idx_point*f_src.num + idy];
-
-        commonJob(&f_src, &f_atm, &PWV_atm, idx, idy, sigout, nepout, PWV_trace, eta_atm, I_nu, flag);
-    }
-}
-
-/**
-  Calculate power and NEP in each channel.
-  This kernel is optimised for observations involving three pointings, encountered in single-pointing ABBA chopping.
-        
-  @param sigout Array for storing output power, for each channel, for each time, in SI units.
-  @param nepout Array for storing output NEP, for each channel, for each time, in SI units.
-  @param flagout Array for storing wether beam is in chop A or B, in nod AB or BA.
-  @param PWV_trace Array containing PWV value of atmosphere as seen by telescope over observation, in millimeters.
-  @param eta_atm Array with transmission parameters as function of PWV and frequency.
-  @param source Array containing source intensity at three pointings, as function of frequency, in SI units.
- */
-__global__ void calcPowerNEP_3(ArrSpec<float> f_src, ArrSpec<float> f_atm, ArrSpec<float> PWV_atm, float *sigout, float *nepout, int *flagout,
-        float *PWV_trace, float *eta_atm, float *source) {
-    
-    int idx = blockIdx.x * blockDim.x + threadIdx.x; 
-    int idy = blockIdx.y * blockDim.y + threadIdx.y; 
-
-    if (idx < cnt && idy < f_src.num) {
-        float I_nu;             // Specific intensity of source.
-        int idx_point;          // Index for pointing of source (0 is OFF-B, 1 is ON-AB, 2 is OFF-A)
-
-        //printf("%d\n", idx);
-        // INTEGERS
-        int flag = flagout[idx];
-        
-        // Determine idx in source from chopping flag
-        if(flag==0 or flag==2) {idx_point = 1;}
-        else if(flag==1) {idx_point = 2;}
-        else {idx_point = 0;}
-    
-        I_nu = source[idx_point*f_src.num + idy];
-
-        commonJob(&f_src, &f_atm, &PWV_atm, idx, idy, sigout, nepout, PWV_trace, eta_atm, I_nu, flag);
     }
 }
 
@@ -820,29 +721,8 @@ void runTiEMPO2_CUDA(Instrument<float> *instrument, Telescope<float> *telescope,
         // CALL TO MAIN SIMULATION KERNEL
         timer.start();
         
-        // SINGLE POINTING, NO CHOP
-        if(telescope->scantype == 0 && telescope->chop_mode == 0) {
-            calcPowerNEP_1<<<gridSize2D, blockSize2D>>>(_f_spec, _f_atm, _PWV_atm, d_sigout, d_nepout, d_flagout,
+        calcPowerNEP<<<gridSize2D, blockSize2D>>>(_f_spec, _f_atm, _PWV_atm, _Az_src, _El_src, d_sigout, d_nepout, d_azout, d_elout, d_flagout,
                 PWV_out, deta_atm, d_I_nu);
-        }
-        
-        // SINGLE POINTING, STRICT ON-OFF
-        else if(telescope->scantype == 0 && telescope->chop_mode == 1) {
-            calcPowerNEP_2<<<gridSize2D, blockSize2D>>>(_f_spec, _f_atm, _PWV_atm, d_sigout, d_nepout, d_flagout,
-                PWV_out, deta_atm, d_I_nu);
-        }
-
-
-        // SINGLE POINTING, ABBA CHOPPING
-        else if(telescope->scantype == 0 && telescope->chop_mode == 2) {
-            calcPowerNEP_3<<<gridSize2D, blockSize2D>>>(_f_spec, _f_atm, _PWV_atm, d_sigout, d_nepout, d_flagout,
-                PWV_out, deta_atm, d_I_nu);
-        }
-
-        else {
-            calcPowerNEP<<<gridSize2D, blockSize2D>>>(_f_spec, _f_atm, _PWV_atm, _Az_src, _El_src, d_sigout, d_nepout, d_azout, d_elout, d_flagout,
-                    PWV_out, deta_atm, d_I_nu);
-        }
         
         gpuErrchk( cudaDeviceSynchronize() );
 

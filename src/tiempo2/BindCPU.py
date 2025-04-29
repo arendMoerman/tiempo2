@@ -28,13 +28,6 @@ def loadTiEMPO2lib():
         except:
             lib = ctypes.CDLL(os.path.join(path_cur, "libtiempo2.dylib"))
 
-    lib.runTiEMPO2.argtypes = [ctypes.POINTER(TStructs.Instrument), 
-                               ctypes.POINTER(TStructs.Telescope),
-                               ctypes.POINTER(TStructs.Atmosphere), 
-                               ctypes.POINTER(TStructs.Source),
-                               ctypes.POINTER(TStructs.Output),
-                               ctypes.c_int, ctypes.c_int]
-    
     lib.calcW2K.argtypes = [ctypes.POINTER(TStructs.Instrument), 
                             ctypes.POINTER(TStructs.Telescope),
                             ctypes.POINTER(TStructs.Atmosphere), 
@@ -60,7 +53,6 @@ def loadTiEMPO2lib():
                            ctypes.POINTER(ctypes.c_double), 
                            ctypes.c_double, ctypes.c_double]
     
-    lib.runTiEMPO2.restype = None
     lib.calcW2K.restype = None
     lib.getSourceSignal.restype = None
     lib.getChopperCalibration.restype = None
@@ -94,46 +86,6 @@ def loadTiEMPO2lib_CUDA():
     lib.runTiEMPO2_CUDA.restype = None
 
     return lib
-
-def runTiEMPO2(instrument, telescope, atmosphere, source, nTimes, nThreads):
-    """!
-    Binding for running the TiEMPO2 simulation on CPU.
-
-    @param instrument Dictionary containing instrument parameters.
-    @param telescope Dictionary containing telescope parameters.
-    @param atmosphere Dictionary containing atmosphere parameters.
-    @param source Dictionary containing astronomical source parameters.
-
-    @returns 2D array containing timestreams of power in detector, for each channel frequency
-    """
-
-    lib = loadTiEMPO2lib()
-    mgr = TManager.Manager()
-
-    _instrument = TStructs.Instrument()
-    _telescope = TStructs.Telescope()
-    _atmosphere = TStructs.Atmosphere()
-    _source = TStructs.Source()
-
-    _output = TStructs.Output()
-
-    TBUtils.allfillInstrument(instrument, _instrument)
-    TBUtils.allfillTelescope(telescope, _telescope)
-    TBUtils.allfillAtmosphere(atmosphere, _atmosphere)
-    TBUtils.allfillSource(source, _source)
-
-    cnTimes = ctypes.c_int(nTimes)
-    cnThreads = ctypes.c_int(nThreads)
-
-    TBUtils.allocateOutput(_output, nTimes, instrument["nf_ch"])
-
-    args = [_instrument, _telescope, _atmosphere, _source, _output, cnTimes, cnThreads]
-
-    mgr.new_thread(target=lib.runTiEMPO2, args=args)
-
-    res = TBUtils.OutputStructToDict(_output, nTimes, instrument["nf_ch"], np_t=np.float64)
-
-    return res
 
 def calcW2K(instrument, telescope, atmosphere, nPWV, nThreads):
     """!
