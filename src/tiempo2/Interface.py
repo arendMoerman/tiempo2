@@ -12,13 +12,12 @@ from scipy.interpolate import griddata
 from scipy.stats import binned_statistic_2d
 
 import tiempo2.Filterbank as TFilter
-import tiempo2.Sources as TSource
 import tiempo2.InputChecker as TCheck
 import tiempo2.Atmosphere as TAtm
 import tiempo2.BindCPU as TBCPU
 import tiempo2.RemoveATM as TRemove
 import tiempo2.Parallel as TParallel
-import tiempo2.Analyse as TAnalyse
+import tiempo2.Utils as TUtils
 
 import psutil
 import logging
@@ -59,23 +58,23 @@ class Interface(object):
         outPath         :   Path to directory where to store simulation output. Defaults to current working directory.
     """
 
-    __sourceDict        = None
     __atmosphereDict    = None
     __telescopeDict     = None
     __instrumentDict    = None
     __observationDict   = None
 
-    sourceDict          = None
     atmosphereDict      = None
     telescopeDict       = None
     instrumentDict      = None
     observationDict     = None
+    sourceDict          = None
 
-    source_set          = False
     atmosphere_set      = False
     telescope_set       = False
     instrument_set      = False
     observation_set     = False
+    source_set          = False
+    w2k_set             = False
     
     initialisedSetup    = False
     initialisedObserve  = False
@@ -102,6 +101,10 @@ class Interface(object):
         if not verbose:
             self.clog.setLevel(logging.CRITICAL)
     
+
+    def _conv(self, arg):
+        return arg
+    
     def setLoggingVerbosity(self, verbose=True):
         """!
         Set or change the verbosity of the TiEMPO2 logger.
@@ -127,26 +130,6 @@ class Interface(object):
         """
 
         self.outPath = outPath
-    
-
-    def setSourceDict(self, sourceDict):
-        """!
-        Set a source dictionary.
-
-        @param sourceDict A dictionary specifying the source to simulate.
-
-        @ingroup inputdicts
-        """
-
-        errlist = TCheck.checkSourceDict(sourceDict)
-
-        if not errlist:
-            self.__sourceDict = sourceDict
-            self.source_set = True
-
-        else:
-            errstr = f"Errors encountered in source dictionary in fields :{errlist}."
-            raise FieldError(errstr)
 
     def setTelescopeDict(self, telescopeDict):
         """!
@@ -266,62 +249,11 @@ class Interface(object):
         self.instrumentDict = copy.deepcopy(self.__instrumentDict)
         self.telescopeDict = copy.deepcopy(self.__telescopeDict)
         self.atmosphereDict = copy.deepcopy(self.__atmosphereDict)
-
-        #### SI CONVERSION ####
-        f0_ch = self.instrumentDict["f0_ch"] * 1e9
-        f0_src = self.instrumentDict["f0_src"] * 1e9
-        f1_src = self.instrumentDict["f1_src"] * 1e9
-        nf_src = self.instrumentDict["nf_src"]
-
-        f_src = np.linspace(f0_src, f1_src, nf_src)
-
-        self.instrumentDict["f_src"] = f_src 
-
-        # Generate range of channel frequencies. Only for Python-side usage
-        
-        #### INITIALISING INSTRUMENT PARAMETERS ####
-        # Generate filterbank
-        if self.instrumentDict.get("R"):
-            if isinstance(f0_ch, float) or isinstance(f0_ch, int):
-                idx_ch_arr = np.arange(self.instrumentDict["nf_ch"])
-                self.instrumentDict["f_ch_arr"] = f0_ch * (1 + 1 / self.instrumentDict["R"])**idx_ch_arr
-            else:
-                self.instrumentDict["f_ch_arr"] = f0_ch
-            self.instrumentDict["filterbank"] = TFilter.generateFilterbankFromR(self.instrumentDict)
-        else:
-            self.instrumentDict["f_ch_arr"] = np.linspace(100,200,nf_src) 
-            # Here we need to call function that reads a filterbank matrix from Louis files.
-
-        #pt.plot(self.instrumentDict["filterbank"].T)
-        #pt.show()
-        
-        #### INITIALISING ATMOSPHERE PARAMETERS ####
-
-        #### INITIALISING TELESCOPE PARAMETERS ####
-        if isinstance(self.telescopeDict.get("eta_ap_ON"), float):
-            self.telescopeDict["eta_ap_ON"] *= np.ones(nf_src)
-        
-        if isinstance(self.telescopeDict.get("eta_ap_OFF"), float):
-            self.telescopeDict["eta_ap_OFF"] *= np.ones(nf_src)
-
-        if self.telescopeDict["s_rms"] is not None:
-            self.telescopeDict["s_rms"] *= 1e-6 # Convert um to m
-
-            eta_surf = np.exp(-(4 * np.pi * self.telescopeDict["s_rms"] * f_src / self.c)**2)
-
-            self.telescopeDict["eta_ap_ON"] *= eta_surf 
-            self.telescopeDict["eta_ap_OFF"] *= eta_surf 
-        
-        self.telescopeDict["dAz_chop"] /= 3600
-        self.telescopeDict["Ax"] /= 3600
-        self.telescopeDict["Axmin"] /= 3600
-        self.telescopeDict["Ay"] /= 3600
-        self.telescopeDict["Aymin"] /= 3600
         
         #### END INITIALISATION ####
         self.initialisedSetup = True
 
-    def initSource(self, pointing=None):
+    def initSource(self, source_cube, az_grid, el_grid, f_arr, pointing=None):
         """!
         Initialise a TiEMPO2 source. 
 
@@ -334,49 +266,69 @@ class Interface(object):
         @ingroup initialise
         """
 
+        az_arr = az_grid[:,0]
+        el_arr = el_grid[0,:]
+        nf_src = f_arr.size
+
+        self.instrumentDict["f0_src"] = f_arr[0]
+        self.instrumentDict["f1_src"] = f_arr[-1]
+        self.instrumentDict["f_src"] = f_arr
+        self.instrumentDict["nf_src"] = nf_src
+
         pointing = np.zeros(2) if pointing is None else pointing
-        self.sourceDict = copy.deepcopy(self.__sourceDict)
-        
-        trace_src = None 
 
-        #### INITIALISING ASTRONOMICAL SOURCE ####
-        # Load or generate source
-        if self.sourceDict.get("type") == "SZ":
-            # UPDATE FOLLOWING FOR ARBITRARY Az-El CENTERS!!!!!!!!!
-            if self.telescopeDict["scantype"] == 0 and self.telescopeDict["chop_mode"] == 2:
-                trace_src = np.zeros((2,3))
-                trace_src[0,:] = np.array([-1, 0, 1]) * self.telescopeDict["dAz_chop"]*3600 + pointing[0]
-                trace_src[1,:] = np.array([0, 0, 0]) + pointing[1]
-            
-            elif self.telescopeDict["scantype"] == 0 and self.telescopeDict["chop_mode"] == 0:
-                trace_src = np.zeros((2,3))
-                trace_src[0,:] = np.array([pointing[0]])
-                trace_src[1,:] = np.array([pointing[1]])
-            
-            I_nu, Az, El = TSource.generateSZMaps(self.sourceDict, self.instrumentDict, self.clog, telescopeDict=self.telescopeDict, trace_src=trace_src)
-
-        elif self.sourceDict.get("type") == "GalSpec":
-            I_nu, Az, El, freqs = TSource.generateGalSpecMaps(self.sourceDict, self.instrumentDict, self.telescopeDict)
+        f0_ch = self.instrumentDict["f0_ch"]
         
-        elif self.sourceDict.get("type") == "background":
-            if self.telescopeDict["scantype"] == 0 and self.telescopeDict["chop_mode"] == 2:
-                I_nu = np.zeros(3 * self.instrumentDict["nf_src"])
-            Az = np.zeros(self.instrumentDict["nf_src"])
-            El = np.zeros(self.instrumentDict["nf_src"])
-        
-        elif self.sourceDict.get("type") == "blackbody":
-            I_nu = np.zeros(self.instrumentDict["nf_src"])
-            Az = np.zeros(self.instrumentDict["nf_src"])
-            El = np.zeros(self.instrumentDict["nf_src"])
+        #### INITIALISING INSTRUMENT PARAMETERS ####
+        # Generate filterbank
+        if isinstance(f0_ch, np.ndarray):
+            self.instrumentDict["nf_ch"] = f0_ch.size
+            self.instrumentDict["f_ch_arr"] = f0_ch
 
-        else:
-            I_nu, Az, El, freqs = TSource.loadSZMaps(self.sourceDict)
+        elif self.instrumentDict.get("R") and self.instrumentDict.get("nf_ch"):
+            # R and number of channels given -> fl_ch unknowm
+            idx_ch_arr = np.arange(self.instrumentDict["nf_ch"])
+            self.instrumentDict["f_ch_arr"] = f0_ch * (1 + 1 / self.instrumentDict["R"])**idx_ch_arr
         
-        self.sourceDict["Az_src"] = Az / 3600
-        self.sourceDict["El_src"] = El / 3600
-        self.sourceDict["I_nu"] = I_nu
+        elif self.instrumentDict.get("R") and self.instrumentDict.get("fl_ch"):
+            # R and fl_ch given -> number of channels unknown
+            self.instrumentDict["nf_ch"] = np.ceil(np.emath.logn(1 + 1/self.instrumentDict["R"], self.instrumentDict["fl_ch"]/self.instrumentDict["f0_ch"])).astype(int)
+            idx_ch_arr = np.arange(self.instrumentDict["nf_ch"])
+            self.instrumentDict["f_ch_arr"] = f0_ch * (1 + 1 / self.instrumentDict["R"])**idx_ch_arr
+        self.instrumentDict["eta_filt"] *= np.ones(self.instrumentDict.get("nf_ch"))
+                
+        self.instrumentDict["filterbank"] = TFilter.generateFilterbankFromR(self.instrumentDict)
+        #import matplotlib.pyplot as plt
 
-    def getSourceSignal(self, Az_point, El_point, PWV_value=-1, ON=True):
+        #plt.plot(self.instrumentDict["filterbank"].T)
+        #plt.show()
+        
+        self.sourceDict = {"I_nu"   : source_cube,
+                           "Az_src" : az_arr / 3600,
+                           "El_src" : el_arr / 3600}
+
+        #### INITIALISING TELESCOPE PARAMETERS ####
+        if isinstance(self.telescopeDict.get("eta_ap_ON"), float):
+            self.telescopeDict["eta_ap_ON"] *= np.ones(nf_src)
+        
+        if isinstance(self.telescopeDict.get("eta_ap_OFF"), float):
+            self.telescopeDict["eta_ap_OFF"] *= np.ones(nf_src)
+
+        if self.telescopeDict["s_rms"] is not None:
+            self.telescopeDict["s_rms"] *= 1e-6 # Convert um to m
+
+            eta_surf = np.exp(-(4 * np.pi * self.telescopeDict["s_rms"] * f_arr / self.c)**2)
+
+            self.telescopeDict["eta_ap_ON"] *= eta_surf 
+            self.telescopeDict["eta_ap_OFF"] *= eta_surf 
+        
+        self.telescopeDict["dAz_chop"] /= 3600
+        self.telescopeDict["Ax"] /= 3600
+        self.telescopeDict["Axmin"] /= 3600
+        self.telescopeDict["Ay"] /= 3600
+        self.telescopeDict["Aymin"] /= 3600
+
+    def getSourceSignal(self, Az_point, El_point, PWV_value=-1, ON=True, w2k=False):
         """!
         Get astronomical signal without atmospheric noise, but with all efficiencies, atmospheric transmission and filterbank.
 
@@ -390,11 +342,20 @@ class Interface(object):
         @ingroup auxilliarymethods
         """
         
-        trace_src = np.array([[Az_point], [El_point]]) 
-        
-        SZ, Az, El = TSource.generateSZMaps(self.sourceDict, self.instrumentDict, self.clog, telescopeDict=self.telescopeDict, trace_src=trace_src)
-        SZ = np.squeeze(SZ) 
+        #SZ, Az, El = TSource.generateSZMaps(self.sourceDict, self.instrumentDict, self.clog, telescopeDict=self.telescopeDict, trace_src=trace_src)
+        #SZ = np.squeeze(SZ) 
+
+        SZ = self.sourceDict["I_nu"][15,15,:] - self.sourceDict["I_nu"][0,0,:] 
+
         res = TBCPU.getSourceSignal(self.instrumentDict, self.telescopeDict, self.atmosphereDict, SZ, PWV_value, ON)
+        
+        if w2k: 
+            if not self.w2k_set:
+                self.clog.error("in order to convert Watts to Kelvin, a call to calcW2K has to be made first!")
+                raise InitialError
+                sys.exit()
+
+            res = self.Watt2Kelvin(res)
 
         return res, self.instrumentDict["f_ch_arr"]
     
@@ -539,7 +500,11 @@ class Interface(object):
         a = np.zeros(self.instrumentDict["nf_ch"])
         b = np.zeros(self.instrumentDict["nf_ch"])
         for k in range(self.instrumentDict["nf_ch"]):
-            _a, _b = np.polyfit(res["power"][:,k], res["temperature"][:,k], 1)
+            try:
+                _a, _b = np.polyfit(res["power"][:,k], res["temperature"][:,k], 1)
+            except:
+                _a = 0
+                _b = 0
             a[k] = _a
             b[k] = _b
 
@@ -547,12 +512,13 @@ class Interface(object):
         res["b"] = b
 
         end = time.time()        
-        
-        self.clog.info("\033[1;32m*** FINISHED TiEMPO2 W2K CALIBRATION ***")
 
-        return res, self.instrumentDict["f_ch_arr"]
+        self.w2k_conv = res
+        self.w2k_set = True
+
+        self.clog.info("\033[1;32m*** FINISHED TiEMPO2 W2K CALIBRATION ***")
     
-    def Watt2Kelvin(self, output, w2k):
+    def Watt2Kelvin(self, output):
         """!
         Convert the signal in output from a Watt to a Kelvin temperature scale.
 
@@ -564,12 +530,40 @@ class Interface(object):
 
         @ingroup auxilliarymethods
         """
-
-        n_ch = output["signal"].shape[0]
         
-        output["signal"] = w2k["a"] * output["signal"] + w2k["b"]
+        try:
+            output["signal"] = self.w2k_conv["a"] * output["signal"] + self.w2k_conv["b"]
 
-    def calcSignalPSD(self, outpath, num_threads=1, nperseg=256):
+        except:
+            output = self.w2k_conv["a"] * output + self.w2k_conv["b"]
+    
+    ####  UTILITY FUNCTIONS
+
+    def shuffle_w2k(self, n_shuffle, n_avg):
+        if not self.w2k_set:
+            self.clog.error("in order to shuffle a w2k calibration, a call to calcW2K has to be made first!")
+            raise InitialError
+            sys.exit()
+
+        n_chan = self.w2k_conv["a"].size
+
+        if n_shuffle > n_chan:
+            self.clog.warning("Attempting to shuffle more channels than are available, reducing amount of channels to shuffle.")
+            n_shuffle = n_chan
+
+        to_shuffle = np.random.choice(np.arange(n_chan), n_shuffle, replace=False)
+        
+        n_same = n_avg - n_shuffle
+
+        a_avg = (np.nansum(self.w2k_conv["a"][to_shuffle]) + n_same*self.w2k_conv["a"][to_shuffle]) / n_avg
+        b_avg = (np.nansum(self.w2k_conv["b"][to_shuffle]) + n_same*self.w2k_conv["b"][to_shuffle]) / n_avg
+
+        self.w2k_conv["a"][to_shuffle] = a_avg
+        self.w2k_conv["b"][to_shuffle] = b_avg
+
+        return to_shuffle
+
+    def calcSignalPSD(self, outpath, num_threads=1, nperseg=2**11, w2k=False):
         """!
         Calculate signal PSD of a simulation output.
 
@@ -588,12 +582,23 @@ class Interface(object):
             self.clog.error("the instrument with which the data was simulated must be set in the interface!")
             raise InitialError
             sys.exit()
+
+        conv = self._conv
+        
+        if w2k: 
+            if not self.w2k_set:
+                self.clog.error("in order to convert Watts to Kelvin, a call to calcW2K has to be made first!")
+                raise InitialError
+                sys.exit()
+
+            conv = self.Watt2Kelvin
         
         self.clog.info("Calculating signal PSD.")
         
         Pxx, f_Pxx = TParallel.parallel_job(outpath, 
                                       num_threads = num_threads, 
-                                      job = TAnalyse.calcSignalPSD, 
+                                      job = TUtils.calcSignalPSD, 
+                                      conv = conv,
                                       args_list = [self.instrumentDict["f_sample"], nperseg])
         
         arr_sizes = np.array([x.size for x in f_Pxx])
@@ -602,6 +607,23 @@ class Interface(object):
         tot_f_Pxx = np.nanmean(f_Pxx, axis=0)
 
         return tot_Pxx, tot_f_Pxx
+    
+    def convolveSourceCube(self, source_cube, az_grid, el_grid, f_arr, Dtel, num_threads=1):
+        """!
+ 
+        @ingroup auxilliarymethods       
+        """
+        
+        self.clog.info("Convolving source cube.")
+        
+        source_cube_convolved = TParallel.parallel_job_np(source_cube, 
+                                      num_threads = num_threads, 
+                                      job = TUtils.convolveSourceCube, 
+                                      arr_par = f_arr,
+                                      args_list = [Dtel, az_grid, el_grid],
+                                      axis = -1)
+
+        return source_cube_convolved
 
     def rebinSignal(self, output, freqs_old, nbins_add, final_bin=True):
         """!
@@ -640,7 +662,7 @@ class Interface(object):
 
         return output_binned, freqs_new
     
-    def avgDirectSubtract(self, outpath, resolution=0, num_threads=1, var_method="PSD"):
+    def avgTOD(self, outpath, num_threads=1, w2k=False):
         """!
         Apply full time-averaging and direct atmospheric subtraction.
 
@@ -660,18 +682,72 @@ class Interface(object):
             raise InitialError
             sys.exit()
         
+        conv = self._conv
+        
+        if w2k: 
+            if not self.w2k_set:
+                self.clog.error("in order to convert Watts to Kelvin, a call to calcW2K has to be made first!")
+                raise InitialError
+                sys.exit()
+
+            conv = self.Watt2Kelvin
+        
+        self.clog.info("Applying time-averaging.")
+        
+        avg_l, var_l, N_l = TParallel.parallel_job(outpath, 
+                                      num_threads = num_threads, 
+                                      job = TUtils.avgTOD, 
+                                      conv = conv,
+                                      args_list = [self.instrumentDict["f_sample"]])
+        
+        avg = np.nansum((N_l - 1) * avg_l.T, axis=1) / (np.nansum(N_l) - len(N_l))
+        var = np.nansum((N_l - 1) * var_l.T, axis=1) / (np.nansum(N_l) - len(N_l))**2
+
+        return avg, var, self.instrumentDict["f_ch_arr"]
+    
+    def avgDirectSubtract(self, outpath, resolution=0, num_threads=1, var_method="PSD", w2k=False):
+        """!
+        Apply full time-averaging and direct atmospheric subtraction.
+
+        @param outpath Path to where output from a simulation is saved.
+        @param resolution How far to average and subtract. The following options are available:
+            0: Reduce signal to a single spectrum, fully averaged and subtracted according to the chopping/nodding scheme.
+            1: Reduce signal by averaging over ON-OFF chop positions.
+        @param num_threads Number of threads to use. If this number is more than necessary, it will automatically scale down.
+
+        @returns red_signal Reduced signal.
+        @returns red_Az Reduced Azimuth array. Only returned if resolution == 1.
+        @returns red_El Reduced Elevation array. Only returned if resolution == 1.
+        """
+        
+        if not self.instrument_set:
+            self.clog.error("the instrument with which the data was simulated must be set in the interface!")
+            raise InitialError
+            sys.exit()
+        
+        conv = self._conv
+        
+        if w2k: 
+            if not self.w2k_set:
+                self.clog.error("in order to convert Watts to Kelvin, a call to calcW2K has to be made first!")
+                raise InitialError
+                sys.exit()
+
+            conv = self.Watt2Kelvin
+        
         if resolution == 0:
             self.clog.info("Applying time-averaging and direct subtraction.")
             
             avg_l, var_l, N_l = TParallel.parallel_job(outpath, 
                                           num_threads = num_threads, 
-                                          job = TAnalyse.avgDirectSubtract, 
+                                          job = TUtils.avgDirectSubtract, 
+                                          conv = conv,
                                           args_list = [self.instrumentDict["f_sample"], var_method])
             
             avg = np.nansum((N_l - 1) * avg_l.T, axis=1) / (np.nansum(N_l) - len(N_l))
             var = np.nansum((N_l - 1) * var_l.T, axis=1) / (np.nansum(N_l) - len(N_l))**2
 
-            return avg, var
+            return avg, var, self.instrumentDict["f_ch_arr"]
 
         elif resolution == 1:
             self.clog.info("Averaging and subtracting over ON-OFF pairs.")
@@ -716,8 +792,6 @@ class Interface(object):
             grid_signal = binned_statistic_2d(red_Az, red_El, red_signal[:,idx], bins=[nAz_grid, nEl_grid]).statistic 
         
         return grid_signal, grid_Az, grid_El
-
-
 
 
 

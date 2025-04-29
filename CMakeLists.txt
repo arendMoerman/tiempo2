@@ -18,13 +18,13 @@ target_include_directories(scan PUBLIC src/include)
 add_library(timer SHARED src/include/Timer.cpp)
 target_include_directories(timer PUBLIC src/include)
 
-#add_library(tiempo2 SHARED src/cpp/InterfaceCPU.cpp)
-#target_link_libraries(tiempo2 PRIVATE interputils scan timer)
-#target_include_directories(tiempo2 PRIVATE src/include)
-#
-#if(NOT WIN32)
-#    target_compile_options(tiempo2 PRIVATE -pthread)
-#endif()
+add_library(tiempo2 SHARED src/cpp/InterfaceCPU.cpp)
+target_link_libraries(tiempo2 PRIVATE interputils scan timer)
+target_include_directories(tiempo2 PRIVATE src/include)
+
+if(NOT WIN32)
+    target_compile_options(tiempo2 PRIVATE -pthread)
+endif()
 
 include(CheckLanguage)
 

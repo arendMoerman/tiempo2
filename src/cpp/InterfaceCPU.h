@@ -31,10 +31,6 @@
 
 extern "C"
 {
-    TIEMPO2_DLL void runTiEMPO2(Instrument<double> *instrument, Telescope<double> *telescope, 
-                                Atmosphere<double> *atmosphere, Source<double> *source, 
-                                Output<double> *output, int nTimes, int nThreads);
-
     TIEMPO2_DLL void calcW2K(Instrument<double> *instrument, Telescope<double> *telescope, 
                              Atmosphere<double> *atmosphere, CalOutput<double> *output,
                              int nPWV, int nThreads);
@@ -51,49 +47,6 @@ extern "C"
     TIEMPO2_DLL void getChopperCalibration(Instrument<double> *instrument, double *output, double Tchopper);
 
 }
-
-/**
- * Parallel job for no chop, no scan, observations.
- *
- * @param instrument Instrument structure.
- * @param telescope Telescope structure.
- * @param instrument Instrument structure.
- * @param telescope Telescope structure.
- */
-void parallelJobs_1(Instrument<double> *instrument, Telescope<double> *telescope, 
-                  Atmosphere<double> *atmosphere, Source<double> *source, 
-                  Output<double> *output, double *eta_atm,
-                  ArrSpec<double> PWV_atm, ArrSpec<double> f_atm,
-                  Effs<double> *effs, int nTimes,
-                  int start, int stop, double dt, 
-                  double* I_atm, double* I_gnd, double* I_tel, double *I_CMB, int threadIdx);
-
-void parallelJobs_2(Instrument<double> *instrument, Telescope<double> *telescope, 
-                  Atmosphere<double> *atmosphere, Source<double> *source, 
-                  Output<double> *output, double *eta_atm,
-                  ArrSpec<double> PWV_atm, ArrSpec<double> f_atm,
-                  Effs<double> *effs, int nTimes,
-                  int start, int stop, double dt, 
-                  double* I_atm, double* I_gnd, double* I_tel, double *I_CMB, int threadIdx);
-
-void parallelJobs_3(Instrument<double> *instrument, Telescope<double> *telescope, 
-                  Atmosphere<double> *atmosphere, Source<double> *source, 
-                  Output<double> *output, double *eta_atm,
-                  ArrSpec<double> PWV_atm, ArrSpec<double> f_atm,
-                  Effs<double> *effs, int nTimes,
-                  int start, int stop, double dt, 
-                  double* I_atm, double* I_gnd, double* I_tel, double *I_CMB, int threadIdx);
-
-void parallelJobs(Instrument<double> *instrument, Telescope<double> *telescope, 
-                  Atmosphere<double> *atmosphere, Source<double> *source, 
-                  Output<double> *output, double *eta_atm,
-                  ArrSpec<double> PWV_atm, ArrSpec<double> f_atm,
-                  Effs<double> *effs, int nTimes,
-                  int start, int stop, double dt,
-                  double* I_atm, double* I_gnd, double* I_tel, double *I_CMB, int threadIdx);
-
-void calcPhotonNoise(Instrument<double> *instrument, double *PSD_nu, 
-                     std::mt19937 &geno, Output<double> *output, int idx, int nTimes);
 
 void parallelJobsW2K(Instrument<double> *instrument, Atmosphere<double> *atmosphere, 
                      CalOutput<double> *output, double *eta_atm, 
