@@ -1,3 +1,4 @@
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10528021.svg)](https://doi.org/10.5281/zenodo.10528021)
+TiEMPO2 has recently undergone a name change and is now called gateau!
+With that, also the repository has changed, find it [here](https://github.com/tifuun/gateau).
 
-Welcome to the TiEMPO2 Github repository! For more info, please see [the documentation pages](https://arend95.github.io/tiempo2/).
+This repository will not be used anymore, and will be kept here solely for archival purposes.
